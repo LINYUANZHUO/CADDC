@@ -47,7 +47,7 @@
 
   <Target Name="BuildBundle" AfterTargets="Build">
     <Error Condition="!Exists('$(ModulesRoot)')" Text="未找到资源目录：$(ModulesRoot)" />
-    <RemoveDir Directories="$(BundleModules)" Condition="Exists('$(BundleModules)')" />
+    <RemoveDir Directories="$(BundleContents)" Condition="Exists('$(BundleContents)')" />
     <MakeDir Directories="$(BundleContents)" />
     <MakeDir Directories="$(BundleModules)" />
     <ItemGroup>

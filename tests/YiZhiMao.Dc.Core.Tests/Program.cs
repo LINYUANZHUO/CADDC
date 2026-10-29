@@ -82,6 +82,7 @@ var tests = new (string Name, Action Test)[]
     ("圆盘由鼠标中键双击触发并替代默认缩放范围", RadialMenuMiddleButtonActivationIsRegistered),
     ("LISP市场默认本地库与三种加载指南完整", LispMarketSurfaceContractIsComplete),
     ("本地LISP库扫描受支持文件并生成安全加载表达式", LispPluginLibraryScansAndBuildsLoadExpression),
+    ("本地LISP命令在插件库中保持唯一", LispPluginCommandsAreUnique),
     ("一键图框参数校验并按内框计算缩放落位", FrameToolOptionsAndPlacementAreValid),
     ("图框模板目录只扫描DWG并保留外部选择", FrameTemplateLibraryScansDwgFiles),
     ("一键图框面板与四类底层命令入口完整", OneClickFrameSurfaceAndCommandsAreComplete),
@@ -114,6 +115,7 @@ var tests = new (string Name, Action Test)[]
     ("铰链类型文字默认35并按间距放入门内", HingeTypeLabelsUseConfigurableInsidePlacement),
     ("五金件面板和底层命令入口完整", HardwareSurfaceContractIsComplete),
     ("Modules资源会打包并由插件直接读取", ModuleResourcesAreBundledAndReadDirectly),
+    ("Bundle构建前清理全部旧Contents", BundleBuildCleansAllPreviousContents),
     ("工具箱XAML静态资源全部可解析", ShortcutPanelStaticResourcesAreDefined),
     ("快捷键面板保留双层导航和防截断约束", ShortcutPanelLayoutKeepsNavigationAndOverflowContract),
     ("打印设置可持久化并拒绝非法分辨率", PrintSettingsPersistAndValidate),
@@ -2168,6 +2170,31 @@ static void LispPluginLibraryScansAndBuildsLoadExpression()
     }
 }
 
+static void LispPluginCommandsAreUnique()
+{
+    var root = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
+    var libraryPath = Path.Combine(root, "Modules", "LispPlugins");
+    var definitions = Directory.EnumerateFiles(libraryPath, "*.lsp", SearchOption.AllDirectories)
+        .SelectMany(path => Regex.Matches(
+                File.ReadAllText(path),
+                @"\(defun\s+c:([^\s()]+)",
+                RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)
+            .Select(match => new
+            {
+                Command = match.Groups[1].Value.ToUpperInvariant(),
+                FileName = Path.GetFileName(path)
+            }))
+        .ToArray();
+    var duplicates = definitions
+        .GroupBy(item => item.Command, StringComparer.OrdinalIgnoreCase)
+        .Where(group => group.Count() > 1)
+        .Select(group => $"{group.Key}: {string.Join(", ", group.Select(item => item.FileName))}")
+        .ToArray();
+
+    Assert(duplicates.Length == 0,
+        $"本地LISP库存在重复命令，加载顺序会覆盖功能：{string.Join("; ", duplicates)}");
+}
+
 static void FrameToolOptionsAndPlacementAreValid()
 {
     var options = new FrameToolOptions();
@@ -2829,6 +2856,18 @@ static void ModuleResourcesAreBundledAndReadDirectly()
            panelCode.Contains("HardwareLibraryService.EnsureDefaultFolders(pluginDirectory)",
                StringComparison.Ordinal),
         "五金件面板尚未从插件安装目录的Modules读取资源。");
+}
+
+static void BundleBuildCleansAllPreviousContents()
+{
+    var root = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
+    var projectPath = Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "YiZhiMao.Dc.Plugin.csproj");
+    var project = File.ReadAllText(projectPath);
+    var cleanIndex = project.IndexOf("<RemoveDir Directories=\"$(BundleContents)\"", StringComparison.Ordinal);
+    var createIndex = project.IndexOf("<MakeDir Directories=\"$(BundleContents)\"", StringComparison.Ordinal);
+
+    Assert(cleanIndex >= 0 && createIndex > cleanIndex,
+        "Bundle构建没有在复制新文件前清理整个Contents，删除或改名的旧依赖可能残留。");
 }
 
 static void PrintSettingsPersistAndValidate()
