@@ -1,0 +1,69 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <AssemblyName>YiZhiMao.Dc.Plugin</AssemblyName>
+    <RootNamespace>YiZhiMao.Dc.Plugin</RootNamespace>
+    <PlatformTarget>x64</PlatformTarget>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <Version>0.1.0</Version>
+    <AutoCADDirectory Condition="'$(AutoCADDirectory)' == ''">D:\Autodesk\AutoCAD 2026</AutoCADDirectory>
+    <BundleRoot>$(MSBuildProjectDirectory)\..\..\artifacts\YiZhiMaoDc.bundle</BundleRoot>
+    <BundleContents>$(BundleRoot)\Contents</BundleContents>
+    <ModulesRoot>$(MSBuildProjectDirectory)\..\..\Modules</ModulesRoot>
+    <BundleModules>$(BundleContents)\Modules</BundleModules>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\YiZhiMao.Dc.Core\YiZhiMao.Dc.Core.csproj" />
+    <PackageReference Include="System.Drawing.Common" Version="8.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="AcCoreMgd">
+      <HintPath>$(AutoCADDirectory)\AcCoreMgd.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="AcDbMgd">
+      <HintPath>$(AutoCADDirectory)\AcDbMgd.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="AcMgd">
+      <HintPath>$(AutoCADDirectory)\AcMgd.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="AcWindows">
+      <HintPath>$(AutoCADDirectory)\AcWindows.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <Target Name="ValidateAutoCADReferences" BeforeTargets="ResolveReferences">
+    <Error Condition="!Exists('$(AutoCADDirectory)\AcMgd.dll')"
+           Text="未找到 AutoCAD 托管程序集。请通过 /p:AutoCADDirectory=... 指定 AutoCAD 2026 安装目录。" />
+  </Target>
+
+  <Target Name="BuildBundle" AfterTargets="Build">
+    <Error Condition="!Exists('$(ModulesRoot)')" Text="未找到资源目录：$(ModulesRoot)" />
+    <RemoveDir Directories="$(BundleModules)" Condition="Exists('$(BundleModules)')" />
+    <MakeDir Directories="$(BundleContents)" />
+    <MakeDir Directories="$(BundleModules)" />
+    <ItemGroup>
+      <BundleAssemblies Include="$(TargetDir)*.dll" />
+      <BundleModuleFiles Include="$(ModulesRoot)\**\*" Exclude="$(ModulesRoot)\**\*.bak" />
+    </ItemGroup>
+    <Copy SourceFiles="@(BundleAssemblies)" DestinationFolder="$(BundleContents)" />
+    <Copy SourceFiles="@(BundleModuleFiles)"
+          DestinationFiles="@(BundleModuleFiles->'$(BundleContents)\Modules\%(RecursiveDir)%(Filename)%(Extension)')" />
+    <Copy SourceFiles="$(TargetDir)$(AssemblyName).pdb"
+          DestinationFolder="$(BundleContents)"
+          Condition="Exists('$(TargetDir)$(AssemblyName).pdb')" />
+    <Copy SourceFiles="$(TargetDir)YiZhiMao.Dc.Core.pdb"
+          DestinationFolder="$(BundleContents)"
+          Condition="Exists('$(TargetDir)YiZhiMao.Dc.Core.pdb')" />
+    <Copy SourceFiles="$(MSBuildProjectDirectory)\..\..\packaging\YiZhiMaoDc.bundle\PackageContents.xml"
+          DestinationFolder="$(BundleRoot)" />
+  </Target>
+</Project>

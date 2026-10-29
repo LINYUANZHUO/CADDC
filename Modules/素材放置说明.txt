@@ -1,0 +1,7 @@
+一只猫dc Modules 资源目录
+
+1. 挂衣杆 DWG 和同名预览图放入 HangingRodBlocks。
+2. 灯带 DWG 和同名预览图放入 LightStripBlocks。
+3. 标注模板放入 DimTemplate。
+4. 构建时整个 Modules 目录会复制到 YiZhiMaoDc.bundle\Contents\Modules。
+5. 五金件面板直接读取安装后 bundle 内的 Modules；新增 DWG 无需重新编译代码，但正式安装包需要重新构建。

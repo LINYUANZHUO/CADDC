@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <AssemblyName>YiZhiMao.Dc.Plugin</AssemblyName>
+    <RootNamespace>YiZhiMao.Dc.Plugin</RootNamespace>
+    <PlatformTarget>x64</PlatformTarget>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Version>0.1.0</Version>
+    <AutoCADDirectory Condition="'$(AutoCADDirectory)' == ''">D:\Autodesk\AutoCAD 2026</AutoCADDirectory>
+    <BundleRoot>$(MSBuildProjectDirectory)\..\..\artifacts\YiZhiMaoDc.bundle</BundleRoot>
+    <BundleContents>$(BundleRoot)\Contents</BundleContents>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="AcCoreMgd">
+      <HintPath>$(AutoCADDirectory)\AcCoreMgd.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="AcDbMgd">
+      <HintPath>$(AutoCADDirectory)\AcDbMgd.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="AcMgd">
+      <HintPath>$(AutoCADDirectory)\AcMgd.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <Target Name="ValidateAutoCADReferences" BeforeTargets="ResolveReferences">
+    <Error Condition="!Exists('$(AutoCADDirectory)\AcMgd.dll')"
+           Text="未找到 AutoCAD 托管程序集。请通过 /p:AutoCADDirectory=... 指定 AutoCAD 2026 安装目录。" />
+  </Target>
+
+  <Target Name="BuildBundle" AfterTargets="Build">
+    <MakeDir Directories="$(BundleContents)" />
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(BundleContents)" />
+    <Copy SourceFiles="$(TargetDir)$(AssemblyName).pdb"
+          DestinationFolder="$(BundleContents)"
+          Condition="Exists('$(TargetDir)$(AssemblyName).pdb')" />
+    <Copy SourceFiles="$(MSBuildProjectDirectory)\..\..\packaging\YiZhiMaoDc.bundle\PackageContents.xml"
+          DestinationFolder="$(BundleRoot)" />
+  </Target>
+</Project>

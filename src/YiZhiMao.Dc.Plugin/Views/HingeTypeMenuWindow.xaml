@@ -1,0 +1,48 @@
+<Window x:Class="YiZhiMao.Dc.Plugin.Views.HingeTypeMenuWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Width="164"
+        SizeToContent="Height"
+        WindowStartupLocation="Manual"
+        WindowStyle="None"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        Background="Transparent"
+        AllowsTransparency="True"
+        FontFamily="Microsoft YaHei UI"
+        KeyDown="OnWindowKeyDown">
+    <Window.Resources>
+        <Style TargetType="Button">
+            <Setter Property="Height" Value="34" />
+            <Setter Property="Margin" Value="4,2" />
+            <Setter Property="Padding" Value="12,5" />
+            <Setter Property="HorizontalContentAlignment" Value="Left" />
+            <Setter Property="Background" Value="White" />
+            <Setter Property="BorderBrush" Value="#D9DDE3" />
+            <Setter Property="Foreground" Value="#20242A" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+    </Window.Resources>
+
+    <Border Background="#F7F7F8"
+            BorderBrush="#AEB4BC"
+            BorderThickness="1"
+            CornerRadius="3"
+            Padding="4">
+        <StackPanel>
+            <TextBlock Margin="8,5,8,4"
+                       Foreground="#68707C"
+                       FontSize="12"
+                       Text="选择铰链类型" />
+            <Button Content="内嵌 (D)" Tag="内嵌" Click="OnTypeClick" />
+            <Button Content="半盖 (X)" Tag="半盖" Click="OnTypeClick" />
+            <Button x:Name="FullCoverButton"
+                    Content="全盖 (Z)"
+                    Tag="全盖"
+                    Background="#EF5E25"
+                    BorderBrush="#EF5E25"
+                    Foreground="White"
+                    Click="OnTypeClick" />
+        </StackPanel>
+    </Border>
+</Window>

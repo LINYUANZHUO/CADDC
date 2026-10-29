@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ApplicationPackage SchemaVersion="1.0"
+                    AutodeskProduct="AutoCAD"
+                    Name="一只猫dc"
+                    AppVersion="0.1.0"
+                    Description="一只猫dc CAD 工具箱"
+                    Author="一只猫dc">
+  <Components>
+    <RuntimeRequirements OS="Win64"
+                         Platform="AutoCAD|AutoCAD*"
+                         SeriesMin="R25.1"
+                         SeriesMax="R25.1" />
+    <ComponentEntry AppName="YiZhiMaoDc_Net80"
+                    ModuleName="./Contents/YiZhiMao.Dc.Plugin.dll"
+                    LoadOnAutoCADStartup="True" />
+  </Components>
+</ApplicationPackage>
