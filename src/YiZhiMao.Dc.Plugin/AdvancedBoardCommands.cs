@@ -3,6 +3,7 @@ using Autodesk.AutoCAD.DatabaseServices;
 using Autodesk.AutoCAD.EditorInput;
 using Autodesk.AutoCAD.Geometry;
 using Autodesk.AutoCAD.Runtime;
+using YiZhiMao.Dc.Core;
 using YiZhiMao.Dc.Plugin.Shortcuts;
 using AcadApplication = Autodesk.AutoCAD.ApplicationServices.Core.Application;
 
@@ -10,17 +11,26 @@ namespace YiZhiMao.Dc.Plugin;
 
 internal static class AdvancedBoardRuntimeSettings
 {
-    public static double AbaOuterThickness { get; set; } = 18;
-    public static double AbaCoreThickness { get; set; } = 9;
-    public static double AbaDepth { get; set; } = 500;
-    public static int DivideCount { get; set; } = 3;
-    public static double DivideThickness { get; set; } = 18;
-    public static double BackboardThickness { get; set; } = 8;
-    public static double BackboardInset { get; set; } = 12;
-    public static double BackboardLeftExtension { get; set; } = 5;
-    public static double BackboardRightExtension { get; set; } = 5;
-    public static double BackboardTopExtension { get; set; } = 5;
-    public static double BackboardBottomExtension { get; set; } = 5;
+    public static BoardToolOptions Current
+    {
+        get => ToolboxSettingsRuntime.Settings.Board;
+        set => ToolboxSettingsRuntime.SetInMemory(settings => settings.Board = value);
+    }
+
+    public static void Save(BoardToolOptions value) =>
+        ToolboxSettingsRuntime.Update(settings => settings.Board = value);
+
+    public static double AbaOuterThickness => Current.AbaOuterThickness;
+    public static double AbaCoreThickness => Current.AbaCoreThickness;
+    public static double AbaDepth => Current.AbaDepth;
+    public static int DivideCount => Current.DivideCount;
+    public static double DivideThickness => Current.DivideThickness;
+    public static double BackboardThickness => Current.BackboardThickness;
+    public static double BackboardInset => Current.BackboardInset;
+    public static double BackboardLeftExtension => Current.BackboardLeftExtension;
+    public static double BackboardRightExtension => Current.BackboardRightExtension;
+    public static double BackboardTopExtension => Current.BackboardTopExtension;
+    public static double BackboardBottomExtension => Current.BackboardBottomExtension;
 }
 
 public static class AdvancedBoardCommands
@@ -129,15 +139,28 @@ public static class AdvancedBoardCommands
         var vertical = direction.Status != PromptStatus.OK ||
                        string.Equals(direction.StringResult, "V", StringComparison.OrdinalIgnoreCase);
         var count = Math.Max(2, AdvancedBoardRuntimeSettings.DivideCount);
+        IReadOnlyList<double> centers;
+        try
+        {
+            centers = BoardGeometryCalculator.GetDividerCenters(
+                vertical ? max.X - min.X : max.Y - min.Y,
+                count,
+                AdvancedBoardRuntimeSettings.DivideThickness);
+        }
+        catch (ArgumentOutOfRangeException exception)
+        {
+            document.Editor.WriteMessage($"\n[一只猫dc] 无法均分板件：{exception.Message}");
+            return;
+        }
+
         using var transaction = document.Database.TransactionManager.StartTransaction();
         var space = (BlockTableRecord)transaction.GetObject(document.Database.CurrentSpaceId, OpenMode.ForWrite);
         EnsureLayer(document.Database, transaction, StructureLayerName, 7);
-        for (var index = 1; index < count; index++)
+        foreach (var offset in centers)
         {
-            var ratio = index / (double)count;
             var start = vertical
-                ? new Point3d(min.X + (max.X - min.X) * ratio, min.Y, 0)
-                : new Point3d(min.X, min.Y + (max.Y - min.Y) * ratio, 0);
+                ? new Point3d(min.X + offset, min.Y, 0)
+                : new Point3d(min.X, min.Y + offset, 0);
             var end = vertical
                 ? new Point3d(start.X, max.Y, 0)
                 : new Point3d(max.X, start.Y, 0);
@@ -216,21 +239,32 @@ public static class AdvancedBoardCommands
         var vertical = direction.Status == PromptStatus.OK
             ? string.Equals(direction.StringResult, "V", StringComparison.OrdinalIgnoreCase)
             : (max.X - min.X) >= (max.Y - min.Y);
-        var coordinate = vertical
-            ? Math.Clamp(point.Value.X, min.X + Tolerance, max.X - Tolerance)
-            : Math.Clamp(point.Value.Y, min.Y + Tolerance, max.Y - Tolerance);
+        var coordinate = vertical ? point.Value.X : point.Value.Y;
+        if (!BoardGeometryCalculator.IsInteriorSplitCoordinate(
+                vertical ? min.X : min.Y,
+                vertical ? max.X : max.Y,
+                coordinate))
+        {
+            document.Editor.WriteMessage("\n[一只猫dc] 拆分点必须位于板件内部，未修改原板件。");
+            return;
+        }
+
         var space = (BlockTableRecord)transaction.GetObject(source.OwnerId, OpenMode.ForWrite);
+        Polyline firstPart;
+        Polyline secondPart;
         if (vertical)
         {
-            AppendRectangle(space, transaction, min.X, min.Y, coordinate, max.Y, source.Thickness, source.Layer);
-            AppendRectangle(space, transaction, coordinate, min.Y, max.X, max.Y, source.Thickness, source.Layer);
+            firstPart = AppendRectangle(space, transaction, min.X, min.Y, coordinate, max.Y, source.Thickness, source.Layer);
+            secondPart = AppendRectangle(space, transaction, coordinate, min.Y, max.X, max.Y, source.Thickness, source.Layer);
         }
         else
         {
-            AppendRectangle(space, transaction, min.X, min.Y, max.X, coordinate, source.Thickness, source.Layer);
-            AppendRectangle(space, transaction, min.X, coordinate, max.X, max.Y, source.Thickness, source.Layer);
+            firstPart = AppendRectangle(space, transaction, min.X, min.Y, max.X, coordinate, source.Thickness, source.Layer);
+            secondPart = AppendRectangle(space, transaction, min.X, coordinate, max.X, max.Y, source.Thickness, source.Layer);
         }
 
+        CopyEntityProperties(source, firstPart);
+        CopyEntityProperties(source, secondPart);
         source.Erase();
         transaction.Commit();
         document.Editor.WriteMessage("\n[一只猫dc] 板件已拆分为两块。");
@@ -262,16 +296,26 @@ public static class AdvancedBoardCommands
         var second = (Polyline)transaction.GetObject(selection.Value[1].ObjectId, OpenMode.ForWrite);
         if (!TryGetAxisAlignedBounds(first, out var firstMin, out var firstMax) ||
             !TryGetAxisAlignedBounds(second, out var secondMin, out var secondMax) ||
-            !CanMerge(firstMin, firstMax, secondMin, secondMax))
+            !CanMerge(firstMin, firstMax, secondMin, secondMax) ||
+            first.OwnerId != second.OwnerId ||
+            first.Normal.GetAngleTo(second.Normal) > Tolerance ||
+            !BoardGeometryCalculator.HaveCompatibleMergeProperties(
+                first.Layer,
+                second.Layer,
+                first.Thickness,
+                second.Thickness,
+                first.Elevation,
+                second.Elevation))
         {
-            document.Editor.WriteMessage("\n[一只猫dc] 只能合并边界对齐且相邻/重叠的矩形板件。");
+            document.Editor.WriteMessage("\n[一只猫dc] 只能合并边界对齐且图层、深度、高程一致的相邻矩形板件。");
             return;
         }
 
         var min = new Point3d(Math.Min(firstMin.X, secondMin.X), Math.Min(firstMin.Y, secondMin.Y), 0);
         var max = new Point3d(Math.Max(firstMax.X, secondMax.X), Math.Max(firstMax.Y, secondMax.Y), 0);
         var space = (BlockTableRecord)transaction.GetObject(first.OwnerId, OpenMode.ForWrite);
-        AppendRectangle(space, transaction, min.X, min.Y, max.X, max.Y, first.Thickness, first.Layer);
+        var merged = AppendRectangle(space, transaction, min.X, min.Y, max.X, max.Y, first.Thickness, first.Layer);
+        CopyEntityProperties(first, merged);
         first.Erase();
         second.Erase();
         transaction.Commit();
@@ -385,6 +429,19 @@ public static class AdvancedBoardCommands
 
         var hit = intersections[0];
         var pickedNearStart = pickedPoint.DistanceTo(source.StartPoint) <= pickedPoint.DistanceTo(source.EndPoint);
+        var sourceVector = source.EndPoint - source.StartPoint;
+        var lengthSquared = sourceVector.DotProduct(sourceVector);
+        if (lengthSquared <= Tolerance)
+        {
+            return false;
+        }
+
+        var intersectionParameter = (hit - source.StartPoint).DotProduct(sourceVector) / lengthSquared;
+        if (!BoardGeometryCalculator.CanEditLineToIntersection(intersectionParameter, pickedNearStart, isExtend))
+        {
+            return false;
+        }
+
         if (isExtend)
         {
             if (pickedNearStart)
@@ -645,6 +702,14 @@ public static class AdvancedBoardCommands
         space.AppendEntity(polyline);
         transaction.AddNewlyCreatedDBObject(polyline, true);
         return polyline;
+    }
+
+    private static void CopyEntityProperties(Polyline source, Polyline target)
+    {
+        target.SetPropertiesFrom(source);
+        target.Thickness = source.Thickness;
+        target.Elevation = source.Elevation;
+        target.Normal = source.Normal;
     }
 
     private static void EnsureLayer(Database database, Transaction transaction, string name, short colorIndex)

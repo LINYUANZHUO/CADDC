@@ -53,6 +53,7 @@ public partial class ShortcutPanelView : UserControl
         LoadHardwareModule();
         LoadWallPanelModule();
         LoadBoardModule();
+        LoadDrawingLayerModule();
         LoadFrameModule();
         LoadRadialMenuModule();
         LoadLispMarketModule();
@@ -596,7 +597,7 @@ public partial class ShortcutPanelView : UserControl
             return;
         }
 
-        WainscotRuntimeSettings.Grille = options;
+        WainscotRuntimeSettings.SaveGrille(options);
         WallPanelStatusText.Foreground = Brushes.DimGray;
         WallPanelStatusText.Text = statusMessage;
         document.SendStringToExecute(command + " ", activate: true, wrapUpInactiveDoc: false, echoCommand: false);
@@ -644,7 +645,7 @@ public partial class ShortcutPanelView : UserControl
             return;
         }
 
-        WainscotRuntimeSettings.PerforatedPanel = options;
+        WainscotRuntimeSettings.SavePerforatedPanel(options);
         PerforatedStatusText.Foreground = Brushes.DimGray;
         PerforatedStatusText.Text = statusMessage;
         document.SendStringToExecute(command + " ", activate: true, wrapUpInactiveDoc: false, echoCommand: false);
@@ -683,7 +684,7 @@ public partial class ShortcutPanelView : UserControl
             return;
         }
 
-        WainscotRuntimeSettings.BackgroundWall = options;
+        WainscotRuntimeSettings.SaveBackgroundWall(options);
         BackgroundWallStatusText.Foreground = Brushes.DimGray;
         BackgroundWallStatusText.Text = "请在图纸中指定背景墙正视图左下角。";
         document.SendStringToExecute(
@@ -893,7 +894,7 @@ public partial class ShortcutPanelView : UserControl
     {
         if (TryReadPlanDoorPanelOptions(out var options, out var error))
         {
-            PlanDoorPanelRuntimeSettings.Current = options;
+            PlanDoorPanelRuntimeSettings.Save(options);
             SetPlanDoorPanelStatus("俯视门板参数已独立保存。", Brushes.SeaGreen);
             return;
         }
@@ -916,7 +917,7 @@ public partial class ShortcutPanelView : UserControl
             return;
         }
 
-        PlanDoorPanelRuntimeSettings.Current = options;
+        PlanDoorPanelRuntimeSettings.Save(options);
         SetPlanDoorPanelStatus("指定柜体前沿起终点；鼠标选侧，R翻转，W/+、S/-调整门数。", Brushes.DimGray);
         document.SendStringToExecute(
             "DC_CMD_PLAN_DOOR ",
@@ -965,7 +966,7 @@ public partial class ShortcutPanelView : UserControl
             return;
         }
 
-        DrawerFaceRuntimeSettings.Current = options;
+        DrawerFaceRuntimeSettings.Save(options);
         SetDrawerFaceStatus("抽面参数已独立保存。", Brushes.SeaGreen);
     }
 
@@ -984,7 +985,7 @@ public partial class ShortcutPanelView : UserControl
             return;
         }
 
-        DrawerFaceRuntimeSettings.Current = options;
+        DrawerFaceRuntimeSettings.Save(options);
         SetDrawerFaceStatus("依次选择柜体内空两个对角点；左右键或 +/- 调整数量，竖向也可用上下键。", Brushes.DimGray);
         document.SendStringToExecute(
             "DC_CMD_DRAWER_FACE ",
@@ -1036,8 +1037,11 @@ public partial class ShortcutPanelView : UserControl
             return false;
         }
 
-        DoorPanelRuntimeSettings.Current = doorOptions;
-        HardwareRuntimeSettings.Current = hardwareOptions;
+        ToolboxSettingsRuntime.Update(settings =>
+        {
+            settings.DoorPanel = doorOptions;
+            settings.Hardware = hardwareOptions;
+        });
         return true;
     }
 
@@ -1202,11 +1206,14 @@ public partial class ShortcutPanelView : UserControl
             return "板厚和深度必须大于 0，标识比例需为 0.1~10。";
         }
 
-        BoardRuntimeSettings.Thickness = thickness;
-        BoardRuntimeSettings.Depth = depth;
-        BoardRuntimeSettings.CenterDepth = centerDepth;
-        BoardRuntimeSettings.TagScale = tagScale;
-        BoardRuntimeSettings.TagType = (BoardTagTypeCombo.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "活动层板带文字";
+        BoardRuntimeSettings.Save(BoardRuntimeSettings.Current with
+        {
+            Thickness = thickness,
+            Depth = depth,
+            CenterDepth = centerDepth,
+            TagScale = tagScale,
+            TagType = (BoardTagTypeCombo.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "活动层板带文字"
+        });
         return null;
     }
 
@@ -1219,11 +1226,14 @@ public partial class ShortcutPanelView : UserControl
             return "偏移板厚必须大于 0，延伸值不能小于 0。";
         }
 
-        BoardRuntimeSettings.LineThickness = thickness;
-        BoardRuntimeSettings.ExtendStart = extendStart;
-        BoardRuntimeSettings.ExtendEnd = extendEnd;
-        BoardRuntimeSettings.DoubleAsRectangle = BoardDoubleModeCombo.SelectedIndex == 1;
-        BoardRuntimeSettings.TripleAsRectangle = BoardTripleModeCombo.SelectedIndex == 1;
+        BoardRuntimeSettings.Save(BoardRuntimeSettings.Current with
+        {
+            LineThickness = thickness,
+            ExtendStart = extendStart,
+            ExtendEnd = extendEnd,
+            DoubleAsRectangle = BoardDoubleModeCombo.SelectedIndex == 1,
+            TripleAsRectangle = BoardTripleModeCombo.SelectedIndex == 1
+        });
         return null;
     }
 
@@ -1239,12 +1249,15 @@ public partial class ShortcutPanelView : UserControl
             return "酒架尺寸必须大于 0，横板数和竖板数至少为 1。";
         }
 
-        BoardRuntimeSettings.WineRackDepth = depth;
-        BoardRuntimeSettings.CrossThickness = crossThickness;
-        BoardRuntimeSettings.DiagonalThickness = diagonalThickness;
-        BoardRuntimeSettings.WineCellWidth = cellWidth;
-        BoardRuntimeSettings.WineRows = rows;
-        BoardRuntimeSettings.WineColumns = columns;
+        BoardRuntimeSettings.Save(BoardRuntimeSettings.Current with
+        {
+            WineRackDepth = depth,
+            CrossThickness = crossThickness,
+            DiagonalThickness = diagonalThickness,
+            WineCellWidth = cellWidth,
+            WineRows = rows,
+            WineColumns = columns
+        });
         return null;
     }
 
@@ -1257,9 +1270,12 @@ public partial class ShortcutPanelView : UserControl
             return "ABA夹层厚度和深度必须大于 0。";
         }
 
-        AdvancedBoardRuntimeSettings.AbaOuterThickness = outerThickness;
-        AdvancedBoardRuntimeSettings.AbaCoreThickness = coreThickness;
-        AdvancedBoardRuntimeSettings.AbaDepth = depth;
+        AdvancedBoardRuntimeSettings.Save(AdvancedBoardRuntimeSettings.Current with
+        {
+            AbaOuterThickness = outerThickness,
+            AbaCoreThickness = coreThickness,
+            AbaDepth = depth
+        });
         return null;
     }
 
@@ -1271,8 +1287,11 @@ public partial class ShortcutPanelView : UserControl
             return "均分格数至少为 2，板厚必须大于 0。";
         }
 
-        AdvancedBoardRuntimeSettings.DivideCount = count;
-        AdvancedBoardRuntimeSettings.DivideThickness = thickness;
+        AdvancedBoardRuntimeSettings.Save(AdvancedBoardRuntimeSettings.Current with
+        {
+            DivideCount = count,
+            DivideThickness = thickness
+        });
         return null;
     }
 
@@ -1288,12 +1307,15 @@ public partial class ShortcutPanelView : UserControl
             return "背板厚度必须大于 0，缩进与延伸不能小于 0。";
         }
 
-        AdvancedBoardRuntimeSettings.BackboardThickness = thickness;
-        AdvancedBoardRuntimeSettings.BackboardInset = inset;
-        AdvancedBoardRuntimeSettings.BackboardLeftExtension = left;
-        AdvancedBoardRuntimeSettings.BackboardRightExtension = right;
-        AdvancedBoardRuntimeSettings.BackboardTopExtension = top;
-        AdvancedBoardRuntimeSettings.BackboardBottomExtension = bottom;
+        AdvancedBoardRuntimeSettings.Save(AdvancedBoardRuntimeSettings.Current with
+        {
+            BackboardThickness = thickness,
+            BackboardInset = inset,
+            BackboardLeftExtension = left,
+            BackboardRightExtension = right,
+            BackboardTopExtension = top,
+            BackboardBottomExtension = bottom
+        });
         return null;
     }
 
@@ -1342,9 +1364,15 @@ public partial class ShortcutPanelView : UserControl
             return;
         }
 
-        DrawingLayerRuntimeSettings.LinetypeScale = lineScale;
-        DrawingLayerRuntimeSettings.WallHatchScale = hatchScale;
+        DrawingLayerRuntimeSettings.Save(new DrawingLayerToolOptions(lineScale, hatchScale));
         RunDrawingCommand("DC_CMD_DRAWING_DISPLAY_REPAIR", "正在修复虚线和墙体填充显示。", SetDrawingLayerStatus);
+    }
+
+    private void LoadDrawingLayerModule()
+    {
+        var options = DrawingLayerRuntimeSettings.Current;
+        DrawingLinetypeScaleBox.Text = options.LinetypeScale.ToString("0.###", CultureInfo.CurrentCulture);
+        WallHatchScaleBox.Text = options.WallHatchScale.ToString("0.###", CultureInfo.CurrentCulture);
     }
 
     private static void RunDrawingCommand(string command, string status, Action<string, Brush> setStatus)
@@ -1624,7 +1652,7 @@ public partial class ShortcutPanelView : UserControl
             return false;
         }
 
-        HardwareRuntimeSettings.Current = options;
+        HardwareRuntimeSettings.Save(options);
         return true;
     }
 
@@ -1849,7 +1877,7 @@ public partial class ShortcutPanelView : UserControl
             return;
         }
 
-        ImageBatchRuntimeSettings.Current = options;
+        ImageBatchRuntimeSettings.Save(options);
         ImageStatusText.Foreground = Brushes.DimGray;
         ImageStatusText.Text = "请在图片选择窗口中选择一张或多张图片。";
         document.SendStringToExecute("DC_CMD_IMAGE_BATCH ", activate: true, wrapUpInactiveDoc: false, echoCommand: false);

@@ -19,7 +19,14 @@ internal static class HardwareRuntimeSettings
 
     public static HardwareLibraryItem? SelectedLightStrip { get; set; }
 
-    public static HardwareOptions Current { get; set; } = HardwareOptions.Default;
+    public static HardwareOptions Current
+    {
+        get => ToolboxSettingsRuntime.Settings.Hardware;
+        set => ToolboxSettingsRuntime.SetInMemory(settings => settings.Hardware = value);
+    }
+
+    public static void Save(HardwareOptions value) =>
+        ToolboxSettingsRuntime.Update(settings => settings.Hardware = value);
 }
 
 public static class HardwareCommands

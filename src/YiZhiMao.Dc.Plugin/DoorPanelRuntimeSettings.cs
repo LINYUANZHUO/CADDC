@@ -4,14 +4,28 @@ namespace YiZhiMao.Dc.Plugin;
 
 internal static class DoorPanelRuntimeSettings
 {
-    public static DoorPanelOptions Current { get; set; } = DoorPanelOptions.Default;
+    public static DoorPanelOptions Current
+    {
+        get => ToolboxSettingsRuntime.Settings.DoorPanel;
+        set => ToolboxSettingsRuntime.SetInMemory(settings => settings.DoorPanel = value);
+    }
+
+    public static void Save(DoorPanelOptions value) =>
+        ToolboxSettingsRuntime.Update(settings => settings.DoorPanel = value);
 }
 
 internal static class PlanDoorPanelRuntimeSettings
 {
     private static double? lastActualGap;
 
-    public static PlanDoorPanelOptions Current { get; set; } = PlanDoorPanelOptions.Default;
+    public static PlanDoorPanelOptions Current
+    {
+        get => ToolboxSettingsRuntime.Settings.PlanDoorPanel;
+        set => ToolboxSettingsRuntime.SetInMemory(settings => settings.PlanDoorPanel = value);
+    }
+
+    public static void Save(PlanDoorPanelOptions value) =>
+        ToolboxSettingsRuntime.Update(settings => settings.PlanDoorPanel = value);
 
     public static double? LastActualGap => lastActualGap;
 
@@ -33,7 +47,14 @@ internal static class DrawerFaceRuntimeSettings
 {
     private static DrawerFaceLayout? lastLayout;
 
-    public static DrawerFaceOptions Current { get; set; } = DrawerFaceOptions.Default;
+    public static DrawerFaceOptions Current
+    {
+        get => ToolboxSettingsRuntime.Settings.DrawerFace;
+        set => ToolboxSettingsRuntime.SetInMemory(settings => settings.DrawerFace = value);
+    }
+
+    public static void Save(DrawerFaceOptions value) =>
+        ToolboxSettingsRuntime.Update(settings => settings.DrawerFace = value);
 
     public static HardwareLibraryItem? SelectedHandle { get; set; }
 

@@ -2,6 +2,7 @@ using Autodesk.AutoCAD.Colors;
 using Autodesk.AutoCAD.DatabaseServices;
 using Autodesk.AutoCAD.EditorInput;
 using Autodesk.AutoCAD.Runtime;
+using YiZhiMao.Dc.Core;
 using YiZhiMao.Dc.Plugin.Shortcuts;
 using YiZhiMao.Dc.Plugin.Views;
 using AcadApplication = Autodesk.AutoCAD.ApplicationServices.Core.Application;
@@ -10,8 +11,17 @@ namespace YiZhiMao.Dc.Plugin;
 
 internal static class DrawingLayerRuntimeSettings
 {
-    public static double LinetypeScale { get; set; } = 40;
-    public static double WallHatchScale { get; set; } = 1;
+    public static DrawingLayerToolOptions Current
+    {
+        get => ToolboxSettingsRuntime.Settings.DrawingLayer;
+        set => ToolboxSettingsRuntime.SetInMemory(settings => settings.DrawingLayer = value);
+    }
+
+    public static void Save(DrawingLayerToolOptions value) =>
+        ToolboxSettingsRuntime.Update(settings => settings.DrawingLayer = value);
+
+    public static double LinetypeScale => Current.LinetypeScale;
+    public static double WallHatchScale => Current.WallHatchScale;
 }
 
 public static class DrawingLayerCommands

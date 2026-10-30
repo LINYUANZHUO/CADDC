@@ -19,7 +19,14 @@ namespace YiZhiMao.Dc.Plugin;
 
 internal static class ImageBatchRuntimeSettings
 {
-    public static ImageBatchOptions Current { get; set; } = ImageBatchOptions.Default;
+    public static ImageBatchOptions Current
+    {
+        get => ToolboxSettingsRuntime.Settings.ImageBatch;
+        set => ToolboxSettingsRuntime.SetInMemory(settings => settings.ImageBatch = value);
+    }
+
+    public static void Save(ImageBatchOptions value) =>
+        ToolboxSettingsRuntime.Update(settings => settings.ImageBatch = value);
 }
 
 public static class ImageBatchCommands

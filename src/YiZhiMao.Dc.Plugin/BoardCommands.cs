@@ -3,6 +3,7 @@ using Autodesk.AutoCAD.DatabaseServices;
 using Autodesk.AutoCAD.EditorInput;
 using Autodesk.AutoCAD.Geometry;
 using Autodesk.AutoCAD.Runtime;
+using YiZhiMao.Dc.Core;
 using YiZhiMao.Dc.Plugin.Shortcuts;
 using AcadApplication = Autodesk.AutoCAD.ApplicationServices.Core.Application;
 using Exception = System.Exception;
@@ -11,22 +12,31 @@ namespace YiZhiMao.Dc.Plugin;
 
 internal static class BoardRuntimeSettings
 {
-    public static double Thickness { get; set; } = 18;
-    public static double Depth { get; set; } = 500;
-    public static double CenterDepth { get; set; } = 500;
-    public static double TagScale { get; set; } = 5;
-    public static string TagType { get; set; } = "活动层板带文字";
-    public static double LineThickness { get; set; } = 18;
-    public static bool DoubleAsRectangle { get; set; }
-    public static bool TripleAsRectangle { get; set; }
-    public static double ExtendStart { get; set; }
-    public static double ExtendEnd { get; set; }
-    public static double WineRackDepth { get; set; } = 500;
-    public static double CrossThickness { get; set; } = 18;
-    public static double DiagonalThickness { get; set; } = 12;
-    public static double WineCellWidth { get; set; } = 100;
-    public static int WineRows { get; set; } = 3;
-    public static int WineColumns { get; set; } = 3;
+    public static BoardToolOptions Current
+    {
+        get => ToolboxSettingsRuntime.Settings.Board;
+        set => ToolboxSettingsRuntime.SetInMemory(settings => settings.Board = value);
+    }
+
+    public static void Save(BoardToolOptions value) =>
+        ToolboxSettingsRuntime.Update(settings => settings.Board = value);
+
+    public static double Thickness => Current.Thickness;
+    public static double Depth => Current.Depth;
+    public static double CenterDepth => Current.CenterDepth;
+    public static double TagScale => Current.TagScale;
+    public static string TagType => Current.TagType;
+    public static double LineThickness => Current.LineThickness;
+    public static bool DoubleAsRectangle => Current.DoubleAsRectangle;
+    public static bool TripleAsRectangle => Current.TripleAsRectangle;
+    public static double ExtendStart => Current.ExtendStart;
+    public static double ExtendEnd => Current.ExtendEnd;
+    public static double WineRackDepth => Current.WineRackDepth;
+    public static double CrossThickness => Current.CrossThickness;
+    public static double DiagonalThickness => Current.DiagonalThickness;
+    public static double WineCellWidth => Current.WineCellWidth;
+    public static int WineRows => Current.WineRows;
+    public static int WineColumns => Current.WineColumns;
 }
 
 public static class BoardCommands
@@ -239,7 +249,7 @@ public static class BoardCommands
         EnsureLayer(document.Database, transaction, StructureLayerName, 7);
         foreach (SelectedObject selected in selection.Value)
         {
-            if (transaction.GetObject(selected.ObjectId, OpenMode.ForRead) is not Line line)
+            if (transaction.GetObject(selected.ObjectId, OpenMode.ForWrite) is not Line line)
             {
                 continue;
             }
@@ -248,6 +258,7 @@ public static class BoardCommands
             var start = line.StartPoint - direction * BoardRuntimeSettings.ExtendStart;
             var end = line.EndPoint + direction * BoardRuntimeSettings.ExtendEnd;
             AppendOffsetGeometry(space, transaction, start, end, lineCount, 1, asRectangle);
+            line.Erase();
         }
 
         transaction.Commit();
@@ -271,23 +282,25 @@ public static class BoardCommands
             return;
         }
 
-        var first = start + normal * (thickness / 2);
-        var second = start - normal * (thickness / 2);
-        var firstEnd = end + normal * (thickness / 2);
-        var secondEnd = end - normal * (thickness / 2);
+        var offsets = BoardGeometryCalculator.GetParallelLineOffsets(lineCount, thickness);
         if (asRectangle)
         {
+            var first = start + normal * offsets[^1];
+            var second = start + normal * offsets[0];
+            var firstEnd = end + normal * offsets[^1];
+            var secondEnd = end + normal * offsets[0];
             AppendClosedPolyline(space, transaction, [first, firstEnd, secondEnd, second], 0);
+            if (lineCount == 3)
+            {
+                AppendLine(space, transaction, start, end);
+            }
         }
         else
         {
-            AppendLine(space, transaction, first, firstEnd);
-            AppendLine(space, transaction, second, secondEnd);
-        }
-
-        if (lineCount == 3)
-        {
-            AppendLine(space, transaction, start, end);
+            foreach (var offset in offsets)
+            {
+                AppendLine(space, transaction, start + normal * offset, end + normal * offset);
+            }
         }
     }
 

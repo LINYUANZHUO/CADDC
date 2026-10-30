@@ -33,6 +33,9 @@ var tests = new (string Name, Action Test)[]
     ("批量图片参数支持默认值和等比缩放", ImageBatchOptionsScaleProportionally),
     ("批量图片参数拒绝非法间距和高度", ImageBatchOptionsRejectInvalidValues),
     ("批量图片按实际宽度和间距向右排列", ImageBatchOptionsCalculateNextPosition),
+    ("工具箱参数跨模块持久化并可完整恢复", ToolboxSettingsPersistAcrossModules),
+    ("工具箱参数损坏或非法时安全回退默认值", ToolboxSettingsFallbackOnInvalidFiles),
+    ("面板与底层命令共享同一持久化运行时", ToolboxRuntimeUsesSharedPersistentSettings),
     ("格栅板参数保留默认值并拒绝非法尺寸", GrilleOptionsValidateDefaultsAndDimensions),
     ("格栅板竖向与横向布局按条宽和间距排列", GrilleLayoutSupportsVerticalAndHorizontalDirections),
     ("格栅板平面图与侧视图使用统一构造尺寸", GrilleLayoutBuildsRequestedAuxiliaryViews),
@@ -73,6 +76,10 @@ var tests = new (string Name, Action Test)[]
     ("图纸修复遍历本地图块并重算墙板填充", DrawingDisplayRepairTraversesAllLocalBlocksAndReevaluatesHatches),
     ("板件模块包含板件单双线和组件三个页签", BoardModuleSurfaceAndCommandsAreComplete),
     ("板件高级操作包含位移夹层均分背板和编辑投影", AdvancedBoardOperationsAreComplete),
+    ("板件单双线替换偏移数量精确", BoardLineReplacementOffsetsAreExact),
+    ("均分板件扣除板厚后保持等净空", BoardDivisionAccountsForThickness),
+    ("板件拆分和延剪拒绝无效几何", BoardEditingGuardsRejectInvalidGeometry),
+    ("板件合并只允许兼容属性", BoardMergePropertiesMustMatch),
     ("拆单统计菜单包含五类统计入口", StatisticsModuleSurfaceAndCommandsAreComplete),
     ("拆单统计按规格汇总并输出Excel兼容CSV", DrawingStatisticsAggregateAndExport),
     ("一键全屋拆单支持CAD表格与Excel总表", WholeHouseStatisticsSupportsCadTableAndExcel),
@@ -669,6 +676,99 @@ static void ImageBatchOptionsCalculateNextPosition()
         "下一张图片位置未按实际宽度加间距计算。");
     AssertThrows<ArgumentOutOfRangeException>(() => options.CalculateNextX(100, 0),
         "零宽度图片未被拒绝。");
+}
+
+static void ToolboxSettingsPersistAcrossModules()
+{
+    var root = Path.Combine(Path.GetTempPath(), $"dc-toolbox-{Guid.NewGuid():N}");
+    Directory.CreateDirectory(root);
+    try
+    {
+        var path = Path.Combine(root, "ToolboxSettings.json");
+        var store = new ToolboxSettingsStore(path);
+        var settings = ToolboxSettings.CreateDefault();
+        settings.DoorPanel = settings.DoorPanel with { TopExtension = 55, GenerateMask = true };
+        settings.PlanDoorPanel = settings.PlanDoorPanel with { Thickness = 20, FrontClearance = 3 };
+        settings.DrawerFace = settings.DrawerFace with { Count = 4, GenerateMask = true };
+        settings.Hardware = settings.Hardware with { HingeTopOffset = 88, HingeTypeTextHeight = 40 };
+        settings.Grille = settings.Grille with { StripGap = 26 };
+        settings.PerforatedPanel = settings.PerforatedPanel with { HoleDiameter = 12 };
+        settings.BackgroundWall = settings.BackgroundWall with
+        {
+            GenerateAllPlanRows = true,
+            Rows = [new BackgroundWallRowOptions(3, 650), new BackgroundWallRowOptions(4, 720)]
+        };
+        settings.Board = settings.Board with { Thickness = 20, DivideCount = 4, DivideThickness = 20 };
+        settings.DrawingLayer = settings.DrawingLayer with { LinetypeScale = 50, WallHatchScale = 2 };
+        settings.ImageBatch = settings.ImageBatch with { Gap = 80, PixelHeight = 1200 };
+
+        store.Save(settings);
+        var loaded = store.Load();
+
+        Assert(loaded.DoorPanel.TopExtension == 55 && loaded.DoorPanel.GenerateMask,
+            "立面门板参数没有从统一配置恢复。" );
+        Assert(loaded.PlanDoorPanel.Thickness == 20 && loaded.DrawerFace.Count == 4,
+            "俯视门板或抽面参数没有从统一配置恢复。" );
+        Assert(loaded.Hardware.HingeTopOffset == 88 && loaded.Hardware.HingeTypeTextHeight == 40,
+            "五金参数没有从统一配置恢复。" );
+        Assert(loaded.Grille.StripGap == 26 && loaded.PerforatedPanel.HoleDiameter == 12 &&
+               loaded.BackgroundWall.Rows.Count == 2 && loaded.BackgroundWall.GenerateAllPlanRows,
+            "墙板参数没有从统一配置恢复。" );
+        Assert(loaded.Board.Thickness == 20 && loaded.Board.DivideCount == 4 &&
+               loaded.DrawingLayer.LinetypeScale == 50 && loaded.ImageBatch.Gap == 80,
+            "板件、图层或批量图片参数没有从统一配置恢复。" );
+        Assert(!File.Exists(path + ".tmp"), "原子保存后遗留了临时配置文件。" );
+    }
+    finally
+    {
+        Directory.Delete(root, recursive: true);
+    }
+}
+
+static void ToolboxSettingsFallbackOnInvalidFiles()
+{
+    var root = Path.Combine(Path.GetTempPath(), $"dc-toolbox-invalid-{Guid.NewGuid():N}");
+    Directory.CreateDirectory(root);
+    try
+    {
+        var path = Path.Combine(root, "ToolboxSettings.json");
+        var store = new ToolboxSettingsStore(path);
+        File.WriteAllText(path, "{ invalid json");
+        Assert(store.Load().Board == BoardToolOptions.Default,
+            "损坏 JSON 没有回退工具箱默认参数。" );
+
+        File.WriteAllText(path, "{\"Board\":{\"Thickness\":-1}}");
+        Assert(store.Load().Board == BoardToolOptions.Default,
+            "非法业务参数没有整体回退工具箱默认参数。" );
+    }
+    finally
+    {
+        Directory.Delete(root, recursive: true);
+    }
+}
+
+static void ToolboxRuntimeUsesSharedPersistentSettings()
+{
+    var root = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
+    var runtime = File.ReadAllText(Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "ToolboxSettingsRuntime.cs"));
+    var doorRuntime = File.ReadAllText(Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "DoorPanelRuntimeSettings.cs"));
+    var panel = File.ReadAllText(Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "Views", "ShortcutPanelView.xaml.cs"));
+    var board = File.ReadAllText(Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "BoardCommands.cs"));
+
+    Assert(runtime.Contains("ToolboxSettings.json", StringComparison.Ordinal) &&
+           runtime.Contains("ToolboxSettingsStore", StringComparison.Ordinal) &&
+           runtime.Contains("SetInMemory", StringComparison.Ordinal) &&
+           runtime.Contains("Update", StringComparison.Ordinal),
+        "插件没有建立统一的工具箱参数持久化运行时。" );
+    Assert(doorRuntime.Contains("set => ToolboxSettingsRuntime.SetInMemory", StringComparison.Ordinal) &&
+           doorRuntime.Contains("ToolboxSettingsRuntime.Update", StringComparison.Ordinal),
+        "实时预览参数和显式保存没有分离，可能在 W/S 调整时频繁写盘。" );
+    Assert(panel.Contains("LoadDrawingLayerModule();", StringComparison.Ordinal) &&
+           panel.Contains("BoardRuntimeSettings.Save(", StringComparison.Ordinal) &&
+           panel.Contains("DrawingLayerRuntimeSettings.Save(", StringComparison.Ordinal),
+        "面板没有从统一运行时加载并保存板件/图层参数。" );
+    Assert(board.Contains("ToolboxSettingsRuntime.Settings.Board", StringComparison.Ordinal),
+        "直接输入板件命令仍未读取统一持久化参数。" );
 }
 
 static void GrilleOptionsValidateDefaultsAndDimensions()
@@ -1873,6 +1973,9 @@ static void BoardModuleSurfaceAndCommandsAreComplete()
            commands.Contains("DC_CMD_WINE_RACK_CROSS", StringComparison.Ordinal) &&
            commands.Contains("DC_CMD_WINE_RACK_DIAGONAL", StringComparison.Ordinal),
         "板件、单双线或组件底层命令入口不完整。" );
+    Assert(commands.Contains("BoardGeometryCalculator.GetParallelLineOffsets", StringComparison.Ordinal) &&
+           commands.Contains("line.Erase();", StringComparison.Ordinal),
+        "单线变双/三没有按计算结果替换原始单线。" );
     Assert(application.Contains("CommandClass(typeof(YiZhiMao.Dc.Plugin.BoardCommands))", StringComparison.Ordinal),
         "板件命令类没有注册到插件。" );
 }
@@ -1892,6 +1995,12 @@ static void AdvancedBoardOperationsAreComplete()
     ];
     Assert(commandNames.All(name => commands.Contains(name, StringComparison.Ordinal)),
         "板件高级操作底层命令不完整。");
+    Assert(commands.Contains("BoardGeometryCalculator.GetDividerCenters", StringComparison.Ordinal) &&
+           commands.Contains("BoardGeometryCalculator.IsInteriorSplitCoordinate", StringComparison.Ordinal) &&
+           commands.Contains("BoardGeometryCalculator.CanEditLineToIntersection", StringComparison.Ordinal) &&
+           commands.Contains("BoardGeometryCalculator.HaveCompatibleMergeProperties", StringComparison.Ordinal) &&
+           commands.Contains("target.SetPropertiesFrom(source);", StringComparison.Ordinal),
+        "板件高级命令没有接入已验证的几何保护或属性保留。" );
     Assert(panel.Contains("位移板", StringComparison.Ordinal) &&
            panel.Contains("ABA夹层", StringComparison.Ordinal) &&
            panel.Contains("均分板件", StringComparison.Ordinal) &&
@@ -1904,6 +2013,55 @@ static void AdvancedBoardOperationsAreComplete()
         "板件高级操作界面入口不完整。");
     Assert(application.Contains("CommandClass(typeof(YiZhiMao.Dc.Plugin.AdvancedBoardCommands))", StringComparison.Ordinal),
         "板件高级命令类没有注册到插件。");
+}
+
+static void BoardLineReplacementOffsetsAreExact()
+{
+    Assert(BoardGeometryCalculator.GetParallelLineOffsets(2, 18).SequenceEqual([-9d, 9d]),
+        "单线变双没有生成左右各半板厚的两条替换线。" );
+    Assert(BoardGeometryCalculator.GetParallelLineOffsets(3, 18).SequenceEqual([-9d, 0d, 9d]),
+        "单线变三没有生成左右边线和中心线。" );
+    AssertThrows<ArgumentOutOfRangeException>(
+        () => BoardGeometryCalculator.GetParallelLineOffsets(1, 18),
+        "替换偏移错误地接受了非双线/三线数量。" );
+}
+
+static void BoardDivisionAccountsForThickness()
+{
+    var centers = BoardGeometryCalculator.GetDividerCenters(1000, 3, 18);
+    Assert(centers.Count == 2 &&
+           Math.Abs(centers[0] - 330.3333333333333) < 0.000001 &&
+           Math.Abs(centers[1] - 669.6666666666667) < 0.000001,
+        "均分板件没有在扣除两块板厚后保持三个净空相等。" );
+    AssertThrows<ArgumentOutOfRangeException>(
+        () => BoardGeometryCalculator.GetDividerCenters(30, 3, 18),
+        "均分板件没有拒绝板厚总和超过范围的输入。" );
+}
+
+static void BoardEditingGuardsRejectInvalidGeometry()
+{
+    Assert(BoardGeometryCalculator.IsInteriorSplitCoordinate(0, 100, 50) &&
+           !BoardGeometryCalculator.IsInteriorSplitCoordinate(0, 100, -10) &&
+           !BoardGeometryCalculator.IsInteriorSplitCoordinate(0, 100, 100),
+        "拆分位置没有严格限制在板件内部。" );
+    Assert(BoardGeometryCalculator.CanEditLineToIntersection(-0.5, pickedNearStart: true, isExtend: true) &&
+           BoardGeometryCalculator.CanEditLineToIntersection(1.5, pickedNearStart: false, isExtend: true) &&
+           !BoardGeometryCalculator.CanEditLineToIntersection(0.5, pickedNearStart: true, isExtend: true),
+        "延伸线没有限制为所选端点外侧的交点。" );
+    Assert(BoardGeometryCalculator.CanEditLineToIntersection(0.5, pickedNearStart: true, isExtend: false) &&
+           !BoardGeometryCalculator.CanEditLineToIntersection(-0.5, pickedNearStart: true, isExtend: false) &&
+           !BoardGeometryCalculator.CanEditLineToIntersection(1.5, pickedNearStart: false, isExtend: false),
+        "修剪线没有限制为原线段内部的交点。" );
+}
+
+static void BoardMergePropertiesMustMatch()
+{
+    Assert(BoardGeometryCalculator.HaveCompatibleMergeProperties("0-柜体结构", "0-柜体结构", -500, -500, 0, 0),
+        "相同属性的相邻板件被错误拒绝合并。" );
+    Assert(!BoardGeometryCalculator.HaveCompatibleMergeProperties("0-柜体结构", "0-背板", -500, -500, 0, 0) &&
+           !BoardGeometryCalculator.HaveCompatibleMergeProperties("0-柜体结构", "0-柜体结构", -500, -450, 0, 0) &&
+           !BoardGeometryCalculator.HaveCompatibleMergeProperties("0-柜体结构", "0-柜体结构", -500, -500, 0, 18),
+        "不同图层、深度或高程的板件仍被允许合并。" );
 }
 
 static void StatisticsModuleSurfaceAndCommandsAreComplete()
