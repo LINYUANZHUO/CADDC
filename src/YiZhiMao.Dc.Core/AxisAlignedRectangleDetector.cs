@@ -18,8 +18,8 @@ public static class AxisAlignedRectangleDetector
         IReadOnlyList<AxisAlignedSegment> segments,
         double tolerance = 0.001)
     {
-        ArgumentNullException.ThrowIfNull(segments);
-        if (!double.IsFinite(tolerance) || tolerance <= 0)
+        Compatibility.NotNull(segments, nameof(segments));
+        if (!Compatibility.IsFinite(tolerance) || tolerance <= 0)
         {
             throw new ArgumentOutOfRangeException(nameof(tolerance), "Tolerance must be a finite positive number.");
         }

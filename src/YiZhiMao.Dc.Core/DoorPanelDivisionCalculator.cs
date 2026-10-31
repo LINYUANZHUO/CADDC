@@ -63,7 +63,7 @@ public static class DoorPanelDivisionCalculator
         }
 
         var integerWidths = Enumerable.Repeat(integerDoor, doorCount).ToArray();
-        integerWidths[^1] += availableWidth - integerDoor * doorCount;
+        integerWidths[integerWidths.Length - 1] += availableWidth - integerDoor * doorCount;
         return new DoorPanelDivision(integerWidths, roundedGap);
     }
 
@@ -102,7 +102,7 @@ public static class DoorPanelDivisionCalculator
             ? Math.Round(availableWidth / doorCount, MidpointRounding.AwayFromZero)
             : Math.Floor(availableWidth / doorCount);
         var widths = Enumerable.Repeat(integerDoor, doorCount).ToArray();
-        widths[^1] += availableWidth - integerDoor * doorCount;
+        widths[widths.Length - 1] += availableWidth - integerDoor * doorCount;
         if (widths.Any(width => width <= Tolerance))
         {
             throw new ArgumentOutOfRangeException(nameof(totalWidth), "门板取整后的宽度必须大于 0。");
@@ -117,9 +117,9 @@ public static class DoorPanelDivisionCalculator
         double targetGap,
         DoorPanelCalculationMode calculationMode)
     {
-        if (!double.IsFinite(totalWidth) || totalWidth <= Tolerance ||
-            doorCount <= 0 || !double.IsFinite(targetGap) || targetGap < 0 ||
-            !Enum.IsDefined(calculationMode))
+        if (!Compatibility.IsFinite(totalWidth) || totalWidth <= Tolerance ||
+            doorCount <= 0 || !Compatibility.IsFinite(targetGap) || targetGap < 0 ||
+            !Enum.IsDefined(typeof(DoorPanelCalculationMode), calculationMode))
         {
             throw new ArgumentOutOfRangeException(nameof(totalWidth), "门板分格参数无效。");
         }

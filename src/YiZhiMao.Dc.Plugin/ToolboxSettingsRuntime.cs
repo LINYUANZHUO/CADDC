@@ -17,7 +17,10 @@ internal static class ToolboxSettingsRuntime
 
     public static void SetInMemory(Action<ToolboxSettings> update)
     {
-        ArgumentNullException.ThrowIfNull(update);
+        if (update is null)
+        {
+            throw new ArgumentNullException(nameof(update));
+        }
         lock (SyncRoot)
         {
             var next = settings.Clone();
@@ -29,7 +32,10 @@ internal static class ToolboxSettingsRuntime
 
     public static void Update(Action<ToolboxSettings> update)
     {
-        ArgumentNullException.ThrowIfNull(update);
+        if (update is null)
+        {
+            throw new ArgumentNullException(nameof(update));
+        }
         lock (SyncRoot)
         {
             var next = settings.Clone();

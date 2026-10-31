@@ -5,6 +5,7 @@ namespace YiZhiMao.Dc.Plugin.Views;
 
 internal enum ToolboxModule
 {
+    Preferences,
     Shortcuts,
     Images,
     BatchPrint,
@@ -25,14 +26,14 @@ internal static class ToolboxPalette
     private static PaletteSet? paletteSet;
     private static ShortcutPanelView? panelView;
 
-    public static void Show(ToolboxModule module = ToolboxModule.Shortcuts)
+    public static void Show(ToolboxModule? module = null)
     {
         if (paletteSet is null)
         {
             paletteSet = new PaletteSet("一只猫dc", PaletteId)
             {
                 DockEnabled = DockSides.Left | DockSides.Right,
-                MinimumSize = new DrawingSize(430, 360),
+            MinimumSize = new DrawingSize(32, 360),
                 Size = new DrawingSize(720, 640),
                 Style = PaletteSetStyles.ShowAutoHideButton |
                         PaletteSetStyles.ShowCloseButton |
@@ -42,7 +43,10 @@ internal static class ToolboxPalette
             paletteSet.AddVisual("工具箱", panelView, true);
         }
 
-        panelView?.SelectModule(module);
+        if (module.HasValue)
+        {
+            panelView?.SelectModule(module.Value);
+        }
         paletteSet.Visible = true;
     }
 

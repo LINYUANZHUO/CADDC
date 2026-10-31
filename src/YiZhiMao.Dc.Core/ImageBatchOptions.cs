@@ -20,7 +20,7 @@ public sealed record ImageBatchOptions(double Gap, bool UseUnifiedHeight, int Pi
         options = Default;
         error = string.Empty;
 
-        if (!TryParseDouble(gapText, out var gap) || !double.IsFinite(gap) || gap < 0)
+        if (!TryParseDouble(gapText, out var gap) || !Compatibility.IsFinite(gap) || gap < 0)
         {
             error = "排列间距必须是大于或等于 0 的数字。";
             return false;
@@ -59,7 +59,7 @@ public sealed record ImageBatchOptions(double Gap, bool UseUnifiedHeight, int Pi
 
     public double CalculateNextX(double currentX, double insertedWidth)
     {
-        if (!double.IsFinite(insertedWidth) || insertedWidth <= 0)
+        if (!Compatibility.IsFinite(insertedWidth) || insertedWidth <= 0)
         {
             throw new ArgumentOutOfRangeException(nameof(insertedWidth), "插入宽度必须大于 0。");
         }

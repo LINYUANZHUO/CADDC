@@ -26,7 +26,7 @@ public static class BackgroundWallLayoutCalculator
 
     public static BackgroundWallLayout Calculate(double left, double bottom, BackgroundWallOptions options)
     {
-        ArgumentNullException.ThrowIfNull(options);
+        Compatibility.NotNull(options, nameof(options));
         ValidateOptions(left, bottom, options);
 
         var panels = new List<BackgroundWallPanel>();
@@ -114,7 +114,7 @@ public static class BackgroundWallLayoutCalculator
 
     private static void ValidateOptions(double left, double bottom, BackgroundWallOptions options)
     {
-        if (!double.IsFinite(left) || !double.IsFinite(bottom) ||
+        if (!Compatibility.IsFinite(left) || !Compatibility.IsFinite(bottom) ||
             options.TotalWidth <= 0 || options.Depth <= 0 || options.Gap < 0 || options.Rows.Count is < 1 or > 5)
         {
             throw new ArgumentOutOfRangeException(nameof(options), "背景墙参数无效。");

@@ -78,14 +78,14 @@ internal static class ShortcutManager
     private static void WriteScript(ShortcutConfiguration configuration)
     {
         Directory.CreateDirectory(DataDirectory);
-        var tempPath = $"{ScriptPath}.{Environment.ProcessId}.{Guid.NewGuid():N}.tmp";
+        var tempPath = $"{ScriptPath}.{System.Diagnostics.Process.GetCurrentProcess().Id}.{Guid.NewGuid():N}.tmp";
         try
         {
             File.WriteAllText(
                 tempPath,
                 AutoLispShortcutGenerator.Generate(configuration),
                 new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
-            File.Move(tempPath, ScriptPath, overwrite: true);
+            Compatibility.MoveFileReplacingExisting(tempPath, ScriptPath);
         }
         finally
         {

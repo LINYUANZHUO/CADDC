@@ -15,7 +15,7 @@ public static class HardwareLibraryService
 
     public static HardwareLibraryFolders EnsureDefaultFolders(string pluginDirectory)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(pluginDirectory);
+        Compatibility.NotNullOrWhiteSpace(pluginDirectory, nameof(pluginDirectory));
 
         var root = Path.Combine(pluginDirectory, "Modules");
         return EnsureFolders(root);
@@ -23,7 +23,7 @@ public static class HardwareLibraryService
 
     public static HardwareLibraryFolders EnsureFolders(string rootDirectory)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(rootDirectory);
+        Compatibility.NotNullOrWhiteSpace(rootDirectory, nameof(rootDirectory));
 
         var root = Path.GetFullPath(rootDirectory);
         var hangingRodDirectory = Path.Combine(root, "HangingRodBlocks");

@@ -21,10 +21,10 @@ public static class HardwareLayoutCalculator
         double bottom,
         double top)
     {
-        if (!double.IsFinite(left) ||
-            !double.IsFinite(right) ||
-            !double.IsFinite(bottom) ||
-            !double.IsFinite(top))
+        if (!Compatibility.IsFinite(left) ||
+            !Compatibility.IsFinite(right) ||
+            !Compatibility.IsFinite(bottom) ||
+            !Compatibility.IsFinite(top))
         {
             return null;
         }
@@ -44,9 +44,9 @@ public static class HardwareLayoutCalculator
         IEnumerable<HorizontalLineSpan> candidates,
         double tolerance = 0.000001)
     {
-        if (!double.IsFinite(selected.Left) ||
-            !double.IsFinite(selected.Right) ||
-            !double.IsFinite(selected.Y) ||
+        if (!Compatibility.IsFinite(selected.Left) ||
+            !Compatibility.IsFinite(selected.Right) ||
+            !Compatibility.IsFinite(selected.Y) ||
             selected.Right - selected.Left <= tolerance)
         {
             throw new ArgumentOutOfRangeException(nameof(selected), "所选横线长度必须大于 0。");
@@ -54,9 +54,9 @@ public static class HardwareLayoutCalculator
 
         return candidates
             .Where(candidate =>
-                double.IsFinite(candidate.Left) &&
-                double.IsFinite(candidate.Right) &&
-                double.IsFinite(candidate.Y) &&
+                Compatibility.IsFinite(candidate.Left) &&
+                Compatibility.IsFinite(candidate.Right) &&
+                Compatibility.IsFinite(candidate.Y) &&
                 candidate.Right - candidate.Left > tolerance &&
                 candidate.Y > selected.Y + tolerance &&
                 candidate.Left <= selected.Left + tolerance &&
@@ -72,15 +72,15 @@ public static class HardwareLayoutCalculator
         IEnumerable<VerticalLineSpan> verticalLines,
         double tolerance = 0.000001)
     {
-        if (!double.IsFinite(baseline.Left) ||
-            !double.IsFinite(baseline.Right) ||
-            !double.IsFinite(baseline.Y) ||
+        if (!Compatibility.IsFinite(baseline.Left) ||
+            !Compatibility.IsFinite(baseline.Right) ||
+            !Compatibility.IsFinite(baseline.Y) ||
             baseline.Right - baseline.Left <= tolerance)
         {
             throw new ArgumentOutOfRangeException(nameof(baseline), "所选横线长度必须大于 0。");
         }
 
-        if (!double.IsFinite(pickedX) ||
+        if (!Compatibility.IsFinite(pickedX) ||
             pickedX <= baseline.Left + tolerance ||
             pickedX >= baseline.Right - tolerance)
         {
@@ -89,17 +89,16 @@ public static class HardwareLayoutCalculator
 
         var boundaries = verticalLines
             .Where(line =>
-                double.IsFinite(line.X) &&
-                double.IsFinite(line.Bottom) &&
-                double.IsFinite(line.Top) &&
+                Compatibility.IsFinite(line.X) &&
+                Compatibility.IsFinite(line.Bottom) &&
+                Compatibility.IsFinite(line.Top) &&
                 line.Top - line.Bottom > tolerance &&
                 line.X >= baseline.Left - tolerance &&
                 line.X <= baseline.Right + tolerance &&
                 line.Bottom <= baseline.Y + tolerance &&
                 line.Top >= baseline.Y - tolerance)
             .Select(line => line.X)
-            .Append(baseline.Left)
-            .Append(baseline.Right)
+            .Concat(new[] { baseline.Left, baseline.Right })
             .ToArray();
 
         var left = boundaries.Where(value => value < pickedX - tolerance).Max();
@@ -114,17 +113,17 @@ public static class HardwareLayoutCalculator
         double topOffset,
         double sideClearance)
     {
-        if (!double.IsFinite(left) || !double.IsFinite(right) || right <= left)
+        if (!Compatibility.IsFinite(left) || !Compatibility.IsFinite(right) || right <= left)
         {
             throw new ArgumentOutOfRangeException(nameof(right), "柜内净宽必须大于 0。");
         }
 
-        if (!double.IsFinite(top) || !double.IsFinite(topOffset) || topOffset < 0)
+        if (!Compatibility.IsFinite(top) || !Compatibility.IsFinite(topOffset) || topOffset < 0)
         {
             throw new ArgumentOutOfRangeException(nameof(topOffset), "挂衣杆离顶高度必须大于或等于 0。");
         }
 
-        if (!double.IsFinite(sideClearance) || sideClearance < 0 || sideClearance * 2 >= right - left)
+        if (!Compatibility.IsFinite(sideClearance) || sideClearance < 0 || sideClearance * 2 >= right - left)
         {
             throw new ArgumentOutOfRangeException(nameof(sideClearance), "挂衣杆左右减尺超过柜内净宽。");
         }
@@ -143,7 +142,7 @@ public static class HardwareLayoutCalculator
         bool useFixedSecondSpacing,
         double fixedSecondSpacing)
     {
-        if (!double.IsFinite(panelHeight) || panelHeight <= 0)
+        if (!Compatibility.IsFinite(panelHeight) || panelHeight <= 0)
         {
             throw new ArgumentOutOfRangeException(nameof(panelHeight), "门板高度必须大于 0。");
         }
@@ -153,7 +152,7 @@ public static class HardwareLayoutCalculator
             throw new ArgumentOutOfRangeException(nameof(hingeCount), "铰链数量必须大于 0。");
         }
 
-        if (!double.IsFinite(topOffset) || !double.IsFinite(bottomOffset) || topOffset < 0 || bottomOffset < 0)
+        if (!Compatibility.IsFinite(topOffset) || !Compatibility.IsFinite(bottomOffset) || topOffset < 0 || bottomOffset < 0)
         {
             throw new ArgumentOutOfRangeException(nameof(topOffset), "铰链距门顶和距门底必须大于或等于 0。");
         }
@@ -174,7 +173,7 @@ public static class HardwareLayoutCalculator
             return EvenlyDistribute(topOffset, lastOffset, hingeCount);
         }
 
-        if (!double.IsFinite(fixedSecondSpacing) || fixedSecondSpacing <= 0)
+        if (!Compatibility.IsFinite(fixedSecondSpacing) || fixedSecondSpacing <= 0)
         {
             throw new ArgumentOutOfRangeException(nameof(fixedSecondSpacing), "第二铰链固定间距必须大于 0。");
         }
@@ -203,13 +202,13 @@ public static class HardwareLayoutCalculator
         double edgeOffset,
         double symbolHalfWidth)
     {
-        if (!double.IsFinite(left) || !double.IsFinite(right) || right <= left)
+        if (!Compatibility.IsFinite(left) || !Compatibility.IsFinite(right) || right <= left)
         {
             throw new ArgumentOutOfRangeException(nameof(right), "门板宽度必须大于 0。");
         }
 
-        if (!double.IsFinite(edgeOffset) ||
-            !double.IsFinite(symbolHalfWidth) ||
+        if (!Compatibility.IsFinite(edgeOffset) ||
+            !Compatibility.IsFinite(symbolHalfWidth) ||
             edgeOffset < symbolHalfWidth ||
             edgeOffset + symbolHalfWidth > right - left)
         {
@@ -224,7 +223,7 @@ public static class HardwareLayoutCalculator
         DoorPanelBounds innerBounds,
         HardwareOptions options)
     {
-        ArgumentNullException.ThrowIfNull(options);
+        Compatibility.NotNull(options, nameof(options));
         var topExtension = Math.Max(0, panel.Top - innerBounds.Top);
         var bottomExtension = Math.Max(0, innerBounds.Bottom - panel.Bottom);
         return CalculateHingeOffsets(
@@ -243,9 +242,9 @@ public static class HardwareLayoutCalculator
         double doorRight,
         double spacing)
     {
-        if (!double.IsFinite(hingeCenterX) || !double.IsFinite(hingeRadius) ||
-            !double.IsFinite(doorLeft) || !double.IsFinite(doorRight) ||
-            !double.IsFinite(spacing) || hingeRadius <= 0 || spacing < 0 || doorRight <= doorLeft)
+        if (!Compatibility.IsFinite(hingeCenterX) || !Compatibility.IsFinite(hingeRadius) ||
+            !Compatibility.IsFinite(doorLeft) || !Compatibility.IsFinite(doorRight) ||
+            !Compatibility.IsFinite(spacing) || hingeRadius <= 0 || spacing < 0 || doorRight <= doorLeft)
         {
             throw new ArgumentOutOfRangeException(nameof(doorRight), "门板范围、铰链半径或文字间距无效。");
         }
@@ -264,8 +263,8 @@ public static class HardwareLayoutCalculator
         bool extendsRight,
         double spacing)
     {
-        if (!double.IsFinite(hingeCenterX) || !double.IsFinite(hingeRadius) ||
-            !double.IsFinite(spacing) || hingeRadius <= 0 || spacing < 0)
+        if (!Compatibility.IsFinite(hingeCenterX) || !Compatibility.IsFinite(hingeRadius) ||
+            !Compatibility.IsFinite(spacing) || hingeRadius <= 0 || spacing < 0)
         {
             throw new ArgumentOutOfRangeException(nameof(hingeRadius), "铰链半径或文字间距无效。");
         }
@@ -362,7 +361,7 @@ public static class HardwareLayoutCalculator
         IReadOnlyList<double> hingeOffsets,
         HingeDimensionMode mode)
     {
-        if (!double.IsFinite(panelHeight) || panelHeight <= 0)
+        if (!Compatibility.IsFinite(panelHeight) || panelHeight <= 0)
         {
             throw new ArgumentOutOfRangeException(nameof(panelHeight), "门板高度必须大于 0。");
         }
@@ -373,7 +372,7 @@ public static class HardwareLayoutCalculator
         }
 
         var offsets = hingeOffsets.OrderBy(offset => offset).ToArray();
-        if (offsets.Any(offset => !double.IsFinite(offset) || offset <= 0 || offset >= panelHeight) ||
+        if (offsets.Any(offset => !Compatibility.IsFinite(offset) || offset <= 0 || offset >= panelHeight) ||
             offsets.Zip(offsets.Skip(1), (first, second) => second > first).Any(increasing => !increasing))
         {
             throw new ArgumentOutOfRangeException(nameof(hingeOffsets), "铰链位置必须位于门板内部且不能重复。");
@@ -381,7 +380,7 @@ public static class HardwareLayoutCalculator
 
         if (mode == HingeDimensionMode.Continuous)
         {
-            var boundaries = new[] { 0d }.Concat(offsets).Append(panelHeight).ToArray();
+            var boundaries = new[] { 0d }.Concat(offsets).Concat(new[] { panelHeight }).ToArray();
             return boundaries
                 .Zip(boundaries.Skip(1), (start, end) => new HingeDimensionSegment(start, end, 0))
                 .ToArray();

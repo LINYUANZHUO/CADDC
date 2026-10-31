@@ -1,4 +1,5 @@
 using Autodesk.AutoCAD.ApplicationServices;
+using YiZhiMao.Dc.Core;
 using AcadApplication = Autodesk.AutoCAD.ApplicationServices.Core.Application;
 
 namespace YiZhiMao.Dc.Plugin;
@@ -36,6 +37,7 @@ internal static class RadialMenuMouseActivation
     private static void OnPreTranslateMessage(object? sender, PreTranslateMessageEventArgs eventArgs)
     {
         if (eventArgs.Message.message != WmMiddleButtonDoubleClick ||
+            !ModulePreferencesRuntime.IsEnabled(ToolboxFeatureModule.RadialMenu) ||
             !RadialMenuRuntime.Options.Enabled)
         {
             return;

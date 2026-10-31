@@ -1,3 +1,4 @@
+using System.Collections;
 using Autodesk.AutoCAD.ApplicationServices;
 using Autodesk.AutoCAD.DatabaseServices;
 using Autodesk.AutoCAD.EditorInput;
@@ -94,6 +95,51 @@ internal static class FrameRecognitionService
         return job;
     }
 
+    public static CadPrintJob? GetCurrentOrActivateFirstPaperSpaceLayout(
+        Document document,
+        PrintSettings settings)
+    {
+        var current = GetCurrentPaperSpaceLayout(document.Database, settings);
+        if (current is not null)
+        {
+            return current;
+        }
+
+        var firstLayoutName = GetFirstPaperSpaceLayoutName(document.Database);
+        if (string.IsNullOrWhiteSpace(firstLayoutName))
+        {
+            return null;
+        }
+
+        LayoutManager.Current.CurrentLayout = firstLayoutName;
+        document.Editor.Regen();
+        return GetCurrentPaperSpaceLayout(document.Database, settings);
+    }
+
+    private static string? GetFirstPaperSpaceLayoutName(Database database)
+    {
+        using var transaction = database.TransactionManager.StartTransaction();
+        var layouts = (DBDictionary)transaction.GetObject(database.LayoutDictionaryId, OpenMode.ForRead);
+        string? firstName = null;
+        var firstTabOrder = int.MaxValue;
+        foreach (DictionaryEntry entry in layouts)
+        {
+            if (entry.Value is not ObjectId layoutId ||
+                transaction.GetObject(layoutId, OpenMode.ForRead) is not Layout layout ||
+                layout.ModelType ||
+                layout.TabOrder >= firstTabOrder)
+            {
+                continue;
+            }
+
+            firstName = layout.LayoutName;
+            firstTabOrder = layout.TabOrder;
+        }
+
+        transaction.Commit();
+        return firstName;
+    }
+
     private static bool TryGetPolylineFrame(Polyline polyline, out PrintFrame frame)
     {
         frame = default;
@@ -110,7 +156,44 @@ internal static class FrameRecognitionService
             }
         }
 
-        return TryGetEntityFrame(polyline, out frame);
+        var points = Enumerable.Range(0, polyline.NumberOfVertices)
+            .Select(polyline.GetPoint2dAt)
+            .ToList();
+        for (var index = 0; index < points.Count; index++)
+        {
+            var start = points[index];
+            var end = points[(index + 1) % points.Count];
+            var horizontal = Math.Abs(start.Y - end.Y) <= Tolerance;
+            var vertical = Math.Abs(start.X - end.X) <= Tolerance;
+            if (horizontal == vertical)
+            {
+                return false;
+            }
+        }
+
+        var minX = points.Min(point => point.X);
+        var minY = points.Min(point => point.Y);
+        var maxX = points.Max(point => point.X);
+        var maxY = points.Max(point => point.Y);
+        if (maxX - minX <= Tolerance || maxY - minY <= Tolerance)
+        {
+            return false;
+        }
+
+        var corners = new[]
+        {
+            new Point2d(minX, minY),
+            new Point2d(maxX, minY),
+            new Point2d(maxX, maxY),
+            new Point2d(minX, maxY)
+        };
+        if (points.Any(point => !corners.Any(corner => point.GetDistanceTo(corner) <= Tolerance)))
+        {
+            return false;
+        }
+
+        frame = new PrintFrame(minX, minY, maxX, maxY);
+        return true;
     }
 
     private static bool TryGetEntityFrame(Entity entity, out PrintFrame frame)
@@ -177,10 +260,10 @@ internal static class FrameRecognitionService
             try
             {
                 var extents = entity.GeometricExtents;
-                var centerX = (extents.MinPoint.X + extents.MaxPoint.X) / 2;
-                var centerY = (extents.MinPoint.Y + extents.MaxPoint.Y) / 2;
-                if (centerX > frame.MinX + Tolerance && centerX < frame.MaxX - Tolerance &&
-                    centerY > frame.MinY + Tolerance && centerY < frame.MaxY - Tolerance)
+                if (extents.MaxPoint.X > frame.MinX + Tolerance &&
+                    extents.MinPoint.X < frame.MaxX - Tolerance &&
+                    extents.MaxPoint.Y > frame.MinY + Tolerance &&
+                    extents.MinPoint.Y < frame.MaxY - Tolerance)
                 {
                     return true;
                 }
@@ -201,16 +284,22 @@ internal static class FrameRecognitionService
             return false;
         }
 
+        var lineLikeEntities = 0;
         foreach (var objectId in definition)
         {
-            if (transaction.GetObject(objectId, OpenMode.ForRead, false) is Entity entity &&
-                entity is not Line &&
-                entity is not Polyline)
+            if (transaction.GetObject(objectId, OpenMode.ForRead, false) is not Entity entity)
+            {
+                continue;
+            }
+
+            if (entity is not Line && entity is not Polyline)
             {
                 return true;
             }
+
+            lineLikeEntities++;
         }
 
-        return false;
+        return lineLikeEntities > 1;
     }
 }

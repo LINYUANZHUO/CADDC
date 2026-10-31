@@ -8,8 +8,8 @@ public static class ShortcutCsvExporter
 
     public static void Export(string path, IEnumerable<ShortcutItem> items)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(path);
-        ArgumentNullException.ThrowIfNull(items);
+        Compatibility.NotNullOrWhiteSpace(path, nameof(path));
+        Compatibility.NotNull(items, nameof(items));
 
         if (!string.Equals(Path.GetExtension(path), ".csv", StringComparison.OrdinalIgnoreCase))
         {
@@ -41,7 +41,7 @@ public static class ShortcutCsvExporter
                 }
             }
 
-            File.Move(tempPath, fullPath, overwrite: true);
+            Compatibility.MoveFileReplacingExisting(tempPath, fullPath);
         }
         finally
         {

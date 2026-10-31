@@ -27,7 +27,7 @@ public static class DrawingStatistics
 {
     public static IReadOnlyList<DrawingStatisticsRow> Aggregate(IEnumerable<DrawingPart> parts)
     {
-        ArgumentNullException.ThrowIfNull(parts);
+        Compatibility.NotNull(parts, nameof(parts));
 
         return parts
             .Where(part => part.Quantity > 0 && part.Width > 0 && part.Height > 0 && part.Thickness >= 0)
@@ -55,8 +55,8 @@ public static class DrawingStatistics
 
     public static void ExportCsv(string path, IEnumerable<DrawingStatisticsRow> rows)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(path);
-        ArgumentNullException.ThrowIfNull(rows);
+        Compatibility.NotNullOrWhiteSpace(path, nameof(path));
+        Compatibility.NotNull(rows, nameof(rows));
 
         var builder = new StringBuilder("类别,名称,宽度(mm),高度(mm),厚度(mm),数量,面积(m²)\r\n");
         foreach (var row in rows)
@@ -76,9 +76,9 @@ public static class DrawingStatistics
 
     public static void ExportExcelXml(string path, string worksheetName, IEnumerable<DrawingStatisticsRow> rows)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(path);
-        ArgumentException.ThrowIfNullOrWhiteSpace(worksheetName);
-        ArgumentNullException.ThrowIfNull(rows);
+        Compatibility.NotNullOrWhiteSpace(path, nameof(path));
+        Compatibility.NotNullOrWhiteSpace(worksheetName, nameof(worksheetName));
+        Compatibility.NotNull(rows, nameof(rows));
 
         XNamespace spreadsheet = "urn:schemas-microsoft-com:office:spreadsheet";
         XNamespace office = "urn:schemas-microsoft-com:office:office";
@@ -132,6 +132,6 @@ public static class DrawingStatistics
 
     private static string Escape(string value) =>
         value.IndexOfAny([',', '"', '\r', '\n']) >= 0
-            ? $"\"{value.Replace("\"", "\"\"", StringComparison.Ordinal)}\""
+            ? $"\"{value.Replace("\"", "\"\"")}\""
             : value;
 }

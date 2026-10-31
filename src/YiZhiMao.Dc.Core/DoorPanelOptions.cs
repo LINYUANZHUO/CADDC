@@ -55,7 +55,7 @@ public sealed record DoorPanelOptions(
         options = Default;
         error = string.Empty;
 
-        if (!Enum.IsDefined(calculationMode))
+        if (!Enum.IsDefined(typeof(DoorPanelCalculationMode), calculationMode))
         {
             error = "请选择有效的门板尺寸计算模式。";
             return false;
@@ -94,7 +94,7 @@ public sealed record DoorPanelOptions(
     {
         if ((!double.TryParse(value, NumberStyles.Float, CultureInfo.CurrentCulture, out result) &&
              !double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out result)) ||
-            !double.IsFinite(result) ||
+            !Compatibility.IsFinite(result) ||
             result < 0)
         {
             error = $"{name}必须是大于或等于 0 的数字。";

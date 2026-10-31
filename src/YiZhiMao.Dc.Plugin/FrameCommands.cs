@@ -139,7 +139,9 @@ public static class FrameCommands
                 .Select(id => transaction.GetObject(id, OpenMode.ForRead, false) as BlockReference)
                 .Where(reference => reference is not null && IsFrameBlock(reference, transaction))
                 .Cast<BlockReference>()
-                .Select(reference => new FrameReference(reference.ObjectId, ToFrame(reference.GeometricExtents)))
+                .Select(reference => new FrameReference(
+                    reference.ObjectId,
+                    ToFrame(reference.GeometricExtents, reference.ObjectId.Handle.ToString())))
                 .ToList();
             if (references.Count == 0)
             {
@@ -147,14 +149,21 @@ public static class FrameCommands
                 return;
             }
 
-            if (FrameToolRuntime.Options.AlignmentMode == FrameAlignmentMode.Left)
-            {
-                ArrangeFromLeft(references, baseline.StartPoint.X, FrameToolRuntime.Options.HorizontalGap, transaction);
-            }
-            else
-            {
-                ArrangeFromBottom(references, baseline.StartPoint.Y, FrameToolRuntime.Options.VerticalGap, transaction);
-            }
+            var moves = FrameToolRuntime.Options.AlignmentMode == FrameAlignmentMode.Left
+                ? FrameAlignmentCalculator.ArrangeFromLeft(
+                    references.Select(item => item.Bounds),
+                    baseline.StartPoint.X,
+                    FrameToolRuntime.Options.HorizontalGap)
+                : FrameAlignmentCalculator.ArrangeFromBottom(
+                    references.Select(item => item.Bounds),
+                    baseline.StartPoint.Y,
+                    FrameToolRuntime.Options.VerticalGap);
+            MoveFramesAndContents(
+                document.Database.CurrentSpaceId,
+                references,
+                moves,
+                baselineResult.ObjectId,
+                transaction);
 
             transaction.Commit();
             editor.WriteMessage($"\n[一只猫dc] 已重新排列 {references.Count} 个图框。");
@@ -336,7 +345,7 @@ public static class FrameCommands
 
         if (rectangles.Count > 0)
         {
-            return rectangles.MaxBy(frame => frame.Width * frame.Height);
+            return rectangles.OrderByDescending(frame => frame.Width * frame.Height).First();
         }
 
         return total ?? throw new InvalidOperationException("DWG 模板中没有可用的矩形或几何范围。");
@@ -354,8 +363,13 @@ public static class FrameCommands
                 continue;
             }
 
-            if (entity is BlockReference)
+            if (entity is BlockReference reference)
             {
+                if (IsFrameBlock(reference, transaction))
+                {
+                    continue;
+                }
+
                 blockFrames.Add(frame);
             }
             else
@@ -364,12 +378,7 @@ public static class FrameCommands
             }
         }
 
-        if (otherFrame is not null)
-        {
-            blockFrames.Add(otherFrame.Value);
-        }
-
-        return PrintFrameProcessor.Prepare(blockFrames);
+        return FrameContentProcessor.Prepare(blockFrames, otherFrame);
     }
 
     private static ObjectId CreatePageFrameBlock(
@@ -408,43 +417,48 @@ public static class FrameCommands
         return blockId;
     }
 
-    private static void ArrangeFromLeft(
+    private static void MoveFramesAndContents(
+        ObjectId currentSpaceId,
         IReadOnlyList<FrameReference> references,
-        double baselineX,
-        double gap,
+        IReadOnlyList<FrameAlignmentMove> moves,
+        ObjectId baselineId,
         Transaction transaction)
     {
-        var ordered = references.OrderBy(item => item.Bounds.MinX).ToList();
-        var bottom = ordered.Min(item => item.Bounds.MinY);
-        var currentX = baselineX;
-        foreach (var item in ordered)
+        var frameIds = new HashSet<ObjectId>(references.Select(item => item.Id));
+        var frameIdsByKey = references.ToDictionary(
+            item => item.Bounds.SourceKey,
+            item => item.Id,
+            StringComparer.Ordinal);
+        var currentSpace = (BlockTableRecord)transaction.GetObject(currentSpaceId, OpenMode.ForRead);
+        var content = new List<(ObjectId Id, FrameAlignmentMove Move)>();
+        foreach (ObjectId objectId in currentSpace)
         {
-            var reference = (BlockReference)transaction.GetObject(item.Id, OpenMode.ForWrite);
-            reference.TransformBy(Matrix3d.Displacement(new Vector3d(
-                currentX - item.Bounds.MinX,
-                bottom - item.Bounds.MinY,
-                0)));
-            currentX += item.Bounds.Width + gap;
-        }
-    }
+            if (objectId == baselineId || frameIds.Contains(objectId) ||
+                transaction.GetObject(objectId, OpenMode.ForRead, false) is not Entity entity ||
+                !TryGetFrame(entity, out var bounds))
+            {
+                continue;
+            }
 
-    private static void ArrangeFromBottom(
-        IReadOnlyList<FrameReference> references,
-        double baselineY,
-        double gap,
-        Transaction transaction)
-    {
-        var ordered = references.OrderBy(item => item.Bounds.MinY).ToList();
-        var left = ordered.Min(item => item.Bounds.MinX);
-        var currentY = baselineY;
-        foreach (var item in ordered)
+            var move = FrameAlignmentCalculator.FindContentMove(bounds, moves);
+            if (move.HasValue)
+            {
+                content.Add((objectId, move.Value));
+            }
+        }
+
+        foreach (var move in moves)
         {
-            var reference = (BlockReference)transaction.GetObject(item.Id, OpenMode.ForWrite);
-            reference.TransformBy(Matrix3d.Displacement(new Vector3d(
-                left - item.Bounds.MinX,
-                currentY - item.Bounds.MinY,
-                0)));
-            currentY += item.Bounds.Height + gap;
+            var reference = (BlockReference)transaction.GetObject(
+                frameIdsByKey[move.Source.SourceKey],
+                OpenMode.ForWrite);
+            reference.TransformBy(Matrix3d.Displacement(new Vector3d(move.DeltaX, move.DeltaY, 0)));
+        }
+
+        foreach (var (objectId, move) in content)
+        {
+            var entity = (Entity)transaction.GetObject(objectId, OpenMode.ForWrite, false);
+            entity.TransformBy(Matrix3d.Displacement(new Vector3d(move.DeltaX, move.DeltaY, 0)));
         }
     }
 
@@ -513,7 +527,7 @@ public static class FrameCommands
         Transaction transaction)
     {
         var points = CreateFilterPoints(region, center, shape, cornerRadius);
-        var definition = new SpatialFilterDefinition(points, Vector3d.ZAxis, 0, 0, double.PositiveInfinity, true);
+        var definition = new SpatialFilterDefinition(points, Vector3d.ZAxis, 0, 0, 0, true);
         var filter = new SpatialFilter { Definition = definition };
         reference.CreateExtensionDictionary();
         var extension = (DBDictionary)transaction.GetObject(reference.ExtensionDictionary, OpenMode.ForWrite);
@@ -679,8 +693,8 @@ public static class FrameCommands
         }
     }
 
-    private static PrintFrame ToFrame(Extents3d extents) =>
-        new(extents.MinPoint.X, extents.MinPoint.Y, extents.MaxPoint.X, extents.MaxPoint.Y);
+    private static PrintFrame ToFrame(Extents3d extents, string sourceKey = "") =>
+        new(extents.MinPoint.X, extents.MinPoint.Y, extents.MaxPoint.X, extents.MaxPoint.Y, sourceKey);
 
     private static PrintFrame Union(PrintFrame left, PrintFrame right) =>
         new(

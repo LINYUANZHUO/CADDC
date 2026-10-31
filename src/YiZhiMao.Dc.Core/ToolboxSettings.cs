@@ -44,6 +44,147 @@ public sealed record DrawingLayerToolOptions(double LinetypeScale, double WallHa
     public static DrawingLayerToolOptions Default { get; } = new(40, 1);
 }
 
+public enum ToolboxFeatureModule
+{
+    Boards,
+    DoorPanels,
+    Hardware,
+    WallPanels,
+    Images,
+    OneClickFrame,
+    BatchPrint,
+    Statistics,
+    DrawingLayers,
+    RadialMenu,
+    LispMarket,
+    Shortcuts
+}
+
+public sealed record ToolboxFeatureModuleInfo(
+    ToolboxFeatureModule Module,
+    string Name,
+    string Description,
+    string? CommandCategory);
+
+public static class ToolboxFeatureModuleCatalog
+{
+    private static readonly IReadOnlyList<ToolboxFeatureModuleInfo> Entries = new[]
+    {
+        new ToolboxFeatureModuleInfo(ToolboxFeatureModule.Boards, "板件", "板件绘制、单双线与组件工具", "板件"),
+        new ToolboxFeatureModuleInfo(ToolboxFeatureModule.DoorPanels, "门板抽面", "立面/俯视门板、抽面、拉手与铰链", "门板抽面"),
+        new ToolboxFeatureModuleInfo(ToolboxFeatureModule.Hardware, "五金件", "挂衣杆、灯带与五金设置", "五金件"),
+        new ToolboxFeatureModuleInfo(ToolboxFeatureModule.WallPanels, "墙板", "格栅板、洞洞板与背景墙", "墙板"),
+        new ToolboxFeatureModuleInfo(ToolboxFeatureModule.Images, "插入图片", "批量插入并排列图片", "插入图片"),
+        new ToolboxFeatureModuleInfo(ToolboxFeatureModule.OneClickFrame, "一键图框", "图框套用、对齐、局部大样与截图", "一键图框"),
+        new ToolboxFeatureModuleInfo(ToolboxFeatureModule.BatchPrint, "批量打印", "图框/布局批量打印与 PDF 工具", "批量打印"),
+        new ToolboxFeatureModuleInfo(ToolboxFeatureModule.Statistics, "拆单统计", "部件、门板、柜体与板件统计", "拆单统计"),
+        new ToolboxFeatureModuleInfo(ToolboxFeatureModule.DrawingLayers, "图层图纸", "图层管理、隔离与图纸显示修复", "图层图纸"),
+        new ToolboxFeatureModuleInfo(ToolboxFeatureModule.RadialMenu, "圆盘", "鼠标中键圆盘与命令配置", "圆盘"),
+        new ToolboxFeatureModuleInfo(ToolboxFeatureModule.LispMarket, "LISP市场", "本地 LISP 插件扫描与加载", null),
+        new ToolboxFeatureModuleInfo(ToolboxFeatureModule.Shortcuts, "快捷键", "快捷键映射与 CAD 命令大全", null)
+    };
+
+    public static IReadOnlyList<ToolboxFeatureModuleInfo> All => Entries;
+
+    public static ToolboxFeatureModuleInfo Get(ToolboxFeatureModule module) =>
+        Entries.Single(entry => entry.Module == module);
+
+    public static bool TryGetByCommandCategory(string? category, out ToolboxFeatureModule module)
+    {
+        var entry = Entries.FirstOrDefault(item =>
+            item.CommandCategory is not null &&
+            string.Equals(item.CommandCategory, category, StringComparison.Ordinal));
+        if (entry is null)
+        {
+            module = default;
+            return false;
+        }
+
+        module = entry.Module;
+        return true;
+    }
+}
+
+public sealed record ToolboxPreferenceOptions(
+    bool AutoExpandSidebar,
+    bool BoardsEnabled,
+    bool DoorPanelsEnabled,
+    bool HardwareEnabled,
+    bool WallPanelsEnabled,
+    bool ImagesEnabled,
+    bool OneClickFrameEnabled,
+    bool BatchPrintEnabled,
+    bool StatisticsEnabled,
+    bool DrawingLayersEnabled,
+    bool RadialMenuEnabled,
+    bool LispMarketEnabled,
+    bool ShortcutsEnabled)
+{
+    public static ToolboxPreferenceOptions Default { get; } = new(
+        true,
+        true, true, true, true, true, true,
+        true, true, true, true, true, true);
+
+    public int EnabledModuleCount => ToolboxFeatureModuleCatalog.All.Count(entry => IsEnabled(entry.Module));
+
+    public bool IsEnabled(ToolboxFeatureModule module) => module switch
+    {
+        ToolboxFeatureModule.Boards => BoardsEnabled,
+        ToolboxFeatureModule.DoorPanels => DoorPanelsEnabled,
+        ToolboxFeatureModule.Hardware => HardwareEnabled,
+        ToolboxFeatureModule.WallPanels => WallPanelsEnabled,
+        ToolboxFeatureModule.Images => ImagesEnabled,
+        ToolboxFeatureModule.OneClickFrame => OneClickFrameEnabled,
+        ToolboxFeatureModule.BatchPrint => BatchPrintEnabled,
+        ToolboxFeatureModule.Statistics => StatisticsEnabled,
+        ToolboxFeatureModule.DrawingLayers => DrawingLayersEnabled,
+        ToolboxFeatureModule.RadialMenu => RadialMenuEnabled,
+        ToolboxFeatureModule.LispMarket => LispMarketEnabled,
+        ToolboxFeatureModule.Shortcuts => ShortcutsEnabled,
+        _ => false
+    };
+
+    public ToolboxPreferenceOptions WithModuleEnabled(ToolboxFeatureModule module, bool enabled) => module switch
+    {
+        ToolboxFeatureModule.Boards => this with { BoardsEnabled = enabled },
+        ToolboxFeatureModule.DoorPanels => this with { DoorPanelsEnabled = enabled },
+        ToolboxFeatureModule.Hardware => this with { HardwareEnabled = enabled },
+        ToolboxFeatureModule.WallPanels => this with { WallPanelsEnabled = enabled },
+        ToolboxFeatureModule.Images => this with { ImagesEnabled = enabled },
+        ToolboxFeatureModule.OneClickFrame => this with { OneClickFrameEnabled = enabled },
+        ToolboxFeatureModule.BatchPrint => this with { BatchPrintEnabled = enabled },
+        ToolboxFeatureModule.Statistics => this with { StatisticsEnabled = enabled },
+        ToolboxFeatureModule.DrawingLayers => this with { DrawingLayersEnabled = enabled },
+        ToolboxFeatureModule.RadialMenu => this with { RadialMenuEnabled = enabled },
+        ToolboxFeatureModule.LispMarket => this with { LispMarketEnabled = enabled },
+        ToolboxFeatureModule.Shortcuts => this with { ShortcutsEnabled = enabled },
+        _ => this
+    };
+}
+
+public sealed record SmartInputMethodOptions(
+    bool Enabled,
+    bool KeepCadCommandsEnglish,
+    bool AutoChineseForText,
+    bool RestoreEnglishAfterText)
+{
+    public static SmartInputMethodOptions Default { get; } = new(
+        true,
+        true,
+        true,
+        true);
+}
+
+public enum DrawingSaveFileFormat
+{
+    AutoCad2000 = 12,
+    AutoCad2004 = 24,
+    AutoCad2007 = 36,
+    AutoCad2010 = 48,
+    AutoCad2013 = 60,
+    AutoCad2018 = 64
+}
+
 public sealed class ToolboxSettings
 {
     public int Version { get; set; } = 1;
@@ -68,6 +209,19 @@ public sealed class ToolboxSettings
 
     public ImageBatchOptions ImageBatch { get; set; } = ImageBatchOptions.Default;
 
+    public ToolboxPreferenceOptions Preferences { get; set; } = ToolboxPreferenceOptions.Default;
+
+    public SmartInputMethodOptions SmartInputMethod { get; set; } = SmartInputMethodOptions.Default;
+
+    public DrawingSaveFileFormat DefaultSaveFileFormat { get; set; } = DrawingSaveFileFormat.AutoCad2007;
+
+    public bool SyncReferencedShxOnSave { get; set; }
+
+    public bool AutoReplaceMissingShx { get; set; } = true;
+
+    public Dictionary<string, string> MissingShxReplacementMappings { get; set; } =
+        new(StringComparer.OrdinalIgnoreCase);
+
     public static ToolboxSettings CreateDefault() => new();
 
     public ToolboxSettings Clone() => new()
@@ -82,7 +236,15 @@ public sealed class ToolboxSettings
         BackgroundWall = BackgroundWall with { Rows = BackgroundWall.Rows.ToArray() },
         Board = Board,
         DrawingLayer = DrawingLayer,
-        ImageBatch = ImageBatch
+        ImageBatch = ImageBatch,
+        Preferences = Preferences,
+        SmartInputMethod = SmartInputMethod,
+        DefaultSaveFileFormat = DefaultSaveFileFormat,
+        SyncReferencedShxOnSave = SyncReferencedShxOnSave,
+        AutoReplaceMissingShx = AutoReplaceMissingShx,
+        MissingShxReplacementMappings = new Dictionary<string, string>(
+            MissingShxReplacementMappings,
+            StringComparer.OrdinalIgnoreCase)
     };
 
     public void Validate()
@@ -97,7 +259,13 @@ public sealed class ToolboxSettings
             !IsValid(BackgroundWall) ||
             !IsValid(Board) ||
             !IsValid(DrawingLayer) ||
-            !IsValid(ImageBatch))
+            !IsValid(ImageBatch) ||
+            !IsValid(Preferences) ||
+            SmartInputMethod is null ||
+            MissingShxReplacementMappings is null ||
+            MissingShxReplacementMappings.Any(pair =>
+                string.IsNullOrWhiteSpace(pair.Key) || string.IsNullOrWhiteSpace(pair.Value)) ||
+            !Enum.IsDefined(typeof(DrawingSaveFileFormat), DefaultSaveFileFormat))
         {
             throw new InvalidOperationException("工具箱参数文件包含无效数据。");
         }
@@ -105,14 +273,14 @@ public sealed class ToolboxSettings
 
     private static bool IsValid(DoorPanelOptions? value) =>
         value is not null &&
-        Enum.IsDefined(value.CalculationMode) &&
+        Enum.IsDefined(typeof(DoorPanelCalculationMode), value.CalculationMode) &&
         value.DoorCount > 0 &&
         IsNonNegative(value.Gap, value.TopExtension, value.BottomExtension, value.LeftExtension, value.RightExtension) &&
         IsColor(value.LineColorIndex);
 
     private static bool IsValid(PlanDoorPanelOptions? value) =>
         value is not null &&
-        Enum.IsDefined(value.CalculationMode) &&
+        Enum.IsDefined(typeof(DoorPanelCalculationMode), value.CalculationMode) &&
         value.DoorCount > 0 &&
         IsPositive(value.Thickness) &&
         IsNonNegative(value.FrontClearance, value.Gap, value.LeftExtension, value.RightExtension) &&
@@ -120,15 +288,15 @@ public sealed class ToolboxSettings
 
     private static bool IsValid(DrawerFaceOptions? value) =>
         value is not null &&
-        Enum.IsDefined(value.Orientation) &&
-        Enum.IsDefined(value.CalculationMode) &&
+        Enum.IsDefined(typeof(DrawerFaceOrientation), value.Orientation) &&
+        Enum.IsDefined(typeof(DoorPanelCalculationMode), value.CalculationMode) &&
         value.Count > 0 &&
         IsNonNegative(value.Gap, value.TopExtension, value.BottomExtension, value.LeftExtension, value.RightExtension) &&
         IsColor(value.LineColorIndex);
 
     private static bool IsValid(HardwareOptions? value) =>
         value is not null &&
-        Enum.IsDefined(value.HingeDimensionMode) &&
+        Enum.IsDefined(typeof(HingeDimensionMode), value.HingeDimensionMode) &&
         IsNonNegative(
             value.HangingRodTopOffset,
             value.LightStripTopOffset,
@@ -216,22 +384,25 @@ public sealed class ToolboxSettings
     private static bool IsValid(DrawingLayerToolOptions? value) =>
         value is not null &&
         value.LinetypeScale is >= 1 and <= 500 &&
-        double.IsFinite(value.LinetypeScale) &&
+        Compatibility.IsFinite(value.LinetypeScale) &&
         value.WallHatchScale >= 0.5 &&
-        double.IsFinite(value.WallHatchScale);
+        Compatibility.IsFinite(value.WallHatchScale);
 
     private static bool IsValid(ImageBatchOptions? value) =>
         value is not null &&
         IsNonNegative(value.Gap) &&
         value.PixelHeight is >= 1 and <= ImageBatchOptions.MaximumPixelHeight;
 
+    private static bool IsValid(ToolboxPreferenceOptions? value) =>
+        value is not null && value.EnabledModuleCount > 0;
+
     private static bool IsColor(short value) => value is >= 1 and <= 255;
 
     private static bool IsPositive(params double[] values) =>
-        values.All(value => double.IsFinite(value) && value > 0);
+        values.All(value => Compatibility.IsFinite(value) && value > 0);
 
     private static bool IsNonNegative(params double[] values) =>
-        values.All(value => double.IsFinite(value) && value >= 0);
+        values.All(value => Compatibility.IsFinite(value) && value >= 0);
 }
 
 public sealed class ToolboxSettingsStore(string path)
@@ -264,7 +435,7 @@ public sealed class ToolboxSettingsStore(string path)
 
     public void Save(ToolboxSettings settings)
     {
-        ArgumentNullException.ThrowIfNull(settings);
+        Compatibility.NotNull(settings, nameof(settings));
         settings.Validate();
         var directory = Path.GetDirectoryName(path);
         if (!string.IsNullOrEmpty(directory))
@@ -274,6 +445,6 @@ public sealed class ToolboxSettingsStore(string path)
 
         var temporaryPath = path + ".tmp";
         File.WriteAllText(temporaryPath, JsonSerializer.Serialize(settings, JsonOptions));
-        File.Move(temporaryPath, path, overwrite: true);
+        Compatibility.MoveFileReplacingExisting(temporaryPath, path);
     }
 }

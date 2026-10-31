@@ -22,9 +22,9 @@ public sealed class ShortcutItem
         {
             Category = "自定义",
             Description = "新功能",
-            CoreCommand = "NEWCMD",
-            DefaultAlias = "NEWCMD",
-            CustomAlias = "NEWCMD",
+            CoreCommand = "DCNEWCMD",
+            DefaultAlias = "DCNEWCMD",
+            CustomAlias = "DCNEWCMD",
             IsUserDefined = true
         };
     }

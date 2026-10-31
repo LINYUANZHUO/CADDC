@@ -38,7 +38,7 @@ public static class DrawingLayerCommands
     ];
 
     [CommandMethod("DC_CMD_LAYER_MANAGER", CommandFlags.Modal)]
-    [ShortcutCommand("图层图纸", "快速图层管理器", "TC")]
+    [ShortcutCommand("图层图纸", "快速图层管理器", "DCTC")]
     public static void ShowLayerManager()
     {
         var document = AcadApplication.DocumentManager.MdiActiveDocument;
@@ -51,7 +51,7 @@ public static class DrawingLayerCommands
     }
 
     [CommandMethod("DC_CMD_LAYER_STANDARDIZE", CommandFlags.Modal)]
-    [ShortcutCommand("图层图纸", "一键生成标准图层", "TCJZ")]
+    [ShortcutCommand("图层图纸", "一键生成标准图层", "DCTCJZ")]
     public static void CreateStandardLayers()
     {
         var document = AcadApplication.DocumentManager.MdiActiveDocument;
@@ -86,7 +86,7 @@ public static class DrawingLayerCommands
     }
 
     [CommandMethod("DC_CMD_LAYER_NORMALIZE", CommandFlags.Modal)]
-    [ShortcutCommand("图层图纸", "一键智能归层", "TCGC")]
+    [ShortcutCommand("图层图纸", "一键智能归层", "DCTCGC")]
     public static void NormalizeLayers()
     {
         var document = AcadApplication.DocumentManager.MdiActiveDocument;
@@ -118,7 +118,7 @@ public static class DrawingLayerCommands
     }
 
     [CommandMethod("DC_CMD_DRAWING_PURGE", CommandFlags.Modal)]
-    [ShortcutCommand("图层图纸", "图纸垃圾清理", "PU")]
+    [ShortcutCommand("图层图纸", "图纸垃圾清理", "DCPU")]
     public static void PurgeDrawing()
     {
         var document = AcadApplication.DocumentManager.MdiActiveDocument;
@@ -141,30 +141,30 @@ public static class DrawingLayerCommands
     }
 
     [CommandMethod("DC_CMD_LAYER_HIDE_HARDWARE", CommandFlags.Modal)]
-    [ShortcutCommand("图层图纸", "隐藏五金图层", "TCWJ")]
+    [ShortcutCommand("图层图纸", "隐藏五金图层", "DCTCWJ")]
     public static void HideHardware() => HideMatching(["五金", "铰链", "拉手", "衣杆", "灯带"]);
 
     [CommandMethod("DC_CMD_LAYER_HIDE_DOOR", CommandFlags.Modal)]
-    [ShortcutCommand("图层图纸", "隐藏门板图层", "TCMB")]
+    [ShortcutCommand("图层图纸", "隐藏门板图层", "DCTCMB")]
     public static void HideDoor() => HideMatching(["门板", "抽面", "开门线"]);
 
     [CommandMethod("DC_CMD_LAYER_HIDE_CABINET", CommandFlags.Modal)]
-    [ShortcutCommand("图层图纸", "隐藏柜体图层", "TCHG")]
+    [ShortcutCommand("图层图纸", "隐藏柜体图层", "DCTCHG")]
     public static void HideCabinet() => HideMatching(["柜体", "背板", "分区线"]);
 
     [CommandMethod("DC_CMD_LAYER_HIDE_ANNOTATION", CommandFlags.Modal)]
-    [ShortcutCommand("图层图纸", "隐藏标注图层", "TCBZ")]
+    [ShortcutCommand("图层图纸", "隐藏标注图层", "DCTCBZ")]
     public static void HideAnnotation() => HideMatching(["标注", "文字"]);
 
     [CommandMethod("DC_CMD_LAYER_SHOW_ALL", CommandFlags.Modal)]
-    [ShortcutCommand("图层图纸", "显示所有图层", "TCXS")]
+    [ShortcutCommand("图层图纸", "显示所有图层", "DCTCXS")]
     public static void ShowAllLayers()
     {
         SetLayerVisibility(_ => true, show: true);
     }
 
     [CommandMethod("DC_CMD_DRAWING_DISPLAY_REPAIR", CommandFlags.Modal)]
-    [ShortcutCommand("图层图纸", "一键修复图纸显示", "TXF")]
+    [ShortcutCommand("图层图纸", "一键修复图纸显示", "DCTXF")]
     public static void RepairDisplay()
     {
         var document = AcadApplication.DocumentManager.MdiActiveDocument;
@@ -208,8 +208,8 @@ public static class DrawingLayerCommands
 
     private static bool IsWallHatchLayer(string layerName)
     {
-        return layerName.Contains("墙体填充", StringComparison.OrdinalIgnoreCase) ||
-               layerName.Contains("护墙板", StringComparison.OrdinalIgnoreCase) ||
+        return Compatibility.Contains(layerName, "墙体填充", StringComparison.OrdinalIgnoreCase) ||
+               Compatibility.Contains(layerName, "护墙板", StringComparison.OrdinalIgnoreCase) ||
                string.Equals(layerName, "DC_墙板", StringComparison.OrdinalIgnoreCase);
     }
 
@@ -238,7 +238,7 @@ public static class DrawingLayerCommands
 
     private static void HideMatching(IReadOnlyList<string> keywords)
     {
-        SetLayerVisibility(name => keywords.Any(keyword => name.Contains(keyword, StringComparison.OrdinalIgnoreCase)), show: false);
+        SetLayerVisibility(name => keywords.Any(keyword => Compatibility.Contains(name, keyword, StringComparison.OrdinalIgnoreCase)), show: false);
     }
 
     private static void SetLayerVisibility(Func<string, bool> predicate, bool show)

@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net462</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <LangVersion>latest</LangVersion>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <Prefer32Bit>false</Prefer32Bit>
+    <AssemblyName>YiZhiMaoDc-Setup</AssemblyName>
+    <RootNamespace>YiZhiMao.Dc.Installer</RootNamespace>
+    <PayloadZip Condition="'$(PayloadZip)' == ''">$(MSBuildProjectDirectory)\..\..\artifacts\YiZhiMaoDc-Green-v0.1.0.zip</PayloadZip>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies.net462"
+                      Version="1.0.3"
+                      PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.IO.Compression.FileSystem" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="$(PayloadZip)" LogicalName="YiZhiMaoDc.Payload.zip" />
+  </ItemGroup>
+
+  <Target Name="ValidatePayload" BeforeTargets="PrepareForBuild">
+    <Error Condition="!Exists('$(PayloadZip)')"
+           Text="Installer payload does not exist: $(PayloadZip)" />
+  </Target>
+</Project>

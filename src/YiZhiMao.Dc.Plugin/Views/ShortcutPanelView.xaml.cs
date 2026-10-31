@@ -5,6 +5,7 @@ using System.Globalization;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -25,6 +26,40 @@ namespace YiZhiMao.Dc.Plugin.Views;
 
 public partial class ShortcutPanelView : UserControl
 {
+    private const int DefaultPointStyleMode = 35;
+    private static readonly PointStyleOption[] PointStyleOptions =
+    [
+        new(0, "点"),
+        new(1, "不显示"),
+        new(2, "十字"),
+        new(3, "叉"),
+        new(4, "竖线"),
+        new(32, "圆＋点"),
+        new(33, "圆"),
+        new(34, "圆＋十字"),
+        new(35, "圆＋叉（默认）"),
+        new(36, "圆＋竖线"),
+        new(64, "方框＋点"),
+        new(65, "方框"),
+        new(66, "方框＋十字"),
+        new(67, "方框＋叉"),
+        new(68, "方框＋竖线"),
+        new(96, "圆框＋方框＋点"),
+        new(97, "圆框＋方框"),
+        new(98, "圆框＋方框＋十字"),
+        new(99, "圆框＋方框＋叉"),
+        new(100, "圆框＋方框＋竖线")
+    ];
+    private static readonly SaveFileFormatOption[] SaveFileFormatOptions =
+    [
+        new(DrawingSaveFileFormat.AutoCad2000, "AutoCAD 2000 / LT2000 图形"),
+        new(DrawingSaveFileFormat.AutoCad2004, "AutoCAD 2004 / LT2004 图形"),
+        new(DrawingSaveFileFormat.AutoCad2007, "AutoCAD 2007 / LT2007 图形"),
+        new(DrawingSaveFileFormat.AutoCad2010, "AutoCAD 2010 / LT2010 图形"),
+        new(DrawingSaveFileFormat.AutoCad2013, "AutoCAD 2013 / LT2013 图形"),
+        new(DrawingSaveFileFormat.AutoCad2018, "AutoCAD 2018 图形")
+    ];
+
     private readonly DispatcherTimer statusClearTimer = new()
     {
         Interval = TimeSpan.FromSeconds(4)
@@ -36,13 +71,20 @@ public partial class ShortcutPanelView : UserControl
     private string? lispPluginDirectory;
     private ObservableCollection<RadialMenuItem> radialMenuItems = [];
     private RadialMenuItem? draggedRadialMenuItem;
+    private List<ModulePreferenceRow> modulePreferenceRows = [];
+    private ToolboxModule selectedModule = ToolboxModule.Preferences;
+    private bool isLoadingPreferences;
+    private bool isLoadingRadialMenu;
 
     public ShortcutPanelView()
     {
         InitializeComponent();
+        InitializePointStyleOptions();
+        InitializeSaveFileFormatOptions();
 
         statusClearTimer.Tick += OnStatusClearTimerTick;
 
+        LoadPreferencesModule();
         LoadItems();
         LoadCadCommands();
         LoadImageBatchOptions();
@@ -57,6 +99,7 @@ public partial class ShortcutPanelView : UserControl
         LoadFrameModule();
         LoadRadialMenuModule();
         LoadLispMarketModule();
+        ApplyModuleVisibility();
     }
 
     private void LoadImageBatchOptions()
@@ -70,6 +113,31 @@ public partial class ShortcutPanelView : UserControl
     private void OnShortcutModuleClick(object sender, RoutedEventArgs e)
     {
         SelectModule(ToolboxModule.Shortcuts);
+    }
+
+    private void OnPreferencesModuleClick(object sender, RoutedEventArgs e)
+    {
+        SelectModule(ToolboxModule.Preferences);
+    }
+
+    private void OnModuleNavigationSplitterDragDelta(object sender, DragDeltaEventArgs e)
+    {
+        if (double.IsNaN(e.HorizontalChange) || double.IsInfinity(e.HorizontalChange))
+        {
+            return;
+        }
+
+        var maximumWidth = ActualWidth - ModuleNavigationSplitter.ActualWidth - ModuleContentColumn.MinWidth;
+        if (maximumWidth < ModuleNavigationColumn.MinWidth)
+        {
+            return;
+        }
+
+        var requestedWidth = ModuleNavigationColumn.ActualWidth + e.HorizontalChange;
+        var constrainedWidth = Math.Max(
+            ModuleNavigationColumn.MinWidth,
+            Math.Min(maximumWidth, requestedWidth));
+        ModuleNavigationColumn.Width = new GridLength(constrainedWidth, GridUnitType.Pixel);
     }
 
     private void OnImageModuleClick(object sender, RoutedEventArgs e)
@@ -131,6 +199,14 @@ public partial class ShortcutPanelView : UserControl
 
     internal void SelectModule(ToolboxModule module)
     {
+        if (TryMapFeatureModule(module, out var featureModule) &&
+            !ModulePreferencesRuntime.IsEnabled(featureModule))
+        {
+            module = ToolboxModule.Preferences;
+        }
+
+        selectedModule = module;
+        PreferencesModuleView.Visibility = module == ToolboxModule.Preferences ? Visibility.Visible : Visibility.Collapsed;
         ShortcutModuleView.Visibility = module == ToolboxModule.Shortcuts ? Visibility.Visible : Visibility.Collapsed;
         ImageModuleView.Visibility = module == ToolboxModule.Images ? Visibility.Visible : Visibility.Collapsed;
         BatchPrintModuleView.Visibility = module == ToolboxModule.BatchPrint ? Visibility.Visible : Visibility.Collapsed;
@@ -144,6 +220,8 @@ public partial class ShortcutPanelView : UserControl
         RadialMenuModuleView.Visibility = module == ToolboxModule.RadialMenu ? Visibility.Visible : Visibility.Collapsed;
         LispMarketModuleView.Visibility = module == ToolboxModule.LispMarket ? Visibility.Visible : Visibility.Collapsed;
         HardwareStatusBar.Visibility = module == ToolboxModule.Hardware ? Visibility.Visible : Visibility.Collapsed;
+        PreferencesModuleButton.Style = (Style)FindResource(
+            module == ToolboxModule.Preferences ? "SelectedModuleButtonStyle" : "ModuleButtonStyle");
         ShortcutModuleButton.Style = (Style)FindResource(
             module == ToolboxModule.Shortcuts ? "SelectedModuleButtonStyle" : "ModuleButtonStyle");
         ImageModuleButton.Style = (Style)FindResource(
@@ -170,6 +248,384 @@ public partial class ShortcutPanelView : UserControl
             module == ToolboxModule.LispMarket ? "SelectedModuleButtonStyle" : "ModuleButtonStyle");
     }
 
+    private void LoadPreferencesModule()
+    {
+        isLoadingPreferences = true;
+        var preferences = ModulePreferencesRuntime.Current;
+        var smartInputMethod = ToolboxSettingsRuntime.Settings.SmartInputMethod;
+        AutoExpandSidebarCheckBox.IsChecked = preferences.AutoExpandSidebar;
+        SmartInputMethodEnabledCheckBox.IsChecked = smartInputMethod.Enabled;
+        KeepCadCommandsEnglishCheckBox.IsChecked = smartInputMethod.KeepCadCommandsEnglish;
+        AutoChineseForTextCheckBox.IsChecked = smartInputMethod.AutoChineseForText;
+        RestoreEnglishAfterTextCheckBox.IsChecked = smartInputMethod.RestoreEnglishAfterText;
+        AutoReplaceMissingShxCheckBox.IsChecked = ToolboxSettingsRuntime.Settings.AutoReplaceMissingShx;
+        SyncReferencedShxOnSaveCheckBox.IsChecked = ToolboxSettingsRuntime.Settings.SyncReferencedShxOnSave;
+        UpdateSmartInputMethodControlState();
+        LoadPointerInputState();
+        LoadPointStyleState();
+        LoadSaveFileFormatState();
+        modulePreferenceRows = ToolboxFeatureModuleCatalog.All
+            .Select(info => new ModulePreferenceRow(
+                info.Module,
+                info.Name,
+                info.Description,
+                preferences.IsEnabled(info.Module)))
+            .ToList();
+        ModulePreferenceItemsControl.ItemsSource = modulePreferenceRows;
+        AllModulesVisibleCheckBox.IsChecked = preferences.EnabledModuleCount == ToolboxFeatureModuleCatalog.All.Count;
+        isLoadingPreferences = false;
+    }
+
+    private void OnAutoExpandSidebarChanged(object sender, RoutedEventArgs e)
+    {
+        if (isLoadingPreferences)
+        {
+            return;
+        }
+
+        ToolboxSettingsRuntime.Update(settings =>
+            settings.Preferences = settings.Preferences with
+            {
+                AutoExpandSidebar = AutoExpandSidebarCheckBox.IsChecked == true
+            });
+        ShowPreferenceStatus("常规设置已保存，下次启动 AutoCAD 时生效。", Brushes.SeaGreen);
+    }
+
+    private void OnSmartInputMethodChanged(object sender, RoutedEventArgs e)
+    {
+        if (isLoadingPreferences)
+        {
+            return;
+        }
+
+        ToolboxSettingsRuntime.Update(settings =>
+            settings.SmartInputMethod = new SmartInputMethodOptions(
+                SmartInputMethodEnabledCheckBox.IsChecked == true,
+                KeepCadCommandsEnglishCheckBox.IsChecked == true,
+                AutoChineseForTextCheckBox.IsChecked == true,
+                RestoreEnglishAfterTextCheckBox.IsChecked == true));
+        UpdateSmartInputMethodControlState();
+        SmartInputMethodRuntime.RefreshSettings();
+        ShowPreferenceStatus("智能输入法设置已保存，将在下一次 CAD 输入状态变化时生效。", Brushes.SeaGreen);
+    }
+
+    private void OnPointerInputChanged(object sender, RoutedEventArgs e)
+    {
+        if (isLoadingPreferences)
+        {
+            return;
+        }
+
+        var enabled = PointerInputCheckBox.IsChecked == true;
+        if (CadQuickToggleRuntime.TrySetPointerInputEnabled(enabled, out var error))
+        {
+            ShowPreferenceStatus(enabled ? "指针输入已开启。" : "指针输入已关闭。", Brushes.SeaGreen);
+            return;
+        }
+
+        isLoadingPreferences = true;
+        LoadPointerInputState();
+        isLoadingPreferences = false;
+        ShowPreferenceStatus($"指针输入切换失败：{error}", Brushes.Firebrick);
+    }
+
+    private void OnCadQuickToggleExpanded(object sender, RoutedEventArgs e)
+    {
+        var wasLoading = isLoadingPreferences;
+        isLoadingPreferences = true;
+        LoadPointerInputState();
+        LoadPointStyleState();
+        LoadSaveFileFormatState();
+        isLoadingPreferences = wasLoading;
+    }
+
+    private void InitializePointStyleOptions()
+    {
+        var wasLoading = isLoadingPreferences;
+        isLoadingPreferences = true;
+        PointStyleListBox.ItemsSource = PointStyleOptions;
+        PointStyleListBox.SelectedValue = DefaultPointStyleMode;
+        isLoadingPreferences = wasLoading;
+    }
+
+    private void OnPointStyleChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (isLoadingPreferences || PointStyleListBox.SelectedValue is not int mode)
+        {
+            return;
+        }
+
+        if (CadQuickToggleRuntime.TrySetPointStyle(mode, out var error))
+        {
+            var name = PointStyleOptions.First(option => option.Mode == mode).Name;
+            ShowPreferenceStatus($"点样式已切换为“{name}”。", Brushes.SeaGreen);
+            return;
+        }
+
+        isLoadingPreferences = true;
+        LoadPointStyleState();
+        isLoadingPreferences = false;
+        ShowPreferenceStatus($"点样式切换失败：{error}", Brushes.Firebrick);
+    }
+
+    private void LoadPointStyleState()
+    {
+        if (CadQuickToggleRuntime.TryGetPointStyle(out var mode, out var error))
+        {
+            PointStyleListBox.SelectedValue = mode;
+            PointStyleListBox.IsEnabled = true;
+            PointStyleListBox.ToolTip = "点样式快捷设置";
+            return;
+        }
+
+        PointStyleListBox.SelectedValue = DefaultPointStyleMode;
+        PointStyleListBox.IsEnabled = false;
+        PointStyleListBox.ToolTip = $"无法读取 PDMODE：{error}";
+    }
+
+    private void LoadPointerInputState()
+    {
+        if (CadQuickToggleRuntime.TryGetPointerInputEnabled(out var enabled, out var error))
+        {
+            PointerInputCheckBox.IsChecked = enabled;
+            PointerInputCheckBox.IsEnabled = true;
+            PointerInputCheckBox.ToolTip = null;
+            return;
+        }
+
+        PointerInputCheckBox.IsChecked = false;
+        PointerInputCheckBox.IsEnabled = false;
+        PointerInputCheckBox.ToolTip = $"无法读取 DYNMODE：{error}";
+    }
+
+    private void InitializeSaveFileFormatOptions()
+    {
+        var wasLoading = isLoadingPreferences;
+        isLoadingPreferences = true;
+        SaveFileFormatComboBox.ItemsSource = SaveFileFormatOptions;
+        LoadSaveFileFormatState();
+        isLoadingPreferences = wasLoading;
+    }
+
+    private void OnSaveFileFormatChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (isLoadingPreferences || SaveFileFormatComboBox.SelectedValue is not DrawingSaveFileFormat format)
+        {
+            return;
+        }
+
+        if (CadQuickToggleRuntime.TrySetSaveFileFormat(format, out var error))
+        {
+            ToolboxSettingsRuntime.Update(settings => settings.DefaultSaveFileFormat = format);
+            var name = SaveFileFormatOptions.First(option => option.Format == format).Name;
+            ShowPreferenceStatus($"默认保存版本已切换为“{name}”。", Brushes.SeaGreen);
+            return;
+        }
+
+        isLoadingPreferences = true;
+        LoadSaveFileFormatState();
+        isLoadingPreferences = false;
+        ShowPreferenceStatus($"默认保存版本切换失败：{error}", Brushes.Firebrick);
+    }
+
+    private void LoadSaveFileFormatState()
+    {
+        SaveFileFormatComboBox.SelectedValue = ToolboxSettingsRuntime.Settings.DefaultSaveFileFormat;
+        SaveFileFormatComboBox.IsEnabled = true;
+    }
+
+    private void OnSyncReferencedShxOnSaveChanged(object sender, RoutedEventArgs e)
+    {
+        if (isLoadingPreferences)
+        {
+            return;
+        }
+
+        var enabled = SyncReferencedShxOnSaveCheckBox.IsChecked == true;
+        ToolboxSettingsRuntime.Update(settings => settings.SyncReferencedShxOnSave = enabled);
+        ShowPreferenceStatus(
+            enabled ? "保存后同步本图 SHX 已开启。" : "保存后同步本图 SHX 已关闭。",
+            Brushes.SeaGreen);
+    }
+
+    private void OnAutoReplaceMissingShxChanged(object sender, RoutedEventArgs e)
+    {
+        if (isLoadingPreferences)
+        {
+            return;
+        }
+
+        var enabled = AutoReplaceMissingShxCheckBox.IsChecked == true;
+        ToolboxSettingsRuntime.Update(settings => settings.AutoReplaceMissingShx = enabled);
+        if (enabled)
+        {
+            MissingShxReplacementRuntime.QueueActiveDocument();
+        }
+
+        ShowPreferenceStatus(
+            enabled ? "缺失文字 SHX 自动替换已开启。" : "缺失文字 SHX 自动替换已关闭。",
+            Brushes.SeaGreen);
+    }
+
+    private async void OnExportCurrentShxClick(object sender, RoutedEventArgs e)
+    {
+        ExportCurrentShxButton.IsEnabled = false;
+        ShowPreferenceStatus("正在导出本图引用的 SHX…", Brushes.DimGray);
+        try
+        {
+            var report = await ShxFontSyncRuntime.ExportActiveDocumentAsync();
+            var foreground = report.FailedCount > 0
+                ? Brushes.Firebrick
+                : report.MissingCount > 0 || report.ConflictCount > 0
+                    ? Brushes.DarkOrange
+                    : Brushes.SeaGreen;
+            ShowPreferenceStatus(ShxFontSyncRuntime.FormatReport(report), foreground);
+        }
+        catch (System.Exception exception)
+        {
+            ShowPreferenceStatus($"SHX 导出失败：{exception.Message}", Brushes.Firebrick);
+        }
+        finally
+        {
+            ExportCurrentShxButton.IsEnabled = true;
+        }
+    }
+
+    private sealed record PointStyleOption(int Mode, string Name);
+
+    private sealed record SaveFileFormatOption(DrawingSaveFileFormat Format, string Name);
+
+    private void UpdateSmartInputMethodControlState()
+    {
+        var enabled = SmartInputMethodEnabledCheckBox.IsChecked == true;
+        KeepCadCommandsEnglishCheckBox.IsEnabled = enabled;
+        AutoChineseForTextCheckBox.IsEnabled = enabled;
+        RestoreEnglishAfterTextCheckBox.IsEnabled = enabled;
+    }
+
+    private void OnModulePreferenceChanged(object sender, RoutedEventArgs e)
+    {
+        if (isLoadingPreferences || sender is not CheckBox { DataContext: ModulePreferenceRow row } checkBox)
+        {
+            return;
+        }
+
+        var enabled = checkBox.IsChecked == true;
+        var next = ModulePreferencesRuntime.Current.WithModuleEnabled(row.Module, enabled);
+        if (next.EnabledModuleCount == 0)
+        {
+            isLoadingPreferences = true;
+            row.IsEnabled = true;
+            checkBox.IsChecked = true;
+            isLoadingPreferences = false;
+            ShowPreferenceStatus("至少要保留一个功能模块。", Brushes.Firebrick);
+            return;
+        }
+
+        row.IsEnabled = enabled;
+        ToolboxSettingsRuntime.Update(settings => settings.Preferences = next);
+        AllModulesVisibleCheckBox.IsChecked = next.EnabledModuleCount == ToolboxFeatureModuleCatalog.All.Count;
+        ApplyModuleVisibility();
+        ShowPreferenceStatus(
+            enabled ? $"已启用“{row.Name}”模块。" : $"已禁用“{row.Name}”模块。",
+            Brushes.SeaGreen);
+    }
+
+    private void OnShowAllModulesClick(object sender, RoutedEventArgs e)
+    {
+        if (isLoadingPreferences)
+        {
+            return;
+        }
+
+        if (AllModulesVisibleCheckBox.IsChecked != true)
+        {
+            isLoadingPreferences = true;
+            AllModulesVisibleCheckBox.IsChecked =
+                ModulePreferencesRuntime.Current.EnabledModuleCount == ToolboxFeatureModuleCatalog.All.Count;
+            isLoadingPreferences = false;
+            ShowPreferenceStatus("如需隐藏模块，请逐项取消勾选。", Brushes.DarkOrange);
+            return;
+        }
+
+        var next = ModulePreferencesRuntime.Current;
+        foreach (var info in ToolboxFeatureModuleCatalog.All)
+        {
+            next = next.WithModuleEnabled(info.Module, true);
+        }
+
+        ToolboxSettingsRuntime.Update(settings => settings.Preferences = next);
+        LoadPreferencesModule();
+        ApplyModuleVisibility();
+        ShowPreferenceStatus("全部功能模块已显示。", Brushes.SeaGreen);
+    }
+
+    private void ApplyModuleVisibility()
+    {
+        var preferences = ModulePreferencesRuntime.Current;
+        BoardModuleButton.Visibility = ToVisibility(preferences.IsEnabled(ToolboxFeatureModule.Boards));
+        DoorPanelModuleButton.Visibility = ToVisibility(preferences.IsEnabled(ToolboxFeatureModule.DoorPanels));
+        HardwareModuleButton.Visibility = ToVisibility(preferences.IsEnabled(ToolboxFeatureModule.Hardware));
+        WallPanelModuleButton.Visibility = ToVisibility(preferences.IsEnabled(ToolboxFeatureModule.WallPanels));
+        ImageModuleButton.Visibility = ToVisibility(preferences.IsEnabled(ToolboxFeatureModule.Images));
+        OneClickFrameModuleButton.Visibility = ToVisibility(preferences.IsEnabled(ToolboxFeatureModule.OneClickFrame));
+        BatchPrintModuleButton.Visibility = ToVisibility(preferences.IsEnabled(ToolboxFeatureModule.BatchPrint));
+        StatisticsModuleButton.Visibility = ToVisibility(preferences.IsEnabled(ToolboxFeatureModule.Statistics));
+        DrawingLayerModuleButton.Visibility = ToVisibility(preferences.IsEnabled(ToolboxFeatureModule.DrawingLayers));
+        RadialMenuModuleButton.Visibility = ToVisibility(preferences.IsEnabled(ToolboxFeatureModule.RadialMenu));
+        LispMarketModuleButton.Visibility = ToVisibility(preferences.IsEnabled(ToolboxFeatureModule.LispMarket));
+        ShortcutModuleButton.Visibility = ToVisibility(preferences.IsEnabled(ToolboxFeatureModule.Shortcuts));
+
+        if (TryMapFeatureModule(selectedModule, out var selectedFeature) &&
+            !preferences.IsEnabled(selectedFeature))
+        {
+            SelectModule(ToolboxModule.Preferences);
+        }
+    }
+
+    private static Visibility ToVisibility(bool visible) =>
+        visible ? Visibility.Visible : Visibility.Collapsed;
+
+    private static bool TryMapFeatureModule(ToolboxModule module, out ToolboxFeatureModule featureModule)
+    {
+        switch (module)
+        {
+            case ToolboxModule.Boards: featureModule = ToolboxFeatureModule.Boards; return true;
+            case ToolboxModule.DoorPanels: featureModule = ToolboxFeatureModule.DoorPanels; return true;
+            case ToolboxModule.Hardware: featureModule = ToolboxFeatureModule.Hardware; return true;
+            case ToolboxModule.WallPanels: featureModule = ToolboxFeatureModule.WallPanels; return true;
+            case ToolboxModule.Images: featureModule = ToolboxFeatureModule.Images; return true;
+            case ToolboxModule.OneClickFrame: featureModule = ToolboxFeatureModule.OneClickFrame; return true;
+            case ToolboxModule.BatchPrint: featureModule = ToolboxFeatureModule.BatchPrint; return true;
+            case ToolboxModule.Statistics: featureModule = ToolboxFeatureModule.Statistics; return true;
+            case ToolboxModule.DrawingLayers: featureModule = ToolboxFeatureModule.DrawingLayers; return true;
+            case ToolboxModule.RadialMenu: featureModule = ToolboxFeatureModule.RadialMenu; return true;
+            case ToolboxModule.LispMarket: featureModule = ToolboxFeatureModule.LispMarket; return true;
+            case ToolboxModule.Shortcuts: featureModule = ToolboxFeatureModule.Shortcuts; return true;
+            default:
+                featureModule = default;
+                return false;
+        }
+    }
+
+    private void ShowPreferenceStatus(string message, Brush foreground)
+    {
+        PreferenceStatusText.Foreground = foreground;
+        PreferenceStatusText.Text = message;
+    }
+
+    private sealed class ModulePreferenceRow(
+        ToolboxFeatureModule module,
+        string name,
+        string description,
+        bool isEnabled)
+    {
+        public ToolboxFeatureModule Module { get; } = module;
+        public string Name { get; } = name;
+        public string Description { get; } = description;
+        public bool IsEnabled { get; set; } = isEnabled;
+    }
+
     private void LoadRadialMenuModule()
     {
         var options = RadialMenuRuntime.Options;
@@ -178,34 +634,73 @@ public partial class ShortcutPanelView : UserControl
         RadialMenuThirdRingCheck.IsChecked = options.ShowThirdRing;
         RadialMenuSizeSlider.Value = options.Radius;
         RadialMenuOpacitySlider.Value = options.Opacity;
-        RadialMenuSkinCombo.SelectedIndex = 0;
+        isLoadingRadialMenu = true;
+        try
+        {
+            RadialMenuSkinCombo.SelectedIndex = options.Skin switch
+            {
+                RadialMenuOptions.CadDarkSkin => 1,
+                RadialMenuOptions.PurpleGraySkin => 2,
+                _ => 0
+            };
+        }
+        finally
+        {
+            isLoadingRadialMenu = false;
+        }
         radialMenuItems = new ObservableCollection<RadialMenuItem>(
             options.Items.OrderBy(item => item.Ring).ThenBy(item => item.Position).Select(item => item.Clone()));
         RadialMenuGrid.ItemsSource = radialMenuItems;
     }
 
-    private void OnSaveRadialMenuClick(object sender, RoutedEventArgs e)
+    private void OnRadialMenuSkinSelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        RadialMenuGrid.CommitEdit(DataGridEditingUnit.Cell, true);
-        RadialMenuGrid.CommitEdit(DataGridEditingUnit.Row, true);
-        var options = new RadialMenuOptions
+        if (isLoadingRadialMenu ||
+            (RadialMenuSkinCombo.SelectedItem as ComboBoxItem)?.Content?.ToString() is not { } selectedSkin ||
+            !RadialMenuOptions.IsSupportedSkin(selectedSkin))
         {
-            Enabled = RadialMenuEnabledCheck.IsChecked == true,
-            AutoCloseAfterCommand = RadialMenuAutoCloseCheck.IsChecked == true,
-            ShowThirdRing = RadialMenuThirdRingCheck.IsChecked == true,
-            Radius = RadialMenuSizeSlider.Value,
-            Opacity = RadialMenuOpacitySlider.Value,
-            Skin = RadialMenuSkinCombo.Text,
-            Items = radialMenuItems.OrderBy(item => item.Ring).ThenBy(item => item.Position)
-                .Select(item => item.Clone()).ToList()
-        };
+            return;
+        }
+
         try
         {
+            var options = RadialMenuRuntime.Options;
+            options.Skin = selectedSkin;
+            RadialMenuRuntime.Save(options);
+            RadialMenuWindowManager.ApplySkin(selectedSkin);
+            RadialMenuStatusText.Foreground = Brushes.SeaGreen;
+            RadialMenuStatusText.Text = $"圆盘外观已切换为“{selectedSkin}”。";
+        }
+        catch (Exception exception)
+        {
+            RadialMenuStatusText.Foreground = Brushes.Firebrick;
+            RadialMenuStatusText.Text = exception.Message;
+        }
+    }
+
+    private void OnSaveRadialMenuClick(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            RadialMenuGrid.CommitEdit(DataGridEditingUnit.Cell, true);
+            RadialMenuGrid.CommitEdit(DataGridEditingUnit.Row, true);
+            var options = new RadialMenuOptions
+            {
+                Enabled = RadialMenuEnabledCheck.IsChecked == true,
+                AutoCloseAfterCommand = RadialMenuAutoCloseCheck.IsChecked == true,
+                ShowThirdRing = RadialMenuThirdRingCheck.IsChecked == true,
+                Radius = RadialMenuSizeSlider.Value,
+                Opacity = RadialMenuOpacitySlider.Value,
+                Skin = (RadialMenuSkinCombo.SelectedItem as ComboBoxItem)?.Content?.ToString()
+                    ?? RadialMenuOptions.DefaultSkin,
+                Items = radialMenuItems.OrderBy(item => item.Ring).ThenBy(item => item.Position)
+                    .Select(item => item.Clone()).ToList()
+            };
             RadialMenuRuntime.Save(options);
             RadialMenuStatusText.Foreground = Brushes.SeaGreen;
             RadialMenuStatusText.Text = "圆盘配置已保存并立即生效。双击鼠标中键或输入 DCYP 打开圆盘。";
         }
-        catch (InvalidOperationException exception)
+        catch (Exception exception)
         {
             RadialMenuStatusText.Foreground = Brushes.Firebrick;
             RadialMenuStatusText.Text = exception.Message;
@@ -223,8 +718,7 @@ public partial class ShortcutPanelView : UserControl
     {
         try
         {
-            var pluginDirectory = Path.GetDirectoryName(typeof(ShortcutPanelView).Assembly.Location) ?? AppContext.BaseDirectory;
-            lispPluginDirectory = LispPluginLibraryService.EnsureDefaultFolder(pluginDirectory);
+            lispPluginDirectory = LispPluginLibraryService.EnsureDefaultFolder(PluginResourceLocator.GetPluginRoot());
             RefreshLispPlugins();
         }
         catch (Exception exception)
@@ -244,7 +738,7 @@ public partial class ShortcutPanelView : UserControl
 
         try
         {
-            var plugins = LispPluginLibraryService.Scan(lispPluginDirectory);
+            var plugins = LispPluginLibraryService.Scan(lispPluginDirectory!);
             LispPluginGrid.ItemsSource = plugins;
             SetLispMarketStatus(
                 plugins.Count == 0
@@ -316,6 +810,12 @@ public partial class ShortcutPanelView : UserControl
 
     private void OnRadialMenuGridMouseDown(object sender, MouseButtonEventArgs e)
     {
+        if (FindAncestor<TextBox>(e.OriginalSource as DependencyObject) is not null)
+        {
+            draggedRadialMenuItem = null;
+            return;
+        }
+
         draggedRadialMenuItem = FindAncestor<DataGridRow>(e.OriginalSource as DependencyObject)?.Item as RadialMenuItem;
     }
 
@@ -363,8 +863,7 @@ public partial class ShortcutPanelView : UserControl
     private void LoadFrameModule()
     {
         var options = FrameToolRuntime.Options;
-        frameTemplateDirectory = FrameTemplateLibraryService.EnsureDefaultFolder(
-            Path.GetDirectoryName(typeof(ShortcutPanelView).Assembly.Location) ?? AppContext.BaseDirectory);
+        frameTemplateDirectory = FrameTemplateLibraryService.EnsureDefaultFolder(PluginResourceLocator.GetPluginRoot());
         RefreshFrameTemplates(options.SelectedTemplatePath);
         FrameMarginBox.Text = options.FrameMargin.ToString("0.###", CultureInfo.CurrentCulture);
         FramePageStatisticsCheck.IsChecked = options.GeneratePageStatistics;
@@ -387,7 +886,7 @@ public partial class ShortcutPanelView : UserControl
             return;
         }
 
-        var templates = FrameTemplateLibraryService.Scan(frameTemplateDirectory, selectedPath);
+        var templates = FrameTemplateLibraryService.Scan(frameTemplateDirectory!, selectedPath);
         FrameTemplateCombo.ItemsSource = templates;
         FrameTemplateCombo.SelectedItem = templates.FirstOrDefault(item =>
             string.Equals(item.DwgPath, selectedPath, StringComparison.OrdinalIgnoreCase)) ?? templates.FirstOrDefault();
@@ -1091,7 +1590,7 @@ public partial class ShortcutPanelView : UserControl
     private static void PickColor(ComboBox target)
     {
         var initial = TryReadColorIndex(target.Text, out var index, out _) ? index : (short)7;
-        dynamic dialog = new Autodesk.AutoCAD.Windows.ColorDialog();
+        var dialog = new Autodesk.AutoCAD.Windows.ColorDialog();
         dialog.Color = Autodesk.AutoCAD.Colors.Color.FromColorIndex(
             Autodesk.AutoCAD.Colors.ColorMethod.ByAci,
             initial);
@@ -1390,7 +1889,7 @@ public partial class ShortcutPanelView : UserControl
 
     private static bool TryReadColorIndex(string? text, out short colorIndex, out string error)
     {
-        var value = text?.Split('-', 2)[0].Trim();
+        var value = text?.Split(new[] { '-' }, 2)[0].Trim();
         if (!short.TryParse(value, NumberStyles.Integer, CultureInfo.CurrentCulture, out colorIndex) ||
             colorIndex < 1 || colorIndex > 255)
         {
@@ -1427,9 +1926,7 @@ public partial class ShortcutPanelView : UserControl
 
         try
         {
-            var pluginDirectory = Path.GetDirectoryName(typeof(ShortcutPanelView).Assembly.Location)
-                ?? throw new InvalidOperationException("无法确定插件安装目录。");
-            hardwareFolders = HardwareLibraryService.EnsureDefaultFolders(pluginDirectory);
+            hardwareFolders = HardwareLibraryService.EnsureDefaultFolders(PluginResourceLocator.GetPluginRoot());
             RefreshHardwareLibraries();
         }
         catch (Exception exception)
@@ -1739,11 +2236,7 @@ public partial class ShortcutPanelView : UserControl
         OpenOutputFolderCheck.IsChecked = settings.OpenOutputFolder;
         OpenMergedPdfCheck.IsChecked = settings.OpenMergedPdf;
         SelectPdfOutputMode(settings.PdfOutputMode);
-        VectorDpiSlider.Value = settings.VectorDpi;
-        GradientDpiSlider.Value = settings.GradientDpi;
         ImageDpiSlider.Value = settings.ImageDpi;
-        VectorDpiBox.Text = settings.VectorDpi.ToString(CultureInfo.CurrentCulture);
-        GradientDpiBox.Text = settings.GradientDpi.ToString(CultureInfo.CurrentCulture);
         PrintImageDpiBox.Text = settings.ImageDpi.ToString(CultureInfo.CurrentCulture);
         DetectPolylineCheck.IsChecked = settings.DetectClosedPolylines;
         DetectLooseLinesCheck.IsChecked = settings.DetectLooseLines;
@@ -1792,11 +2285,9 @@ public partial class ShortcutPanelView : UserControl
     private bool TrySavePrintSettings(out string error)
     {
         error = string.Empty;
-        if (!int.TryParse(VectorDpiBox.Text, out var vectorDpi) ||
-            !int.TryParse(GradientDpiBox.Text, out var gradientDpi) ||
-            !int.TryParse(PrintImageDpiBox.Text, out var imageDpi))
+        if (!int.TryParse(PrintImageDpiBox.Text, out var imageDpi))
         {
-            error = "三项分辨率必须填写整数。";
+            error = "着色/光栅分辨率必须填写整数。";
             return false;
         }
 
@@ -1812,8 +2303,6 @@ public partial class ShortcutPanelView : UserControl
         settings.OpenOutputFolder = OpenOutputFolderCheck.IsChecked == true;
         settings.OpenMergedPdf = OpenMergedPdfCheck.IsChecked == true;
         settings.PdfOutputMode = outputMode;
-        settings.VectorDpi = vectorDpi;
-        settings.GradientDpi = gradientDpi;
         settings.ImageDpi = imageDpi;
         settings.DetectClosedPolylines = DetectPolylineCheck.IsChecked == true;
         settings.DetectLooseLines = DetectLooseLinesCheck.IsChecked == true;
@@ -1841,15 +2330,7 @@ public partial class ShortcutPanelView : UserControl
     private void OnDpiSliderChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
     {
         var text = Math.Round(e.NewValue).ToString(CultureInfo.CurrentCulture);
-        if (sender == VectorDpiSlider && VectorDpiBox is not null)
-        {
-            VectorDpiBox.Text = text;
-        }
-        else if (sender == GradientDpiSlider && GradientDpiBox is not null)
-        {
-            GradientDpiBox.Text = text;
-        }
-        else if (sender == ImageDpiSlider && PrintImageDpiBox is not null)
+        if (sender == ImageDpiSlider && PrintImageDpiBox is not null)
         {
             PrintImageDpiBox.Text = text;
         }
@@ -2105,7 +2586,7 @@ public partial class ShortcutPanelView : UserControl
         IEnumerable<string> values,
         FontWeight? fontWeight = null)
     {
-        var texts = values.Append(column.Header?.ToString() ?? string.Empty);
+        var texts = values.Concat(new[] { column.Header?.ToString() ?? string.Empty });
         var minimumWidth = texts.Max(value => MeasureTextWidth(value, fontWeight ?? FontWeights.Normal)) + 28;
         column.MinWidth = Math.Ceiling(minimumWidth);
     }
@@ -2125,6 +2606,6 @@ public partial class ShortcutPanelView : UserControl
 
     private static bool Contains(string value, string keyword)
     {
-        return value.Contains(keyword, StringComparison.OrdinalIgnoreCase);
+        return Compatibility.Contains(value, keyword, StringComparison.OrdinalIgnoreCase);
     }
 }

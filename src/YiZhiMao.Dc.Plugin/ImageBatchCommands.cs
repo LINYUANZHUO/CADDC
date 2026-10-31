@@ -37,7 +37,7 @@ public static class ImageBatchCommands
     private const uint MaximumMetafileBytes = 15 * 1024 * 1024;
 
     [CommandMethod("DC_CMD_IMAGE_BATCH", CommandFlags.Modal)]
-    [ShortcutCommand("插入图片", "批量插入图片", "OLE")]
+    [ShortcutCommand("插入图片", "批量插入图片", "DCOLE")]
     public static async void InsertImages()
     {
         var document = AcadApplication.DocumentManager.MdiActiveDocument;
@@ -219,7 +219,7 @@ public static class ImageBatchCommands
         {
             var extents = frame.GeometricExtents;
             var measuredWidth = extents.MaxPoint.X - extents.MinPoint.X;
-            if (double.IsFinite(measuredWidth) && measuredWidth > 0.1)
+            if (Compatibility.IsFinite(measuredWidth) && measuredWidth > 0.1)
             {
                 width = measuredWidth;
             }

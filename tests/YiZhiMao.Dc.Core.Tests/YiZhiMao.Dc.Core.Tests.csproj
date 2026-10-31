@@ -8,5 +8,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\YiZhiMao.Dc.Core\YiZhiMao.Dc.Core.csproj" />
+    <Compile Include="..\..\packaging\Installer\InstallerFileOperations.cs"
+             Link="InstallerFileOperations.cs" />
   </ItemGroup>
 </Project>

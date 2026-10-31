@@ -11,7 +11,7 @@ public static class BoardGeometryCalculator
             throw new ArgumentOutOfRangeException(nameof(lineCount), "替换线数量只能是 2 或 3。");
         }
 
-        if (!double.IsFinite(thickness) || thickness <= DefaultTolerance)
+        if (!Compatibility.IsFinite(thickness) || thickness <= DefaultTolerance)
         {
             throw new ArgumentOutOfRangeException(nameof(thickness), "偏移板厚必须大于 0。");
         }
@@ -25,7 +25,7 @@ public static class BoardGeometryCalculator
         int compartmentCount,
         double thickness)
     {
-        if (!double.IsFinite(span) || span <= DefaultTolerance)
+        if (!Compatibility.IsFinite(span) || span <= DefaultTolerance)
         {
             throw new ArgumentOutOfRangeException(nameof(span), "均分范围必须大于 0。");
         }
@@ -35,13 +35,13 @@ public static class BoardGeometryCalculator
             throw new ArgumentOutOfRangeException(nameof(compartmentCount), "均分格数至少为 2。");
         }
 
-        if (!double.IsFinite(thickness) || thickness <= DefaultTolerance)
+        if (!Compatibility.IsFinite(thickness) || thickness <= DefaultTolerance)
         {
             throw new ArgumentOutOfRangeException(nameof(thickness), "均分板厚必须大于 0。");
         }
 
         var clearSpan = span - (compartmentCount - 1d) * thickness;
-        if (!double.IsFinite(clearSpan) || clearSpan <= DefaultTolerance)
+        if (!Compatibility.IsFinite(clearSpan) || clearSpan <= DefaultTolerance)
         {
             throw new ArgumentOutOfRangeException(nameof(thickness), "板厚总和必须小于均分范围。");
         }
@@ -62,10 +62,10 @@ public static class BoardGeometryCalculator
         double coordinate,
         double tolerance = DefaultTolerance)
     {
-        return double.IsFinite(minimum) &&
-               double.IsFinite(maximum) &&
-               double.IsFinite(coordinate) &&
-               double.IsFinite(tolerance) &&
+        return Compatibility.IsFinite(minimum) &&
+               Compatibility.IsFinite(maximum) &&
+               Compatibility.IsFinite(coordinate) &&
+               Compatibility.IsFinite(tolerance) &&
                tolerance >= 0 &&
                maximum - minimum > tolerance * 2 &&
                coordinate > minimum + tolerance &&
@@ -78,7 +78,7 @@ public static class BoardGeometryCalculator
         bool isExtend,
         double tolerance = DefaultTolerance)
     {
-        if (!double.IsFinite(intersectionParameter) || !double.IsFinite(tolerance) || tolerance < 0)
+        if (!Compatibility.IsFinite(intersectionParameter) || !Compatibility.IsFinite(tolerance) || tolerance < 0)
         {
             return false;
         }
@@ -104,11 +104,11 @@ public static class BoardGeometryCalculator
     {
         return !string.IsNullOrWhiteSpace(firstLayer) &&
                string.Equals(firstLayer, secondLayer, StringComparison.OrdinalIgnoreCase) &&
-               double.IsFinite(firstThickness) &&
-               double.IsFinite(secondThickness) &&
-               double.IsFinite(firstElevation) &&
-               double.IsFinite(secondElevation) &&
-               double.IsFinite(tolerance) &&
+               Compatibility.IsFinite(firstThickness) &&
+               Compatibility.IsFinite(secondThickness) &&
+               Compatibility.IsFinite(firstElevation) &&
+               Compatibility.IsFinite(secondElevation) &&
+               Compatibility.IsFinite(tolerance) &&
                tolerance >= 0 &&
                Math.Abs(firstThickness - secondThickness) <= tolerance &&
                Math.Abs(firstElevation - secondElevation) <= tolerance;

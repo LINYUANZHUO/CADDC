@@ -1,4 +1,5 @@
 using Autodesk.AutoCAD.Runtime;
+using YiZhiMao.Dc.Core;
 using YiZhiMao.Dc.Plugin.Shortcuts;
 using YiZhiMao.Dc.Plugin.Views;
 using AcadApplication = Autodesk.AutoCAD.ApplicationServices.Core.Application;
@@ -11,6 +12,11 @@ public static class RadialMenuCommands
     [ShortcutCommand("圆盘", "打开圆盘工具", "DCYP")]
     public static void ShowRadialMenu()
     {
+        if (!ModulePreferencesRuntime.EnsureEnabled(ToolboxFeatureModule.RadialMenu))
+        {
+            return;
+        }
+
         var options = RadialMenuRuntime.Options;
         if (!options.Enabled)
         {

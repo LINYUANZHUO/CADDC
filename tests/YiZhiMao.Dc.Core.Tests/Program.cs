@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
@@ -21,9 +22,11 @@ var tests = new (string Name, Action Test)[]
     ("旧版未修改快捷键迁移到新的无冲突默认值", UnchangedLegacyAliasMigratesToNewDefault),
     ("旧版HJL迁移为不冲突的DCHJL", LegacyHingeAliasMigratesToDchjl),
     ("旧版墙板快捷键迁移为DC前缀", LegacyWainscotAliasesMigrateToDcPrefix),
+    ("插件命令和默认快捷键统一使用DC前缀", BuiltInCommandsAndAliasesUseDcPrefix),
+    ("旧默认快捷键升级为DC前缀并保留用户修改", LegacyCommandAliasesMigrateWithoutOverwritingUserValues),
     ("非法用户配置仍可加载到面板修正", InvalidSavedAliasCanStillBeLoaded),
     ("空命令列表配置可恢复默认值", NullSavedItemsRecoverDefaults),
-    ("新增映射使用NEWCMD默认值", NewMappingUsesRequestedDefaults),
+    ("新增映射使用DCNEWCMD默认值", NewMappingUsesRequestedDefaults),
     ("用户附加映射可随配置合并保留", UserDefinedMappingSurvivesConfigurationMerge),
     ("用户附加映射必须填写快捷键", UserDefinedMappingRequiresAlias),
     ("CSV导出使用UTF8并正确转义", CsvExportUsesUtf8AndEscapesFields),
@@ -36,6 +39,10 @@ var tests = new (string Name, Action Test)[]
     ("工具箱参数跨模块持久化并可完整恢复", ToolboxSettingsPersistAcrossModules),
     ("工具箱参数损坏或非法时安全回退默认值", ToolboxSettingsFallbackOnInvalidFiles),
     ("面板与底层命令共享同一持久化运行时", ToolboxRuntimeUsesSharedPersistentSettings),
+    ("偏好设置默认全开并禁止关闭最后一个模块", ToolboxPreferencesPersistAndKeepOneModule),
+    ("偏好设置导航启动和命令禁用入口完整", ToolboxPreferencesSurfaceAndGuardAreComplete),
+    ("SHX同步只复制本图引用字体并安全处理重复与冲突", ShxFontSyncCopiesReferencedFontsSafely),
+    ("缺失SHX按文字类型安全选择替换且不替换形文件", MissingShxReplacementPolicyIsSafe),
     ("格栅板参数保留默认值并拒绝非法尺寸", GrilleOptionsValidateDefaultsAndDimensions),
     ("格栅板竖向与横向布局按条宽和间距排列", GrilleLayoutSupportsVerticalAndHorizontalDirections),
     ("格栅板平面图与侧视图使用统一构造尺寸", GrilleLayoutBuildsRequestedAuxiliaryViews),
@@ -83,6 +90,7 @@ var tests = new (string Name, Action Test)[]
     ("拆单统计菜单包含五类统计入口", StatisticsModuleSurfaceAndCommandsAreComplete),
     ("拆单统计按规格汇总并输出Excel兼容CSV", DrawingStatisticsAggregateAndExport),
     ("一键全屋拆单支持CAD表格与Excel总表", WholeHouseStatisticsSupportsCadTableAndExcel),
+    ("图框对齐让框内图形跟随所属图框移动", FrameAlignmentMovesContainedGeometry),
     ("圆盘默认三圈配置与命中规则稳定", RadialMenuDefaultsAndHitTestingAreStable),
     ("圆盘配置持久化并拒绝非法参数", RadialMenuOptionsPersistAndRejectInvalidValues),
     ("圆盘设置面板与底层命令入口完整", RadialMenuSurfaceAndCommandAreComplete),
@@ -91,6 +99,7 @@ var tests = new (string Name, Action Test)[]
     ("本地LISP库扫描受支持文件并生成安全加载表达式", LispPluginLibraryScansAndBuildsLoadExpression),
     ("本地LISP命令在插件库中保持唯一", LispPluginCommandsAreUnique),
     ("一键图框参数校验并按内框计算缩放落位", FrameToolOptionsAndPlacementAreValid),
+    ("一键加框合并与普通图形重叠的图块范围", OneClickFrameMergesOverlappingBlockBounds),
     ("图框模板目录只扫描DWG并保留外部选择", FrameTemplateLibraryScansDwgFiles),
     ("一键图框面板与四类底层命令入口完整", OneClickFrameSurfaceAndCommandsAreComplete),
     ("五金铰链页与门板页共享同一组参数", HardwareHingeTabSharesDoorPanelParameters),
@@ -123,18 +132,25 @@ var tests = new (string Name, Action Test)[]
     ("五金件面板和底层命令入口完整", HardwareSurfaceContractIsComplete),
     ("Modules资源会打包并由插件直接读取", ModuleResourcesAreBundledAndReadDirectly),
     ("Bundle构建前清理全部旧Contents", BundleBuildCleansAllPreviousContents),
+    ("AutoCAD 2017至2027安装清单按精确版本分流", AutoCadVersionManifestUsesExactLanes),
     ("工具箱XAML静态资源全部可解析", ShortcutPanelStaticResourcesAreDefined),
     ("快捷键面板保留双层导航和防截断约束", ShortcutPanelLayoutKeepsNavigationAndOverflowContract),
     ("打印设置可持久化并拒绝非法分辨率", PrintSettingsPersistAndValidate),
     ("打印选项只返回设备实际支持的值", PrintOptionsChooseOnlyAvailableValues),
     ("打印图框去重去嵌套并按阅读顺序排列", PrintFramesAreCleanedAndSorted),
+    ("批量打印逐份与非逐份顺序正确", PrintCopyOrderMatchesCollateSetting),
     ("PDF工具扫描页数并按选择顺序合并", PdfToolScansAndMergesInOrder),
     ("批量打印命令面板与PDF工具入口完整", BatchPrintSurfaceContractIsComplete),
     ("批量打印避免布局字典强转并保留阶段错误", BatchPrintRuntimeRegressionContract),
     ("批量打印窄面板按钮与窗口坐标保持有效", BatchPrintNarrowPanelAndWindowAreaContract),
+    ("安装器检测到AutoCAD后可重试、安全强制关闭或取消", InstallerAutoCadShutdownFlowIsSafe),
+    ("安装向导支持标准安装范围、进度和完成路径", InstallerWizardSupportsScopePathAndProgress),
+    ("安装升级只恢复用户新增或修改的资源", InstallerUpgradePreservesUserResources),
+    ("卸载默认保留用户资源并可显式清除用户数据", InstallerUninstallPreservesDataByDefault),
+    ("安装失败会回滚旧Bundle并记录日志", InstallerFailureRollsBackAndWritesLog),
     ("批量打印按布局读取纸张并先写窗口后切换类型", BatchPrintUsesLayoutBoundMediaAndWindowSequence),
     ("纸张打印排除文件设备且批量任务关闭后台打印", BatchPrintSeparatesPaperDevicesAndDisablesBackgroundPlot),
-    ("D3和D4只打印当前布局且D1提示打印服务前置条件", BatchPrintTargetsCurrentLayoutAndChecksPaperPrerequisites),
+    ("D3和D4从模型空间自动切换首个布局且D1提示打印服务前置条件", BatchPrintTargetsCurrentLayoutAndChecksPaperPrerequisites),
     ("打印预览生成临时PDF并自动打开且不受纸张服务阻断", BatchPrintPreviewGeneratesAndOpensPdf),
     ("散线图框检测使用容差索引且不重复", LineRectangleDetectorUsesToleranceIndexWithoutDuplicates),
     ("安全依赖与面板计时器生命周期已加固", SecurityDependencyAndPanelTimerAreHardened)
@@ -454,6 +470,85 @@ static void LegacyWainscotAliasesMigrateToDcPrefix()
     }
 }
 
+static void BuiltInCommandsAndAliasesUseDcPrefix()
+{
+    var root = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
+    var pluginRoot = Path.Combine(root, "src", "YiZhiMao.Dc.Plugin");
+    var source = string.Join(
+        Environment.NewLine,
+        Directory.EnumerateFiles(pluginRoot, "*.cs", SearchOption.AllDirectories).Select(File.ReadAllText));
+
+    var shortcutAliases = Regex.Matches(
+            source,
+            @"\[ShortcutCommand\([^\r\n]*?,\s*""(?<alias>[A-Z0-9_]+)""\)\]")
+        .Select(match => match.Groups["alias"].Value)
+        .ToArray();
+    var commandNames = Regex.Matches(
+            source,
+            @"\[CommandMethod\(""(?<command>[A-Z0-9_]+)""")
+        .Select(match => match.Groups["command"].Value)
+        .ToArray();
+
+    Assert(shortcutAliases.Length > 0 && shortcutAliases.All(alias => alias.StartsWith("DC", StringComparison.Ordinal)),
+        "存在未使用 DC 前缀的插件默认快捷键。" );
+    Assert(commandNames.Length > 0 && commandNames.All(command => command.StartsWith("DC", StringComparison.Ordinal)),
+        "存在未使用 DC 前缀的插件公开命令。" );
+}
+
+static void LegacyCommandAliasesMigrateWithoutOverwritingUserValues()
+{
+    var root = Path.Combine(Path.GetTempPath(), $"YiZhiMaoDcTests-{Guid.NewGuid():N}");
+    Directory.CreateDirectory(root);
+
+    try
+    {
+        var path = Path.Combine(root, "ShortcutConfig.json");
+        File.WriteAllText(path, """
+            {
+              "SchemaVersion": 7,
+              "ShortcutItems": [
+                {
+                  "CoreCommand": "DC_CMD_STATUS",
+                  "DefaultAlias": "JC",
+                  "CustomAlias": "JC"
+                },
+                {
+                  "CoreCommand": "DC_CMD_IMAGE_BATCH",
+                  "DefaultAlias": "OLE",
+                  "CustomAlias": "MYIMAGE"
+                },
+                {
+                  "CoreCommand": "DC_CMD_LAYER_MANAGER",
+                  "DefaultAlias": "MYLAYER",
+                  "CustomAlias": "MYLAYER2"
+                }
+              ]
+            }
+            """);
+
+        var store = new ShortcutConfigurationStore(path);
+        var configuration = store.LoadAndMerge([
+            CreateItem("检查插件运行状态", "DC_CMD_STATUS", "DCJC", "DCJC"),
+            CreateItem("批量插入图片", "DC_CMD_IMAGE_BATCH", "DCOLE", "DCOLE"),
+            CreateItem("快速图层管理器", "DC_CMD_LAYER_MANAGER", "DCTC", "DCTC")
+        ]);
+
+        var status = configuration.ShortcutItems.Single(item => item.CoreCommand == "DC_CMD_STATUS");
+        var image = configuration.ShortcutItems.Single(item => item.CoreCommand == "DC_CMD_IMAGE_BATCH");
+        var layer = configuration.ShortcutItems.Single(item => item.CoreCommand == "DC_CMD_LAYER_MANAGER");
+        Assert(status.DefaultAlias == "DCJC" && status.CustomAlias == "DCJC",
+            "未修改的 JC 默认值没有迁移为 DCJC。" );
+        Assert(image.DefaultAlias == "DCOLE" && image.CustomAlias == "MYIMAGE",
+            "OLE 默认值未迁移，或用户自定义快捷键被覆盖。" );
+        Assert(layer.DefaultAlias == "MYLAYER" && layer.CustomAlias == "MYLAYER2",
+            "用户编辑过的默认和自定义快捷键没有保留。" );
+    }
+    finally
+    {
+        DeleteTestDirectory(root);
+    }
+}
+
 static void InvalidSavedAliasCanStillBeLoaded()
 {
     var root = Path.Combine(Path.GetTempPath(), $"YiZhiMaoDcTests-{Guid.NewGuid():N}");
@@ -531,14 +626,14 @@ static void NewMappingUsesRequestedDefaults()
     var item = ShortcutItem.CreateNewMapping();
 
     Assert(item.Description == "新功能", "新增映射的功能说明默认值不正确。");
-    Assert(item.DefaultAlias == "NEWCMD", "新增映射的默认快捷键不正确。");
-    Assert(item.CustomAlias == "NEWCMD", "新增映射的自定义快捷键不正确。");
-    Assert(item.CoreCommand == "NEWCMD", "新增映射的底层命令不正确。");
+    Assert(item.DefaultAlias == "DCNEWCMD", "新增映射的默认快捷键不正确。");
+    Assert(item.CustomAlias == "DCNEWCMD", "新增映射的自定义快捷键不正确。");
+    Assert(item.CoreCommand == "DCNEWCMD", "新增映射的底层命令不正确。");
     Assert(item.IsUserDefined, "新增映射未标记为用户映射。");
-    Assert(ShortcutValidator.GetEffectiveAliases(item).SequenceEqual(["NEWCMD"]), "相同的默认和自定义快捷键未合并为一个映射。");
+    Assert(ShortcutValidator.GetEffectiveAliases(item).SequenceEqual(["DCNEWCMD"]), "相同的默认和自定义快捷键未合并为一个映射。");
 
     var script = AutoLispShortcutGenerator.Generate(new ShortcutConfiguration { ShortcutItems = [item] });
-    Assert(script.Contains(".NEWCMD", StringComparison.Ordinal), "新增映射生成的LSP未调用NEWCMD底层命令。");
+    Assert(script.Contains(".DCNEWCMD", StringComparison.Ordinal), "新增映射生成的LSP未调用DCNEWCMD底层命令。");
 }
 
 static void UserDefinedMappingSurvivesConfigurationMerge()
@@ -565,7 +660,7 @@ static void UserDefinedMappingSurvivesConfigurationMerge()
         Assert(userMapping.Description == "用户新命令", "用户映射的功能说明未保留。");
         Assert(userMapping.DefaultAlias == "NEWONE", "用户映射的默认快捷键未保留。");
         Assert(userMapping.CustomAlias == "NEWONE2", "用户映射的自定义快捷键未保留。");
-        Assert(userMapping.CoreCommand == "NEWCMD", "用户映射的底层命令未保留。");
+        Assert(userMapping.CoreCommand == "DCNEWCMD", "用户映射的底层命令未保留。");
     }
     finally
     {
@@ -603,7 +698,7 @@ static void CsvExportUsesUtf8AndEscapesFields()
         var text = Encoding.UTF8.GetString(bytes.AsSpan(Encoding.UTF8.Preamble.Length));
         Assert(text.StartsWith("功能说明,默认,自定义,禁用默认,底层命令\r\n", StringComparison.Ordinal), "CSV表头不正确。");
         Assert(text.Contains("\"命令A,\"\"测试\"\"\",AA,AX,否,DC_CMD_A\r\n", StringComparison.Ordinal), "CSV未正确转义逗号或双引号。");
-        Assert(text.Contains("新功能,NEWCMD,NEWCMD,否,NEWCMD\r\n", StringComparison.Ordinal), "CSV缺少新增映射默认值。");
+        Assert(text.Contains("新功能,DCNEWCMD,DCNEWCMD,否,DCNEWCMD\r\n", StringComparison.Ordinal), "CSV缺少新增映射默认值。");
     }
     finally
     {
@@ -701,6 +796,7 @@ static void ToolboxSettingsPersistAcrossModules()
         settings.Board = settings.Board with { Thickness = 20, DivideCount = 4, DivideThickness = 20 };
         settings.DrawingLayer = settings.DrawingLayer with { LinetypeScale = 50, WallHatchScale = 2 };
         settings.ImageBatch = settings.ImageBatch with { Gap = 80, PixelHeight = 1200 };
+        settings.DefaultSaveFileFormat = DrawingSaveFileFormat.AutoCad2010;
 
         store.Save(settings);
         var loaded = store.Load();
@@ -717,6 +813,8 @@ static void ToolboxSettingsPersistAcrossModules()
         Assert(loaded.Board.Thickness == 20 && loaded.Board.DivideCount == 4 &&
                loaded.DrawingLayer.LinetypeScale == 50 && loaded.ImageBatch.Gap == 80,
             "板件、图层或批量图片参数没有从统一配置恢复。" );
+        Assert(loaded.DefaultSaveFileFormat == DrawingSaveFileFormat.AutoCad2010,
+            "默认保存版本没有从统一配置恢复。" );
         Assert(!File.Exists(path + ".tmp"), "原子保存后遗留了临时配置文件。" );
     }
     finally
@@ -769,6 +867,323 @@ static void ToolboxRuntimeUsesSharedPersistentSettings()
         "面板没有从统一运行时加载并保存板件/图层参数。" );
     Assert(board.Contains("ToolboxSettingsRuntime.Settings.Board", StringComparison.Ordinal),
         "直接输入板件命令仍未读取统一持久化参数。" );
+}
+
+static void ToolboxPreferencesPersistAndKeepOneModule()
+{
+    var defaults = ToolboxPreferenceOptions.Default;
+    var smartInputMethodDefaults = SmartInputMethodOptions.Default;
+    Assert(defaults.AutoExpandSidebar &&
+           defaults.EnabledModuleCount == ToolboxFeatureModuleCatalog.All.Count &&
+           ToolboxFeatureModuleCatalog.All.Count == 12,
+        "偏好设置默认值没有自动展开全部十二个功能模块。" );
+    Assert(smartInputMethodDefaults.Enabled &&
+           smartInputMethodDefaults.KeepCadCommandsEnglish &&
+           smartInputMethodDefaults.AutoChineseForText &&
+           smartInputMethodDefaults.RestoreEnglishAfterText,
+        "智能输入法默认设置没有全部启用。" );
+    Assert(ToolboxSettings.CreateDefault().DefaultSaveFileFormat == DrawingSaveFileFormat.AutoCad2007,
+        "工具箱首次使用没有默认采用 AutoCAD 2007 DWG 保存格式。" );
+    Assert(!ToolboxSettings.CreateDefault().SyncReferencedShxOnSave,
+        "工具箱首次使用不应默认开启 SHX 自动同步。" );
+    Assert(ToolboxSettings.CreateDefault().AutoReplaceMissingShx,
+        "工具箱首次使用应默认开启缺失文字 SHX 自动替换。" );
+    Assert(ToolboxFeatureModuleCatalog.All.Select(item => item.Module).Distinct().Count() == 12,
+        "偏好设置模块目录存在缺项或重复项。" );
+
+    var root = Path.Combine(Path.GetTempPath(), $"dc-preferences-{Guid.NewGuid():N}");
+    Directory.CreateDirectory(root);
+    try
+    {
+        var path = Path.Combine(root, "ToolboxSettings.json");
+        var store = new ToolboxSettingsStore(path);
+        var settings = ToolboxSettings.CreateDefault();
+        settings.Preferences = settings.Preferences with { AutoExpandSidebar = false };
+        settings.Preferences = settings.Preferences.WithModuleEnabled(ToolboxFeatureModule.Boards, false);
+        settings.SmartInputMethod = settings.SmartInputMethod with { AutoChineseForText = false };
+        settings.SyncReferencedShxOnSave = true;
+        settings.AutoReplaceMissingShx = false;
+        settings.MissingShxReplacementMappings["TextFont|lost.shx"] = "simplex.shx";
+        store.Save(settings);
+
+        var loaded = store.Load();
+        Assert(!loaded.Preferences.AutoExpandSidebar &&
+               !loaded.Preferences.IsEnabled(ToolboxFeatureModule.Boards) &&
+               loaded.Preferences.IsEnabled(ToolboxFeatureModule.DoorPanels) &&
+               !loaded.SmartInputMethod.AutoChineseForText &&
+               loaded.SmartInputMethod.Enabled &&
+               loaded.SyncReferencedShxOnSave &&
+               !loaded.AutoReplaceMissingShx &&
+               loaded.MissingShxReplacementMappings["TextFont|lost.shx"] == "simplex.shx",
+            "偏好设置没有跨启动持久化自动展开或模块开关。" );
+
+        var noneEnabled = ToolboxPreferenceOptions.Default;
+        foreach (var info in ToolboxFeatureModuleCatalog.All)
+        {
+            noneEnabled = noneEnabled.WithModuleEnabled(info.Module, false);
+        }
+
+        AssertThrows<InvalidOperationException>(
+            () => new ToolboxSettings { Preferences = noneEnabled }.Validate(),
+            "偏好设置允许关闭全部功能模块。" );
+        AssertThrows<InvalidOperationException>(
+            () => new ToolboxSettings { DefaultSaveFileFormat = (DrawingSaveFileFormat)999 }.Validate(),
+            "偏好设置允许保存不受支持的 DWG 版本。" );
+
+        File.WriteAllText(path, "{}");
+        var compatibleDefaults = store.Load();
+        Assert(compatibleDefaults.Preferences.EnabledModuleCount == 12 &&
+               compatibleDefaults.SmartInputMethod == SmartInputMethodOptions.Default &&
+               compatibleDefaults.DefaultSaveFileFormat == DrawingSaveFileFormat.AutoCad2007 &&
+               !compatibleDefaults.SyncReferencedShxOnSave &&
+               compatibleDefaults.AutoReplaceMissingShx,
+            "旧版工具箱配置缺少偏好字段时没有兼容恢复默认值。" );
+    }
+    finally
+    {
+        DeleteTestDirectory(root);
+    }
+}
+
+static void ToolboxPreferencesSurfaceAndGuardAreComplete()
+{
+    var root = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
+    var xaml = File.ReadAllText(Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "Views", "ShortcutPanelView.xaml"));
+    var panelCode = File.ReadAllText(Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "Views", "ShortcutPanelView.xaml.cs"));
+    var startup = File.ReadAllText(Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "PluginApplication.cs"));
+    var guard = File.ReadAllText(Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "ModulePreferencesRuntime.cs"));
+    var palette = File.ReadAllText(Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "Views", "ToolboxPalette.cs"));
+    var smartInputMethod = File.ReadAllText(Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "SmartInputMethodRuntime.cs"));
+    var cadQuickToggle = File.ReadAllText(Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "CadQuickToggleRuntime.cs"));
+    var pointStyleIcon = File.ReadAllText(Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "Views", "PointStyleIcon.cs"));
+    var shxRuntime = File.ReadAllText(Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "ShxFontSyncRuntime.cs"));
+    var missingShxRuntime = File.ReadAllText(Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "MissingShxReplacementRuntime.cs"));
+
+    Assert(xaml.Contains("x:Name=\"PreferencesModuleButton\"", StringComparison.Ordinal) &&
+           xaml.Contains("Text=\"偏好设置\"", StringComparison.Ordinal) &&
+           xaml.Contains("Content=\"启动时自动展开侧边栏\"", StringComparison.Ordinal) &&
+           xaml.Contains("Content=\"全部显示\"", StringComparison.Ordinal) &&
+           xaml.Contains("x:Name=\"ModulePreferenceItemsControl\"", StringComparison.Ordinal) &&
+           xaml.Contains("x:Name=\"PinnedPreferencesCheckBox\"", StringComparison.Ordinal) &&
+           xaml.Contains("x:Name=\"SmartInputMethodEnabledCheckBox\"", StringComparison.Ordinal) &&
+           xaml.Contains("x:Name=\"KeepCadCommandsEnglishCheckBox\"", StringComparison.Ordinal) &&
+           xaml.Contains("x:Name=\"AutoChineseForTextCheckBox\"", StringComparison.Ordinal) &&
+           xaml.Contains("x:Name=\"RestoreEnglishAfterTextCheckBox\"", StringComparison.Ordinal) &&
+           xaml.Contains("x:Name=\"CadQuickToggleExpander\"", StringComparison.Ordinal) &&
+           xaml.Contains("x:Name=\"PointerInputCheckBox\"", StringComparison.Ordinal) &&
+           xaml.Contains("Content=\"指针输入（P）\"", StringComparison.Ordinal) &&
+           xaml.Contains("x:Name=\"PointStyleListBox\"", StringComparison.Ordinal) &&
+           !xaml.Contains("x:Name=\"PointStyleComboBox\"", StringComparison.Ordinal) &&
+           xaml.Contains("SelectionChanged=\"OnPointStyleChanged\"", StringComparison.Ordinal) &&
+           xaml.Contains("x:Name=\"SaveFileFormatComboBox\"", StringComparison.Ordinal) &&
+           xaml.Contains("SelectionChanged=\"OnSaveFileFormatChanged\"", StringComparison.Ordinal) &&
+           xaml.Contains("x:Name=\"SyncReferencedShxOnSaveCheckBox\"", StringComparison.Ordinal) &&
+           xaml.Contains("x:Name=\"AutoReplaceMissingShxCheckBox\"", StringComparison.Ordinal) &&
+           xaml.Contains("x:Name=\"ExportCurrentShxButton\"", StringComparison.Ordinal) &&
+           xaml.Contains("<UniformGrid Columns=\"5\"", StringComparison.Ordinal) &&
+           xaml.Contains("IsExpanded=\"False\"", StringComparison.Ordinal) &&
+           xaml.Contains("Expanded=\"OnCadQuickToggleExpanded\"", StringComparison.Ordinal) &&
+           xaml.Contains("IsChecked=\"True\"", StringComparison.Ordinal) &&
+           xaml.Contains("IsEnabled=\"False\"", StringComparison.Ordinal),
+        "偏好设置入口、常规设置或模块列表不完整。" );
+    Assert(panelCode.Contains("ApplyModuleVisibility", StringComparison.Ordinal) &&
+           panelCode.Contains("EnabledModuleCount == 0", StringComparison.Ordinal) &&
+           panelCode.Contains("ToolboxSettingsRuntime.Update", StringComparison.Ordinal) &&
+           panelCode.Contains("SmartInputMethodRuntime.RefreshSettings()", StringComparison.Ordinal) &&
+           panelCode.Contains("private void OnCadQuickToggleExpanded", StringComparison.Ordinal) &&
+           panelCode.Contains("CadQuickToggleRuntime.TryGetPointerInputEnabled", StringComparison.Ordinal) &&
+           panelCode.Contains("CadQuickToggleRuntime.TrySetPointerInputEnabled", StringComparison.Ordinal) &&
+           panelCode.Contains("DefaultPointStyleMode = 35", StringComparison.Ordinal) &&
+           panelCode.Contains("PointStyleListBox.ItemsSource = PointStyleOptions", StringComparison.Ordinal) &&
+           panelCode.Contains("private void OnPointStyleChanged", StringComparison.Ordinal) &&
+           panelCode.Contains("CadQuickToggleRuntime.TryGetPointStyle", StringComparison.Ordinal) &&
+           panelCode.Contains("CadQuickToggleRuntime.TrySetPointStyle", StringComparison.Ordinal) &&
+           panelCode.Contains("private void OnSaveFileFormatChanged", StringComparison.Ordinal) &&
+           panelCode.Contains("CadQuickToggleRuntime.TrySetSaveFileFormat", StringComparison.Ordinal) &&
+           panelCode.Contains("settings.DefaultSaveFileFormat = format", StringComparison.Ordinal) &&
+           panelCode.Contains("private void OnSyncReferencedShxOnSaveChanged", StringComparison.Ordinal) &&
+           panelCode.Contains("private void OnAutoReplaceMissingShxChanged", StringComparison.Ordinal) &&
+           panelCode.Contains("MissingShxReplacementRuntime.QueueActiveDocument", StringComparison.Ordinal) &&
+           panelCode.Contains("ShxFontSyncRuntime.ExportActiveDocumentAsync", StringComparison.Ordinal),
+        "模块入口没有即时隐藏、最后一项保护或持久化逻辑。" );
+    Assert(startup.Contains("ScheduleAutoExpand", StringComparison.Ordinal) &&
+           startup.Contains("ToolboxPalette.Show()", StringComparison.Ordinal) &&
+           startup.Contains("ModuleCommandGuard.Initialize()", StringComparison.Ordinal) &&
+           startup.Contains("SmartInputMethodRuntime.Initialize()", StringComparison.Ordinal) &&
+           startup.Contains("SmartInputMethodRuntime.Dispose()", StringComparison.Ordinal) &&
+           startup.Contains("ShxFontSyncRuntime.Initialize()", StringComparison.Ordinal) &&
+           startup.Contains("ShxFontSyncRuntime.Dispose()", StringComparison.Ordinal) &&
+           startup.Contains("MissingShxReplacementRuntime.Initialize()", StringComparison.Ordinal) &&
+           startup.Contains("MissingShxReplacementRuntime.Dispose()", StringComparison.Ordinal) &&
+           startup.Contains("CadQuickToggleRuntime.TryApplyConfiguredSaveFileFormat", StringComparison.Ordinal),
+        "启动自动展开或命令禁用守卫没有注册。" );
+    var immediateExpandCall = startup.IndexOf("TryAutoExpandImmediately();", StringComparison.Ordinal);
+    var saveFormatCall = startup.IndexOf("CadQuickToggleRuntime.TryApplyConfiguredSaveFileFormat", StringComparison.Ordinal);
+    Assert(immediateExpandCall >= 0 && immediateExpandCall < saveFormatCall &&
+           startup.Contains("catch (System.Exception)", StringComparison.Ordinal) &&
+           startup.Contains("ScheduleAutoExpand();", StringComparison.Ordinal),
+        "工具箱仍等待 AutoCAD Idle 才显示，会被缺少 SHX 等启动模态窗口阻塞。" );
+    Assert(shxRuntime.Contains("SaveComplete", StringComparison.Ordinal) &&
+           shxRuntime.Contains("TextStyleTable", StringComparison.Ordinal) &&
+           shxRuntime.Contains("BigFontFileName", StringComparison.Ordinal) &&
+           shxRuntime.Contains("ShapeStyleAt", StringComparison.Ordinal) &&
+           shxRuntime.Contains("Task.Run", StringComparison.Ordinal) &&
+           shxRuntime.Contains("\"Modules\", \"Fonts\"", StringComparison.Ordinal) &&
+           shxRuntime.Contains("\".dwg\"", StringComparison.Ordinal),
+        "SHX 同步没有限定正式 DWG 保存、引用样式或后台文件复制。" );
+    Assert(missingShxRuntime.Contains("HostApplicationServices.Current.FindFile", StringComparison.Ordinal) &&
+           missingShxRuntime.Contains("ShapeStyleAt", StringComparison.Ordinal) &&
+           missingShxRuntime.Contains("MissingShxReplacementPolicy.Decide", StringComparison.Ordinal) &&
+           missingShxRuntime.Contains("TextStyleTableRecord", StringComparison.Ordinal) &&
+           missingShxRuntime.Contains("BigFontFileName", StringComparison.Ordinal) &&
+           missingShxRuntime.Contains("Path.Combine(fontLibrary", StringComparison.Ordinal) &&
+           missingShxRuntime.Contains("Editor.WriteMessage", StringComparison.Ordinal),
+        "缺失 SHX 运行时没有延迟扫描文字样式、保护形文件或输出非模态结果。" );
+    Assert(missingShxRuntime.Contains("private static void TryQueue", StringComparison.Ordinal) &&
+           missingShxRuntime.Contains("Queue(Document? document", StringComparison.Ordinal) &&
+           missingShxRuntime.Contains("document?.Database is not Database database", StringComparison.Ordinal) &&
+           missingShxRuntime.Contains("TryQueue(e.Document, force: false)", StringComparison.Ordinal),
+        "缺失 SHX 文档事件没有隔离空文档，异常可能穿过 AutoCAD 原生事件边界导致崩溃。" );
+    Assert(smartInputMethod.Contains("CommandWillStart", StringComparison.Ordinal) &&
+           smartInputMethod.Contains("CommandEnded", StringComparison.Ordinal) &&
+           smartInputMethod.Contains("CommandCancelled", StringComparison.Ordinal) &&
+           smartInputMethod.Contains("CommandFailed", StringComparison.Ordinal) &&
+           smartInputMethod.Contains("PromptingForString", StringComparison.Ordinal) &&
+           smartInputMethod.Contains("PromptedForString", StringComparison.Ordinal) &&
+           smartInputMethod.Contains("ImmSetOpenStatus", StringComparison.Ordinal) &&
+           smartInputMethod.Contains("Document? document = e.Document", StringComparison.Ordinal) &&
+           smartInputMethod.Contains("document ??= AcadApplication.DocumentManager.MdiActiveDocument", StringComparison.Ordinal) &&
+           smartInputMethod.Contains("private static void RunEventSafely(Action action)", StringComparison.Ordinal) &&
+           !smartInputMethod.Contains("SendKeys", StringComparison.Ordinal),
+        "智能输入法没有覆盖命令和文字输入生命周期，或仍在模拟按键。" );
+    Assert(cadQuickToggle.Contains("GetSystemVariable(\"DYNMODE\")", StringComparison.Ordinal) &&
+           cadQuickToggle.Contains("SetSystemVariable(\"DYNMODE\"", StringComparison.Ordinal) &&
+           cadQuickToggle.Contains("| 1", StringComparison.Ordinal) &&
+           cadQuickToggle.Contains("& ~1", StringComparison.Ordinal) &&
+           cadQuickToggle.Contains("GetSystemVariable(\"PDMODE\")", StringComparison.Ordinal) &&
+           cadQuickToggle.Contains("SetSystemVariable(\"PDMODE\"", StringComparison.Ordinal) &&
+           cadQuickToggle.Contains("IsSupportedPointStyle", StringComparison.Ordinal) &&
+           cadQuickToggle.Contains("AcadPreferencesApplication.Preferences", StringComparison.Ordinal) &&
+           cadQuickToggle.Contains("OpenSave.SaveAsType", StringComparison.Ordinal) &&
+           cadQuickToggle.Contains("TryApplyConfiguredSaveFileFormat", StringComparison.Ordinal),
+        "CAD 快捷开关没有读取真实 DYNMODE，或未按位保留其他动态输入设置。" );
+    Assert(pointStyleIcon.Contains("DrawEllipse", StringComparison.Ordinal) &&
+           pointStyleIcon.Contains("DrawRectangle", StringComparison.Ordinal) &&
+           pointStyleIcon.Contains("DrawLine", StringComparison.Ordinal),
+        "点样式图标没有覆盖圆、方框及十字/叉线绘制。" );
+    Assert(guard.Contains("DocumentLockModeChanged", StringComparison.Ordinal) &&
+           guard.Contains("e.Veto()", StringComparison.Ordinal) &&
+           guard.Contains("模块已禁用", StringComparison.Ordinal),
+        "模块关闭后没有在 AutoCAD 命令入口阻止执行并给出提示。" );
+    Assert(panelCode.Contains("selectedModule = ToolboxModule.Preferences", StringComparison.Ordinal) &&
+           palette.Contains("ToolboxModule? module = null", StringComparison.Ordinal) &&
+           palette.Contains("if (module.HasValue)", StringComparison.Ordinal),
+        "工具箱首次打开没有默认显示偏好设置，或后续打开不能保留当前模块。" );
+}
+
+static void ShxFontSyncCopiesReferencedFontsSafely()
+{
+    var root = Path.Combine(Path.GetTempPath(), $"dc-shx-sync-{Guid.NewGuid():N}");
+    var library = Path.Combine(root, "library");
+    var drawingDirectory = Path.Combine(root, "drawing");
+    Directory.CreateDirectory(library);
+    Directory.CreateDirectory(drawingDirectory);
+
+    try
+    {
+        File.WriteAllText(Path.Combine(library, "simplex.shx"), "simplex");
+        File.WriteAllText(Path.Combine(library, "gbcbig.shx"), "gbcbig");
+        File.WriteAllText(Path.Combine(library, "same.shx"), "same");
+        File.WriteAllText(Path.Combine(library, "conflict.shx"), "library-version");
+        File.WriteAllText(Path.Combine(library, "escape.shx"), "must-not-copy");
+        File.WriteAllText(Path.Combine(drawingDirectory, "same.shx"), "same");
+        File.WriteAllText(Path.Combine(drawingDirectory, "conflict.shx"), "drawing-version");
+
+        var referencedFonts = new[]
+        {
+            "simplex.shx",
+            "SIMPLEX.SHX",
+            @"C:\AutoCAD\Fonts\gbcbig.shx",
+            "same.shx",
+            "conflict.shx",
+            "missing.shx",
+            "arial.ttf",
+            @"..\escape.shx"
+        };
+
+        var first = ShxFontSyncService.Sync(library, drawingDirectory, referencedFonts);
+        Assert(first.CopiedCount == 2 && first.ExistingCount == 1 &&
+               first.ConflictCount == 1 && first.MissingCount == 1,
+            "首次同步没有正确区分复制、已存在、冲突和缺失字体。");
+        Assert(File.ReadAllText(Path.Combine(drawingDirectory, "simplex.shx")) == "simplex" &&
+               File.ReadAllText(Path.Combine(drawingDirectory, "gbcbig.shx")) == "gbcbig",
+            "引用的 SHX 字体没有复制到图纸目录。");
+        Assert(File.ReadAllText(Path.Combine(drawingDirectory, "conflict.shx")) == "drawing-version",
+            "同名但内容不同的图纸字体被覆盖。");
+        Assert(!File.Exists(Path.Combine(drawingDirectory, "escape.shx")) &&
+               !File.Exists(Path.Combine(drawingDirectory, "arial.ttf")),
+            "路径穿越或非 SHX 文件被错误复制。");
+
+        var second = ShxFontSyncService.Sync(library, drawingDirectory, referencedFonts);
+        Assert(second.CopiedCount == 0 && second.ExistingCount == 3 &&
+               second.ConflictCount == 1 && second.MissingCount == 1,
+            "重复保存时没有跳过内容相同的既有字体。");
+    }
+    finally
+    {
+        DeleteTestDirectory(root);
+    }
+}
+
+static void MissingShxReplacementPolicyIsSafe()
+{
+    Assert(
+        MissingShxReplacementPolicy.Decide(
+            "existing.shx",
+            ShxReferenceKind.TextFont,
+            isAvailable: true,
+            isInLibrary: false).Action == MissingShxAction.None,
+        "已经可用的 SHX 被错误处理。" );
+    Assert(
+        MissingShxReplacementPolicy.Decide(
+            "custom.shx",
+            ShxReferenceKind.TextFont,
+            isAvailable: false,
+            isInLibrary: true).Action == MissingShxAction.UseLibrary,
+        "项目字体库已有的原始 SHX 没有优先保留。" );
+
+    var textDecision = MissingShxReplacementPolicy.Decide(
+        "missing-text.shx",
+        ShxReferenceKind.TextFont,
+        isAvailable: false,
+        isInLibrary: false);
+    Assert(textDecision.Action == MissingShxAction.Replace &&
+           textDecision.ReplacementFile == "simplex.shx",
+        "缺失普通文字 SHX 没有替换为 simplex.shx。" );
+
+    var bigFontDecision = MissingShxReplacementPolicy.Decide(
+        "missing-big.shx",
+        ShxReferenceKind.BigFont,
+        isAvailable: false,
+        isInLibrary: false);
+    Assert(bigFontDecision.Action == MissingShxAction.Replace &&
+           bigFontDecision.ReplacementFile == "gbcbig.shx",
+        "缺失中文大字体 SHX 没有替换为 gbcbig.shx。" );
+
+    Assert(
+        MissingShxReplacementPolicy.Decide(
+            "missing-shape.shx",
+            ShxReferenceKind.ShapeFile,
+            isAvailable: false,
+            isInLibrary: false).Action == MissingShxAction.ReportOnly,
+        "缺失形文件被错误替换，可能破坏线型或符号。" );
+    Assert(
+        MissingShxReplacementPolicy.Decide(
+            "arial.ttf",
+            ShxReferenceKind.TextFont,
+            isAvailable: false,
+            isInLibrary: false).Action == MissingShxAction.None,
+        "非 SHX 字体被错误纳入替换。" );
 }
 
 static void GrilleOptionsValidateDefaultsAndDimensions()
@@ -2084,7 +2499,7 @@ static void StatisticsModuleSurfaceAndCommandsAreComplete()
            commands.Contains("DC_CMD_CABINET_BOM", StringComparison.Ordinal) &&
            commands.Contains("DC_CMD_BOARD_STATISTICS", StringComparison.Ordinal),
         "拆单统计底层命令不完整。");
-    Assert(commands.Contains("polyline.Layer.Contains(\"柜体结构\"", StringComparison.Ordinal) &&
+    Assert(commands.Contains("Compatibility.Contains(polyline.Layer, \"柜体结构\"", StringComparison.Ordinal) &&
            commands.Contains("var boardThickness = Math.Min(width, height)", StringComparison.Ordinal) &&
            !commands.Contains("combined.Contains(\"板\"", StringComparison.Ordinal),
         "柜体板件没有按长度×深度×板厚换算，或普通门板仍会混入柜体拆单。");
@@ -2154,9 +2569,34 @@ static void WholeHouseStatisticsSupportsCadTableAndExcel()
     Assert(commands.Contains("DC_CMD_WHOLE_HOUSE_BOM", StringComparison.Ordinal) &&
            commands.Contains("放置CAD表格", StringComparison.Ordinal) &&
            commands.Contains("导出Excel总表", StringComparison.Ordinal) &&
+           commands.Contains("Keywords.Add(\"CAD\"", StringComparison.Ordinal) &&
            commands.Contains("new Table", StringComparison.Ordinal) &&
            commands.Contains("Drawing1_柜拆单.xls", StringComparison.Ordinal),
-        "一键全屋拆单没有同时提供CAD表格和.xls总表输出。");
+        "一键全屋拆单没有同时提供CAD关键字、CAD表格和.xls总表输出。");
+}
+
+static void FrameAlignmentMovesContainedGeometry()
+{
+    var frames = new[]
+    {
+        new PrintFrame(0, 0, 100, 80, "A"),
+        new PrintFrame(200, 20, 320, 100, "B")
+    };
+    var moves = FrameAlignmentCalculator.ArrangeFromLeft(frames, 1000, 50);
+
+    Assert(moves.Count == 2 &&
+           moves[0].Source.SourceKey == "A" && moves[0].DeltaX == 1000 && moves[0].DeltaY == 0 &&
+           moves[1].Source.SourceKey == "B" && moves[1].DeltaX == 950 && moves[1].DeltaY == -20,
+        "图框左对齐没有按基线、间距和共同底边生成稳定移动量。");
+
+    var inside = FrameAlignmentCalculator.FindContentMove(
+        new PrintFrame(220, 30, 250, 60),
+        moves);
+    var outside = FrameAlignmentCalculator.FindContentMove(
+        new PrintFrame(500, 30, 520, 60),
+        moves);
+    Assert(inside is { Source.SourceKey: "B" } && outside is null,
+        "框内图形没有归属到对应图框，或框外图形被错误带动。");
 }
 
 static void RadialMenuDefaultsAndHitTestingAreStable()
@@ -2164,12 +2604,22 @@ static void RadialMenuDefaultsAndHitTestingAreStable()
     var options = RadialMenuOptions.CreateDefault();
     options.Validate();
     Assert(options.Enabled && options.AutoCloseAfterCommand && options.ShowThirdRing &&
-           options.Radius == 200 && Math.Abs(options.Opacity - 1) < 0.000001,
-        "圆盘默认开关、大小或透明度与确认界面不一致。");
+           options.Radius == 200 && Math.Abs(options.Opacity - 1) < 0.000001 &&
+           options.Skin == RadialMenuOptions.DefaultSkin,
+        "圆盘默认开关、大小、透明度或橙灰皮肤与确认界面不一致。");
+    Assert(RadialMenuOptions.IsSupportedSkin(RadialMenuOptions.DefaultSkin) &&
+           RadialMenuOptions.IsSupportedSkin(RadialMenuOptions.CadDarkSkin) &&
+           RadialMenuOptions.IsSupportedSkin(RadialMenuOptions.PurpleGraySkin),
+        "圆盘没有完整声明橙灰、CAD深色和紫灰三套受支持皮肤。");
     Assert(options.Items.Count(item => item.Ring == 1) == 8 &&
            options.Items.Count(item => item.Ring == 2) == 16 &&
            options.Items.Count(item => item.Ring == 3) == 24,
         "圆盘默认配置不是8/16/24三个完整圆环。");
+    Assert(options.Items.Single(item => item.Ring == 1 && item.Position == 1) is { Name: "", CommandAlias: "" } &&
+           options.Items.Single(item => item.Ring == 1 && item.Position == 7).CommandAlias == "DCMB" &&
+           options.Items.Single(item => item.Ring == 2 && item.Position == 3) is { Name: "", CommandAlias: "" } &&
+           options.Items.Single(item => item.Ring == 2 && item.Position == 14).CommandAlias == "DCDY",
+        "圆盘仍预填项目未实现的命令，或已实现命令没有保留。" );
 
     var topInner = RadialMenuHitTester.HitTest(0, -60, 200, true);
     var topMiddle = RadialMenuHitTester.HitTest(0, -120, 200, true);
@@ -2191,15 +2641,58 @@ static void RadialMenuOptionsPersistAndRejectInvalidValues()
         var options = RadialMenuOptions.CreateDefault();
         options.Radius = 220;
         options.Opacity = 0.8;
-        options.Items.Single(item => item.Ring == 1 && item.Position == 1).CommandAlias = "DCMB";
+        var configuredSlot = options.Items.Single(item => item.Ring == 1 && item.Position == 1);
+        configuredSlot.Name = "生成门板";
+        configuredSlot.CommandAlias = "DCMB";
         RadialMenuOptionsStore.Save(path, options);
         var loaded = RadialMenuOptionsStore.Load(path);
         Assert(loaded.Radius == 220 && Math.Abs(loaded.Opacity - 0.8) < 0.000001 &&
                loaded.Items.Single(item => item.Ring == 1 && item.Position == 1).CommandAlias == "DCMB",
             "圆盘大小、透明度或命令配置没有持久化。");
 
+        var legacyBatchPrintSlot = options.Items.Single(item => item.Ring == 2 && item.Position == 14);
+        legacyBatchPrintSlot.CommandAlias = "DY";
+        RadialMenuOptionsStore.Save(path, options);
+        loaded = RadialMenuOptionsStore.Load(path);
+        Assert(loaded.Items.Single(item => item.Ring == 2 && item.Position == 14).CommandAlias == "DCDY",
+            "圆盘旧版批量打印默认命令没有迁移为 DC 前缀。" );
+
+        options.Skin = "科技深蓝 (Tech Blue)";
+        RadialMenuOptionsStore.Save(path, options);
+        loaded = RadialMenuOptionsStore.Load(path);
+        Assert(loaded.Skin == RadialMenuOptions.DefaultSkin,
+            "圆盘旧科技深蓝皮肤没有迁移为全局橙灰皮肤。" );
+
+        options.Skin = RadialMenuOptions.CadDarkSkin;
+        RadialMenuOptionsStore.Save(path, options);
+        loaded = RadialMenuOptionsStore.Load(path);
+        Assert(loaded.Skin == RadialMenuOptions.CadDarkSkin,
+            "圆盘CAD深色皮肤没有持久化。" );
+
+        options.Skin = RadialMenuOptions.PurpleGraySkin;
+        RadialMenuOptionsStore.Save(path, options);
+        loaded = RadialMenuOptionsStore.Load(path);
+        Assert(loaded.Skin == RadialMenuOptions.PurpleGraySkin,
+            "圆盘紫灰皮肤没有持久化。" );
+
+        configuredSlot.Name = "快速拉伸";
+        configuredSlot.CommandAlias = "KS";
+        RadialMenuOptionsStore.Save(path, options);
+        loaded = RadialMenuOptionsStore.Load(path);
+        Assert(loaded.Items.Single(item => item.Ring == 1 && item.Position == 1) is { Name: "", CommandAlias: "" } &&
+               RadialMenuOptions.IsUnsafeExternalCommandAlias(" .LS_CMD_KS_SMART ") &&
+               !RadialMenuOptions.IsUnsafeExternalCommandAlias("DCMB"),
+            "圆盘没有清除或阻止已知会导致宿主崩溃的外部拉伸命令。");
+
         loaded.Radius = 50;
         AssertThrows<InvalidOperationException>(loaded.Validate, "非法圆盘大小未被拒绝。");
+        loaded.Radius = 220;
+        var emptySlot = loaded.Items.Single(item => item.Ring == 1 && item.Position == 1);
+        emptySlot.Name = string.Empty;
+        emptySlot.CommandAlias = string.Empty;
+        loaded.Validate();
+        emptySlot.Name = "只有名称";
+        AssertThrows<InvalidOperationException>(loaded.Validate, "圆盘空位置应允许留空，但名称和命令只填一项必须拒绝。");
     }
     finally
     {
@@ -2216,7 +2709,10 @@ static void RadialMenuSurfaceAndCommandAreComplete()
     var panel = File.ReadAllText(Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "Views", "ShortcutPanelView.xaml"));
     var commands = File.ReadAllText(Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "RadialMenuCommands.cs"));
     var control = File.ReadAllText(Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "Views", "RadialMenuControl.cs"));
+    var window = File.ReadAllText(Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "Views", "RadialMenuWindow.cs"));
+    var panelCode = File.ReadAllText(Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "Views", "ShortcutPanelView.xaml.cs"));
     var application = File.ReadAllText(Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "PluginApplication.cs"));
+    var theme = File.ReadAllText(Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "Themes", "ToolboxTheme.xaml"));
 
     Assert(panel.Contains("x:Name=\"RadialMenuModuleView\"", StringComparison.Ordinal) &&
            panel.Contains("Text=\"圆盘\"", StringComparison.Ordinal) &&
@@ -2231,8 +2727,35 @@ static void RadialMenuSurfaceAndCommandAreComplete()
            control.Contains("OnRender", StringComparison.Ordinal) &&
            control.Contains("RadialMenuHitTester.HitTest", StringComparison.Ordinal),
         "圆盘底层命令或三圈绘制命中入口不完整。");
+    Assert(panel.Contains(RadialMenuOptions.DefaultSkin, StringComparison.Ordinal) &&
+           panel.Contains(RadialMenuOptions.CadDarkSkin, StringComparison.Ordinal) &&
+           panel.Contains(RadialMenuOptions.PurpleGraySkin, StringComparison.Ordinal) &&
+           panelCode.Contains("RadialMenuOptions.CadDarkSkin", StringComparison.Ordinal) &&
+           panelCode.Contains("RadialMenuOptions.PurpleGraySkin", StringComparison.Ordinal) &&
+           control.Contains("ThemeTextPrimaryBrush", StringComparison.Ordinal) &&
+           control.Contains("ThemeTextSecondaryBrush", StringComparison.Ordinal) &&
+           control.Contains("ThemeBorderBrush", StringComparison.Ordinal) &&
+           control.Contains("RadialCadDarkInnerBrush", StringComparison.Ordinal) &&
+           control.Contains("RadialPurpleGrayInnerBrush", StringComparison.Ordinal) &&
+           theme.Contains("x:Key=\"RadialCadDarkAccentBrush\"", StringComparison.Ordinal) &&
+           theme.Contains("x:Key=\"RadialPurpleGrayAccentBrush\"", StringComparison.Ordinal) &&
+           !control.Contains("Color.FromRgb(15, 57, 91)", StringComparison.Ordinal) &&
+           !control.Contains("Color.FromRgb(22, 76, 112)", StringComparison.Ordinal) &&
+           !control.Contains("Color.FromRgb(30, 98, 128)", StringComparison.Ordinal),
+        "圆盘三套皮肤的界面、保存选择或主题令牌不完整。" );
+    Assert(panel.Contains("SelectionChanged=\"OnRadialMenuSkinSelectionChanged\"", StringComparison.Ordinal) &&
+           panelCode.Contains("private void OnRadialMenuSkinSelectionChanged", StringComparison.Ordinal) &&
+           panelCode.Contains("options.Skin = selectedSkin;", StringComparison.Ordinal) &&
+           panelCode.Contains("RadialMenuWindowManager.ApplySkin(selectedSkin);", StringComparison.Ordinal) &&
+           window.Contains("public static void ApplySkin(string skin)", StringComparison.Ordinal) &&
+           window.Contains("InvalidateVisual()", StringComparison.Ordinal),
+        "圆盘外观皮肤选择后没有立即写入运行时配置。");
     Assert(application.Contains("CommandClass(typeof(YiZhiMao.Dc.Plugin.RadialMenuCommands))", StringComparison.Ordinal),
         "圆盘命令类没有注册到插件。");
+    Assert(panelCode.Contains("FindAncestor<TextBox>", StringComparison.Ordinal) &&
+           panelCode.Contains("catch (Exception exception)", StringComparison.Ordinal) &&
+           control.Contains("!string.IsNullOrWhiteSpace(item.CommandAlias)", StringComparison.Ordinal),
+        "圆盘编辑仍会触发行拖拽、保存异常未被界面承接，或空位置仍会执行命令。");
 }
 
 static void RadialMenuMiddleButtonActivationIsRegistered()
@@ -2374,6 +2897,23 @@ static void FrameToolOptionsAndPlacementAreValid()
         "负数图形到图框距离未被拒绝。");
     AssertThrows<InvalidOperationException>(() => new FrameToolOptions { DetailScale = 0 }.Validate(),
         "无效局部放大倍数未被拒绝。");
+}
+
+static void OneClickFrameMergesOverlappingBlockBounds()
+{
+    var ordinaryGeometry = new PrintFrame(0, 0, 1000, 700);
+    var slightlyOutsideBlock = new PrintFrame(-20, 100, 300, 400);
+
+    var frames = FrameContentProcessor.Prepare([slightlyOutsideBlock], ordinaryGeometry);
+
+    Assert(frames.Count == 1 &&
+           frames[0] == new PrintFrame(-20, 0, 1000, 700),
+        "普通图形与内部图块范围发生重叠时被拆成多个候选，导致重复重叠加框。");
+
+    var separatedBlock = new PrintFrame(1200, 100, 1500, 400);
+    var separatedFrames = FrameContentProcessor.Prepare([separatedBlock], ordinaryGeometry);
+    Assert(separatedFrames.Count == 2,
+        "彼此分开的独立图块应继续分别生成图框。" );
 }
 
 static void FrameTemplateLibraryScansDwgFiles()
@@ -2961,9 +3501,9 @@ static void HardwareSurfaceContractIsComplete()
     Assert(commands.Contains("[CommandMethod(\"DC_CMD_HANGING_ROD\"", StringComparison.Ordinal) &&
            commands.Contains("[ShortcutCommand(\"五金件\", \"插入挂衣杆\", \"DCYG\")]", StringComparison.Ordinal) &&
            commands.Contains("[CommandMethod(\"DC_CMD_LIGHT_STRIP\"", StringComparison.Ordinal) &&
-           commands.Contains("[ShortcutCommand(\"五金件\", \"插入灯带\", \"DD\")]", StringComparison.Ordinal) &&
+           commands.Contains("[ShortcutCommand(\"五金件\", \"插入灯带\", \"DCDD\")]", StringComparison.Ordinal) &&
            commands.Contains("[CommandMethod(\"DC_CMD_HINGE_INSERT\"", StringComparison.Ordinal) &&
-           commands.Contains("[ShortcutCommand(\"门板抽面\", \"插入铰链\", \"JL\")]", StringComparison.Ordinal) &&
+           commands.Contains("[ShortcutCommand(\"门板抽面\", \"插入铰链\", \"DCJL\")]", StringComparison.Ordinal) &&
            commands.Contains("[CommandMethod(\"DC_CMD_HINGE_LABEL\"", StringComparison.Ordinal) &&
            commands.Contains("[ShortcutCommand(\"门板抽面\", \"标记铰链种类\", \"DCHJL\")]", StringComparison.Ordinal) &&
            commands.Contains("[CommandMethod(\"DCHJL\", CommandFlags.Modal)]", StringComparison.Ordinal),
@@ -2995,6 +3535,7 @@ static void ModuleResourcesAreBundledAndReadDirectly()
     var modulesPath = Path.Combine(root, "Modules");
     var projectPath = Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "YiZhiMao.Dc.Plugin.csproj");
     var panelCodePath = Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "Views", "ShortcutPanelView.xaml.cs");
+    var locatorPath = Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "PluginResourceLocator.cs");
 
     Assert(Directory.Exists(Path.Combine(modulesPath, "HangingRodBlocks")) &&
            Directory.Exists(Path.Combine(modulesPath, "LightStripBlocks")) &&
@@ -3010,9 +3551,10 @@ static void ModuleResourcesAreBundledAndReadDirectly()
         "Modules尚未递归复制到bundle的Contents\\Modules，或没有排除AutoCAD备份文件。");
 
     var panelCode = File.ReadAllText(panelCodePath);
-    Assert(panelCode.Contains("typeof(ShortcutPanelView).Assembly.Location", StringComparison.Ordinal) &&
-           panelCode.Contains("HardwareLibraryService.EnsureDefaultFolders(pluginDirectory)",
-               StringComparison.Ordinal),
+    var locatorCode = File.ReadAllText(locatorPath);
+    Assert(panelCode.Contains("PluginResourceLocator.GetPluginRoot()", StringComparison.Ordinal) &&
+           locatorCode.Contains("Directory.GetParent(assemblyDirectory)", StringComparison.Ordinal) &&
+           locatorCode.Contains("Path.Combine(parentDirectory, \"Modules\")", StringComparison.Ordinal),
         "五金件面板尚未从插件安装目录的Modules读取资源。");
 }
 
@@ -3026,6 +3568,52 @@ static void BundleBuildCleansAllPreviousContents()
 
     Assert(cleanIndex >= 0 && createIndex > cleanIndex,
         "Bundle构建没有在复制新文件前清理整个Contents，删除或改名的旧依赖可能残留。");
+    Assert(project.Contains("Condition=\"'$(BuildBundle)' == 'true'\"", StringComparison.Ordinal),
+        "普通开发构建仍会清空并覆盖正式多版本Bundle，必须改为显式启用BuildBundle。") ;
+}
+
+static void AutoCadVersionManifestUsesExactLanes()
+{
+    var root = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
+    var manifestPath = Path.Combine(root, "packaging", "YiZhiMaoDc.bundle", "PackageContents.xml");
+    var matrixPath = Path.Combine(root, "tests", "autocad-version-matrix.ps1");
+    var bundleBuildPath = Path.Combine(root, "packaging", "build-multiversion-bundle.ps1");
+    var document = XDocument.Load(manifestPath);
+    var components = document.Root?.Elements("Components").ToList() ?? [];
+    var expected = new Dictionary<string, string>(StringComparer.Ordinal)
+    {
+        ["R21.0"] = "./Contents/R21.0/YiZhiMao.Dc.Plugin.dll",
+        ["R22.0"] = "./Contents/R22.0/YiZhiMao.Dc.Plugin.dll",
+        ["R23.0"] = "./Contents/R23.0/YiZhiMao.Dc.Plugin.dll",
+        ["R23.1"] = "./Contents/R23.1/YiZhiMao.Dc.Plugin.dll",
+        ["R24.0"] = "./Contents/R24.0/YiZhiMao.Dc.Plugin.dll",
+        ["R24.1"] = "./Contents/R24.1/YiZhiMao.Dc.Plugin.dll",
+        ["R24.2"] = "./Contents/R24.2/YiZhiMao.Dc.Plugin.dll",
+        ["R24.3"] = "./Contents/R24.3/YiZhiMao.Dc.Plugin.dll",
+        ["R25.0"] = "./Contents/R25.0/YiZhiMao.Dc.Plugin.dll",
+        ["R25.1"] = "./Contents/R25.1/YiZhiMao.Dc.Plugin.dll",
+        ["R26.0"] = "./Contents/R26.0/YiZhiMao.Dc.Plugin.dll"
+    };
+
+    Assert(components.Count == expected.Count, "PackageContents没有为十一个AutoCAD版本建立独立组件。");
+    foreach (var component in components)
+    {
+        var requirements = component.Element("RuntimeRequirements");
+        var entry = component.Element("ComponentEntry");
+        var minimum = requirements?.Attribute("SeriesMin")?.Value;
+        var maximum = requirements?.Attribute("SeriesMax")?.Value;
+        var platform = requirements?.Attribute("Platform")?.Value;
+        var module = entry?.Attribute("ModuleName")?.Value;
+        Assert(platform == "AutoCAD" && minimum is not null && minimum == maximum &&
+               expected.TryGetValue(minimum, out var expectedModule) && module == expectedModule,
+            $"AutoCAD版本分流无效：{minimum ?? "缺少SeriesMin"}。");
+    }
+
+    var matrix = File.ReadAllText(matrixPath);
+    var bundleBuild = File.ReadAllText(bundleBuildPath);
+    Assert(matrix.Contains("[System.Reflection.AssemblyName]::GetAssemblyName", StringComparison.Ordinal) &&
+           bundleBuild.Contains("[System.Reflection.AssemblyName]::GetAssemblyName", StringComparison.Ordinal),
+        "版本矩阵或正式Bundle构建没有核对SDK程序集版本，错误SDK可能被装入版本通道。") ;
 }
 
 static void PrintSettingsPersistAndValidate()
@@ -3041,7 +3629,7 @@ static void PrintSettingsPersistAndValidate()
         {
             PlotTransparency = true,
             PdfOutputMode = PdfOutputMode.SeparateAndMerged,
-            VectorDpi = 2400,
+            ImageDpi = 600,
             Margin = 3.5,
             Paper = "ISO_A3"
         };
@@ -3050,11 +3638,14 @@ static void PrintSettingsPersistAndValidate()
         var loaded = store.Load();
         Assert(loaded.PlotTransparency, "打印透明度未持久化。");
         Assert(loaded.PdfOutputMode == PdfOutputMode.SeparateAndMerged, "PDF输出模式未持久化。");
-        Assert(loaded.VectorDpi == 2400 && Math.Abs(loaded.Margin - 3.5) < 0.000001, "打印数值设置未持久化。");
+        Assert(loaded.ImageDpi == 600 && Math.Abs(loaded.Margin - 3.5) < 0.000001, "打印数值设置未持久化。");
         Assert(loaded.Paper == "ISO_A3", "纸张设置未持久化。");
 
-        loaded.VectorDpi = 0;
+        loaded.ImageDpi = 0;
         AssertThrows<InvalidOperationException>(() => store.Save(loaded), "非法分辨率未被拒绝。");
+        loaded.ImageDpi = 200;
+        loaded.PdfOutputMode = (PdfOutputMode)99;
+        AssertThrows<InvalidOperationException>(() => store.Save(loaded), "非法PDF输出模式未被拒绝。");
     }
     finally
     {
@@ -3096,6 +3687,35 @@ static void PrintOptionsChooseOnlyAvailableValues()
         "命名样式图纸错误接受了CTB。") ;
 }
 
+static void PrintCopyOrderMatchesCollateSetting()
+{
+    var collated = PrintCopyPlanner.Build([2, 2], collate: true);
+    Assert(collated.SequenceEqual([
+            new PrintCopyStep(0, 0),
+            new PrintCopyStep(1, 0),
+            new PrintCopyStep(0, 1),
+            new PrintCopyStep(1, 1)
+        ]),
+        "逐份打印没有按第1份A/B、第2份A/B的顺序执行。");
+
+    var uncollated = PrintCopyPlanner.Build([2, 2], collate: false);
+    Assert(uncollated.SequenceEqual([
+            new PrintCopyStep(0, 0),
+            new PrintCopyStep(0, 1),
+            new PrintCopyStep(1, 0),
+            new PrintCopyStep(1, 1)
+        ]),
+        "非逐份打印没有按A/A、B/B的顺序执行。");
+
+    var uneven = PrintCopyPlanner.Build([2, 1], collate: true);
+    Assert(uneven.SequenceEqual([
+            new PrintCopyStep(0, 0),
+            new PrintCopyStep(1, 0),
+            new PrintCopyStep(0, 1)
+        ]),
+        "不同份数任务的逐份顺序不正确。");
+}
+
 static void PdfToolScansAndMergesInOrder()
 {
     var root = Path.Combine(Path.GetTempPath(), $"YiZhiMaoDcTests-{Guid.NewGuid():N}");
@@ -3105,15 +3725,20 @@ static void PdfToolScansAndMergesInOrder()
     {
         var first = Path.Combine(root, "A.pdf");
         var second = Path.Combine(root, "B.pdf");
+        var broken = Path.Combine(root, "broken.pdf");
         CreatePdf(first, 1);
         CreatePdf(second, 2);
+        File.WriteAllText(broken, "not a pdf");
 
-        var scanned = PdfToolService.Scan(root);
-        Assert(scanned.Count == 2, "PDF扫描数量不正确。");
+        var scanResult = PdfToolService.ScanWithDiagnostics(root);
+        var scanned = scanResult.Files;
+        Assert(scanned.Count == 2 && scanResult.Failures.Count == 1, "损坏PDF没有被单独跳过并报告。");
         Assert(scanned[0].FileName == "A.pdf" && scanned[0].PageCount == 1, "PDF扫描排序或页数不正确。");
         Assert(scanned[1].FileName == "B.pdf" && scanned[1].PageCount == 2, "PDF扫描页数不正确。");
+        Assert(Path.GetFileName(scanResult.Failures[0].Path) == "broken.pdf", "PDF扫描失败项不正确。");
 
         var merged = Path.Combine(root, "merged.pdf");
+        File.WriteAllText(merged, "existing output");
         var pageCount = PdfToolService.Merge([second, first], merged);
         Assert(pageCount == 3 && PdfToolService.GetPageCount(merged) == 3, "PDF未按输入列表完整合并。");
         AssertThrows<InvalidOperationException>(() => PdfToolService.Merge([first], first), "未阻止输出覆盖输入PDF。");
@@ -3132,7 +3757,10 @@ static void BatchPrintSurfaceContractIsComplete()
     var printWindowPath = Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "Views", "BatchPrintWindow.xaml");
     var pdfWindowPath = Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "Views", "PdfToolWindow.xaml");
     var projectPath = Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "YiZhiMao.Dc.Plugin.csproj");
-    Assert(File.Exists(commandsPath) && File.Exists(panelPath) && File.Exists(printWindowPath) && File.Exists(pdfWindowPath),
+    var resolverPath = Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "PluginDependencyResolver.cs");
+    var applicationPath = Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "PluginApplication.cs");
+    Assert(File.Exists(commandsPath) && File.Exists(panelPath) && File.Exists(printWindowPath) &&
+           File.Exists(pdfWindowPath) && File.Exists(resolverPath),
         "批量打印或PDF工具界面文件缺失。");
 
     var commands = File.ReadAllText(commandsPath);
@@ -3150,11 +3778,11 @@ static void BatchPrintSurfaceContractIsComplete()
         Assert(commands.Contains($"[CommandMethod(\"{command}\"", StringComparison.Ordinal), $"缺少底层命令 {command}。");
     }
 
-    Assert(commands.Contains("\"D1\")", StringComparison.Ordinal) &&
-           commands.Contains("\"D2\")", StringComparison.Ordinal) &&
-           commands.Contains("\"D3\")", StringComparison.Ordinal) &&
-           commands.Contains("\"D4\")", StringComparison.Ordinal) &&
-           commands.Contains("\"DY\")", StringComparison.Ordinal), "D1-D4 或 DY 默认快捷键缺失。");
+    Assert(commands.Contains("\"DCD1\")", StringComparison.Ordinal) &&
+           commands.Contains("\"DCD2\")", StringComparison.Ordinal) &&
+           commands.Contains("\"DCD3\")", StringComparison.Ordinal) &&
+           commands.Contains("\"DCD4\")", StringComparison.Ordinal) &&
+           commands.Contains("\"DCDY\")", StringComparison.Ordinal), "DCD1-DCD4 或 DCDY 默认快捷键缺失。");
 
     var panel = File.ReadAllText(panelPath);
     Assert(panel.Contains("Text=\"批量打印\"", StringComparison.Ordinal), "左侧未增加批量打印模块。");
@@ -3162,6 +3790,11 @@ static void BatchPrintSurfaceContractIsComplete()
     Assert(panel.Contains("Content=\"闭合矩形多段线\"", StringComparison.Ordinal) &&
            panel.Contains("Content=\"四条直线组成的矩形\"", StringComparison.Ordinal) &&
            panel.Contains("Content=\"块参照外框\"", StringComparison.Ordinal), "图框识别选项不完整。");
+    Assert(panel.Contains("x:Name=\"ImageDpiSlider\"", StringComparison.Ordinal) &&
+           panel.Contains("着色/光栅分辨率", StringComparison.Ordinal) &&
+           !panel.Contains("x:Name=\"VectorDpiSlider\"", StringComparison.Ordinal) &&
+           !panel.Contains("x:Name=\"GradientDpiSlider\"", StringComparison.Ordinal),
+        "分辨率界面仍暴露AutoCAD托管API无法实际应用的矢量或渐变DPI。") ;
 
     var printWindow = File.ReadAllText(printWindowPath);
     Assert(printWindow.Contains("Header=\"预览\"", StringComparison.Ordinal) &&
@@ -3175,8 +3808,16 @@ static void BatchPrintSurfaceContractIsComplete()
 
     var project = File.ReadAllText(projectPath);
     Assert(project.Contains("<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>", StringComparison.Ordinal) &&
-           project.Contains("<BundleAssemblies Include=\"$(TargetDir)*.dll\"", StringComparison.Ordinal),
-        "PDFsharp运行依赖未纳入bundle复制规则。");
+           project.Contains("<BundleAssemblies Include=\"$(TargetDir)*.dll\"", StringComparison.Ordinal) &&
+           project.Contains("<BundleDependencyMetadata Include=\"$(TargetDir)*.deps.json\"", StringComparison.Ordinal),
+        "PDFsharp运行依赖或.NET依赖解析清单未纳入bundle复制规则。");
+    var resolver = File.ReadAllText(resolverPath);
+    var application = File.ReadAllText(applicationPath);
+    Assert(resolver.Contains("AssemblyLoadContext.GetLoadContext", StringComparison.Ordinal) &&
+           resolver.Contains("Resolving += ResolveCoreAssembly", StringComparison.Ordinal) &&
+           application.Contains("PluginDependencyResolver.Initialize()", StringComparison.Ordinal) &&
+           application.Contains("PluginDependencyResolver.Dispose()", StringComparison.Ordinal),
+        "AutoCAD插件加载上下文没有从插件目录解析PDFsharp传递依赖。");
 }
 
 static void BatchPrintRuntimeRegressionContract()
@@ -3197,6 +3838,16 @@ static void BatchPrintRuntimeRegressionContract()
         "正式打印设置未绑定已解析的设备与纸张并刷新列表。") ;
     Assert(plotService.Contains("当前阶段", StringComparison.Ordinal),
         "打印异常未包含失败阶段，无法继续定位AutoCAD错误。") ;
+    Assert(plotService.Contains("finally", StringComparison.Ordinal) &&
+           plotService.Contains("TryCompletePlotStage(() => engine.EndGenerateGraphics(null))", StringComparison.Ordinal) &&
+           plotService.Contains("TryCompletePlotStage(() => engine.EndPage(null))", StringComparison.Ordinal) &&
+           plotService.Contains("TryCompletePlotStage(() => engine.EndDocument(null))", StringComparison.Ordinal) &&
+           plotService.Contains("TryCompletePlotStage(() => engine.EndPlot(null))", StringComparison.Ordinal),
+        "打印取消或异常时没有成对释放原生打印阶段，可能使AutoCAD停留在打印状态。") ;
+    Assert(plotService.Contains("PrintCopyPlanner.Build", StringComparison.Ordinal) &&
+           plotService.Contains("temporarySinglesDirectory", StringComparison.Ordinal) &&
+           plotService.Contains("TryDeleteDirectory(temporarySinglesDirectory)", StringComparison.Ordinal),
+        "逐份顺序或仅合并模式的临时单页清理没有接入正式打印流程。") ;
 }
 
 static void BatchPrintNarrowPanelAndWindowAreaContract()
@@ -3287,9 +3938,12 @@ static void BatchPrintSeparatesPaperDevicesAndDisablesBackgroundPlot()
     Assert(plotService.Contains("GetPaperDevices()", StringComparison.Ordinal) &&
            plotService.Contains("PlotToFileCapability.MustPlotToFile", StringComparison.Ordinal),
         "D1尚未排除只能输出文件的打印设备。");
-    Assert(printWindow.Contains("toPdf ? CadPlotService.GetDevices() : CadPlotService.GetPaperDevices()",
+    Assert(printWindow.Contains("toPdf ? CadPlotService.GetPdfDevices() : CadPlotService.GetPaperDevices()",
             StringComparison.Ordinal),
         "批量打印窗口没有按D1/D2用途分离设备列表。");
+    Assert(plotService.Contains("GetPdfDevices()", StringComparison.Ordinal) &&
+           plotService.Contains("PlotToFileCapability.MustPlotToFile", StringComparison.Ordinal),
+        "PDF输出仍可能列出不能输出PDF的设备。");
     Assert(plotService.Contains("GetSystemVariable(\"BACKGROUNDPLOT\")", StringComparison.Ordinal) &&
            plotService.Contains("SetSystemVariable(\"BACKGROUNDPLOT\", 0)", StringComparison.Ordinal) &&
            plotService.Contains("SetSystemVariable(\"BACKGROUNDPLOT\", previousBackgroundPlot)",
@@ -3310,15 +3964,20 @@ static void BatchPrintTargetsCurrentLayoutAndChecksPaperPrerequisites()
     var plotService = File.ReadAllText(plotServicePath);
     var panel = File.ReadAllText(panelPath);
 
-    Assert(commands.Contains("FrameRecognitionService.GetCurrentPaperSpaceLayout", StringComparison.Ordinal) &&
-           !commands.Contains("FrameRecognitionService.GetPaperSpaceLayouts", StringComparison.Ordinal),
-        "D3/D4仍然枚举全部布局，没有限定为当前布局。");
+    Assert(commands.Contains("FrameRecognitionService.GetCurrentOrActivateFirstPaperSpaceLayout(document", StringComparison.Ordinal) &&
+           !commands.Contains("请先切换到要打印的布局", StringComparison.Ordinal),
+        "D3/D4在模型空间仍然要求人工切换布局。");
+    Assert(recognition.Contains("GetCurrentOrActivateFirstPaperSpaceLayout", StringComparison.Ordinal) &&
+           recognition.Contains("GetFirstPaperSpaceLayoutName", StringComparison.Ordinal) &&
+           recognition.Contains("LayoutManager.Current.CurrentLayout = firstLayoutName", StringComparison.Ordinal) &&
+           recognition.Contains("document.Editor.Regen()", StringComparison.Ordinal),
+        "D3/D4没有激活并显示首个非Model布局。");
     Assert(recognition.Contains("GetCurrentPaperSpaceLayout", StringComparison.Ordinal) &&
            recognition.Contains("database.CurrentSpaceId", StringComparison.Ordinal) &&
            recognition.Contains("layout.ModelType", StringComparison.Ordinal),
-        "当前布局任务没有从当前空间解析，或没有排除模型空间。");
-    Assert(panel.Contains("Content=\"D3 布局打印纸张\"", StringComparison.Ordinal) &&
-           panel.Contains("Content=\"D4 布局打印 PDF\"", StringComparison.Ordinal) &&
+        "布局切换后没有重新从当前空间解析打印任务。");
+    Assert(panel.Contains("Content=\"DCD3 布局打印纸张\"", StringComparison.Ordinal) &&
+           panel.Contains("Content=\"DCD4 布局打印 PDF\"", StringComparison.Ordinal) &&
            !panel.Contains("全布局打印", StringComparison.Ordinal),
         "D3/D4按钮仍显示为全布局打印。");
     Assert(plotService.Contains("EnsurePaperPrintingAvailable", StringComparison.Ordinal) &&
@@ -3341,8 +4000,10 @@ static void BatchPrintPreviewGeneratesAndOpensPdf()
         "单项预览或全部预览仍只缩放CAD视图，没有生成PDF文件。");
     Assert(plotService.Contains("public static string CreatePreview(", StringComparison.Ordinal) &&
            plotService.Contains("DWG To PDF.pc3", StringComparison.Ordinal) &&
+           plotService.Contains("GetPdfDevices()", StringComparison.Ordinal) &&
            plotService.Contains("PdfOutputMode.MergedOnly", StringComparison.Ordinal) &&
            plotService.Contains("Path.GetTempPath()", StringComparison.Ordinal) &&
+           plotService.Contains("CleanupOldPreviewDirectories", StringComparison.Ordinal) &&
            plotService.Contains("TryOpen(previewPath)", StringComparison.Ordinal),
         "预览服务没有固定生成临时合并PDF并自动打开。");
 
@@ -3434,21 +4095,143 @@ static void ShortcutPanelStaticResourcesAreDefined()
 {
     var root = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
     var xamlPath = Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "Views", "ShortcutPanelView.xaml");
+    var themePath = Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "Themes", "ToolboxTheme.xaml");
     var xaml = File.ReadAllText(xamlPath);
+    var theme = File.ReadAllText(themePath);
     var document = XDocument.Parse(xaml);
+    var themeDocument = XDocument.Parse(theme);
     var resourceKeys = document.Descendants()
         .Attributes()
         .Where(attribute => attribute.Name.LocalName == "Key")
         .Select(attribute => attribute.Value)
+        .Concat(themeDocument.Descendants()
+            .Attributes()
+            .Where(attribute => attribute.Name.LocalName == "Key")
+            .Select(attribute => attribute.Value))
         .ToHashSet(StringComparer.Ordinal);
-    var references = Regex.Matches(xaml, @"\{StaticResource\s+([^}\s]+)")
+    var references = Regex.Matches(xaml + theme, @"\{StaticResource\s+([^}\s]+)")
         .Select(match => match.Groups[1].Value)
         .Distinct(StringComparer.Ordinal)
         .ToArray();
     var undefined = references.Where(reference => !resourceKeys.Contains(reference)).ToArray();
 
+    Assert(xaml.Contains("Themes/ToolboxTheme.xaml", StringComparison.Ordinal),
+        "工具箱面板没有合并全局主题资源字典。" );
     Assert(undefined.Length == 0,
         $"工具箱XAML引用了未定义资源：{string.Join(", ", undefined)}。" );
+
+    var requiredControlStyles = new[]
+    {
+        "DcTextBoxStyle",
+        "DcComboBoxStyle",
+        "DcComboBoxItemStyle",
+        "DcCheckBoxStyle",
+        "DcRadioButtonStyle",
+        "DcListBoxStyle",
+        "DcListBoxItemStyle",
+        "DcExpanderStyle",
+        "DcSliderStyle",
+        "DcScrollBarStyle",
+        "DcDataGridColumnHeaderStyle"
+    };
+    var missingControlStyles = requiredControlStyles
+        .Where(style => !resourceKeys.Contains(style))
+        .ToArray();
+    Assert(missingControlStyles.Length == 0,
+        $"全局主题缺少控件样式：{string.Join(", ", missingControlStyles)}。" );
+    Assert(theme.Contains("Stroke=\"White\"", StringComparison.Ordinal) &&
+           theme.Contains("ThemeAccentSoftBrush", StringComparison.Ordinal) &&
+           theme.Contains("TargetType=\"ComboBoxItem\"", StringComparison.Ordinal),
+        "勾选、选中和下拉列表没有统一使用橙灰主题状态。" );
+    Assert(theme.Contains("x:Name=\"FocusBorder\"", StringComparison.Ordinal) &&
+           theme.Contains("VerticalAlignment=\"{TemplateBinding VerticalContentAlignment}\"", StringComparison.Ordinal) &&
+           !theme.Contains("TargetName=\"InputBorder\" Property=\"BorderThickness\" Value=\"1.5\"", StringComparison.Ordinal) &&
+           theme.Contains("<Setter Property=\"Padding\" Value=\"7,0\" />", StringComparison.Ordinal),
+        "输入框焦点状态会改变布局尺寸，或紧凑输入框没有稳定垂直居中。" );
+    Assert(xaml.Contains("x:Key=\"MutedGridTextBlockStyle\"", StringComparison.Ordinal) &&
+           xaml.Contains("ElementStyle=\"{StaticResource MutedGridTextBlockStyle}\"", StringComparison.Ordinal),
+        "底层命令列没有使用固定灰色只读文字样式。" );
+
+    XNamespace presentation = "http://schemas.microsoft.com/winfx/2006/xaml/presentation";
+    XNamespace xamlNamespace = "http://schemas.microsoft.com/winfx/2006/xaml";
+    static bool HasVerticalPadding(string value)
+    {
+        var parts = value.Split(',')
+            .Select(part => double.Parse(part.Trim(), CultureInfo.InvariantCulture))
+            .ToArray();
+        return parts.Length switch
+        {
+            1 => parts[0] != 0,
+            2 => parts[1] != 0,
+            4 => parts[1] != 0 || parts[3] != 0,
+            _ => true
+        };
+    }
+
+    var verticallyPaddedTextBoxStyles = document.Descendants(presentation + "Style")
+        .Concat(themeDocument.Descendants(presentation + "Style"))
+        .Where(style => string.Equals((string?)style.Attribute("TargetType"), "TextBox", StringComparison.Ordinal))
+        .SelectMany(style => style.Elements(presentation + "Setter"))
+        .Where(setter => string.Equals((string?)setter.Attribute("Property"), "Padding", StringComparison.Ordinal))
+        .Select(setter => (string?)setter.Attribute("Value"))
+        .Where(value => !string.IsNullOrWhiteSpace(value) && HasVerticalPadding(value))
+        .ToArray();
+    Assert(verticallyPaddedTextBoxStyles.Length == 0,
+        $"输入框样式仍含上下内边距，会与垂直居中叠加并导致文字偏移或裁切：{string.Join(", ", verticallyPaddedTextBoxStyles)}");
+    var hardwareView = document.Descendants(presentation + "Grid")
+        .Single(element => string.Equals(
+            (string?)element.Attribute(xamlNamespace + "Name"),
+            "HardwareModuleView",
+            StringComparison.Ordinal));
+    var hardwareHingeInputs = hardwareView.Descendants(presentation + "TextBox")
+        .Where(element => ((string?)element.Attribute(xamlNamespace + "Name"))
+            ?.StartsWith("HardwareHinge", StringComparison.Ordinal) == true)
+        .ToArray();
+    Assert(hardwareHingeInputs.Length > 0 &&
+           hardwareHingeInputs.All(element =>
+               string.Equals(
+                   (string?)element.Attribute("Style"),
+                   "{StaticResource HardwareInputStyle}",
+                   StringComparison.Ordinal) &&
+               element.Attribute("Height") is null),
+        "五金铰链输入框仍混用带上下内边距的表单样式和更小固定高度，会裁切文字。" );
+
+    Assert(resourceKeys.Contains("DcDataGridTextBlockStyle") &&
+           theme.Contains("x:Key=\"DcDataGridTextBlockStyle\"", StringComparison.Ordinal) &&
+           theme.Contains("<Setter Property=\"Margin\" Value=\"0,2,0,0\" />", StringComparison.Ordinal),
+        "全局表格显示文字样式没有稳定垂直居中和基线补偿。" );
+
+    var viewsRoot = Path.GetDirectoryName(xamlPath)!;
+    foreach (var fileName in new[] { "BatchPrintWindow.xaml", "PdfToolWindow.xaml", "HingeTypeMenuWindow.xaml" })
+    {
+        var toolWindow = File.ReadAllText(Path.Combine(viewsRoot, fileName));
+        Assert(toolWindow.Contains("Themes/ToolboxTheme.xaml", StringComparison.Ordinal),
+            $"{fileName} 没有合并全局主题资源字典。" );
+    }
+
+    var tableFiles = new[] { "ShortcutPanelView.xaml", "BatchPrintWindow.xaml", "PdfToolWindow.xaml" };
+    var unalignedColumns = tableFiles
+        .Select(fileName => new
+        {
+            FileName = fileName,
+            Document = XDocument.Parse(File.ReadAllText(Path.Combine(viewsRoot, fileName)))
+        })
+        .SelectMany(item => item.Document.Descendants(presentation + "DataGridTextColumn")
+            .Where(column => column.Attribute("ElementStyle") is null &&
+                             !column.Elements(presentation + "DataGridTextColumn.ElementStyle").Any())
+            .Select(column => $"{item.FileName}:{(string?)column.Attribute("Header") ?? "(无标题)"}"))
+        .ToArray();
+    Assert(unalignedColumns.Length == 0,
+        $"表格列没有显式使用垂直居中的显示文字样式：{string.Join(", ", unalignedColumns)}。" );
+
+    var layerManager = File.ReadAllText(Path.Combine(viewsRoot, "LayerManagerWindow.cs"));
+    var radialWindow = File.ReadAllText(Path.Combine(viewsRoot, "RadialMenuWindow.cs"));
+    var radialControl = File.ReadAllText(Path.Combine(viewsRoot, "RadialMenuControl.cs"));
+    Assert(layerManager.Contains("Themes/ToolboxTheme.xaml", StringComparison.Ordinal),
+        "图层管理器没有加载全局主题资源。" );
+    Assert(radialWindow.Contains("Themes/ToolboxTheme.xaml", StringComparison.Ordinal) &&
+           radialControl.Contains("ThemeAccentBrush", StringComparison.Ordinal),
+        "圆盘没有使用全局橙色交互高亮。" );
 }
 
 static void ShortcutPanelLayoutKeepsNavigationAndOverflowContract()
@@ -3468,7 +4251,72 @@ static void ShortcutPanelLayoutKeepsNavigationAndOverflowContract()
     Assert(File.Exists(imageCommandsPath), "未找到批量图片插入命令。") ;
 
     var xaml = File.ReadAllText(xamlPath);
+    var theme = File.ReadAllText(Path.Combine(
+        Path.GetDirectoryName(xamlPath)!, "..", "Themes", "ToolboxTheme.xaml"));
     var xamlDocument = XDocument.Parse(xaml);
+    var searchBoxes = xamlDocument.Descendants()
+        .Where(element => element.Name.LocalName == "TextBox" &&
+                          element.Attributes().Any(attribute =>
+                              attribute.Name.LocalName == "Name" &&
+                              (attribute.Value == "SearchBox" || attribute.Value == "CadSearchBox")))
+        .ToArray();
+    Assert(searchBoxes.Length == 2 && searchBoxes.All(searchBox =>
+        searchBox.Attribute("Width") is null &&
+        searchBox.Attribute("MaxWidth") is null &&
+        searchBox.Parent?.Attribute("Width") is null &&
+        searchBox.Parent?.Attribute("MaxWidth") is null &&
+        ((string?)searchBox.Parent?.Attribute("HorizontalAlignment") is null or "Stretch")),
+        "两个命令搜索框没有随内容区横向拉伸，仍受固定宽度或最大宽度限制。");
+    static XElement FindNamedDataGrid(XDocument document, string name)
+    {
+        return document.Descendants()
+            .Single(element => element.Name.LocalName == "DataGrid" &&
+                               element.Attributes().Any(attribute =>
+                                   attribute.Name.LocalName == "Name" &&
+                                   string.Equals(attribute.Value, name, StringComparison.Ordinal)));
+    }
+
+    static XElement[] GetDataGridColumns(XElement dataGrid)
+    {
+        return dataGrid.Descendants()
+            .Where(element => element.Parent?.Name.LocalName == "DataGrid.Columns" &&
+                              element.Name.LocalName.EndsWith("Column", StringComparison.Ordinal))
+            .ToArray();
+    }
+
+    static bool HasReadableMinimumWidth(XElement column)
+    {
+        return double.TryParse(
+                   (string?)column.Attribute("MinWidth"),
+                   NumberStyles.Float,
+                   CultureInfo.InvariantCulture,
+                   out var minimumWidth) &&
+               minimumWidth >= 48;
+    }
+
+    var expectedModuleOrder = new[]
+    {
+        "PreferencesModuleButton",
+        "BoardModuleButton",
+        "DoorPanelModuleButton",
+        "HardwareModuleButton",
+        "WallPanelModuleButton",
+        "ImageModuleButton",
+        "OneClickFrameModuleButton",
+        "BatchPrintModuleButton",
+        "StatisticsModuleButton",
+        "DrawingLayerModuleButton",
+        "RadialMenuModuleButton",
+        "LispMarketModuleButton",
+        "ShortcutModuleButton"
+    };
+    var moduleButtonOrder = xamlDocument.Descendants()
+        .Where(element => element.Name.LocalName == "Button")
+        .Select(element => element.Attributes().FirstOrDefault(attribute => attribute.Name.LocalName == "Name")?.Value)
+        .Where(name => name is not null && expectedModuleOrder.Contains(name, StringComparer.Ordinal))
+        .ToArray();
+    Assert(moduleButtonOrder.SequenceEqual(expectedModuleOrder, StringComparer.Ordinal),
+        "左侧主功能导航顺序与约定不一致。");
     var textColumns = xamlDocument.Descendants()
         .Where(element => element.Name.LocalName == "DataGridTextColumn")
         .ToList();
@@ -3478,7 +4326,7 @@ static void ShortcutPanelLayoutKeepsNavigationAndOverflowContract()
     var coreCommandColumn = textColumns.Single(element => (string?)element.Attribute("Header") == "底层命令");
     Assert(xaml.Contains("Text=\"快捷键\"", StringComparison.Ordinal), "左侧缺少快捷键一级模块。") ;
     Assert(xaml.Contains("Text=\"插入图片\"", StringComparison.Ordinal), "左侧缺少插入图片一级模块。") ;
-    Assert(xaml.Contains("Content=\"批量插入图片 (OLE)\"", StringComparison.Ordinal) &&
+    Assert(xaml.Contains("Content=\"批量插入图片 (DCOLE)\"", StringComparison.Ordinal) &&
            xaml.Contains("Click=\"OnInsertImagesClick\"", StringComparison.Ordinal), "批量插入图片入口尚未启用。");
     Assert(xaml.Contains("Header=\"重命名快捷键\"", StringComparison.Ordinal), "缺少重命名快捷键标签。") ;
     Assert(xaml.Contains("Header=\"CAD命令大全\"", StringComparison.Ordinal), "缺少CAD命令大全标签。") ;
@@ -3489,9 +4337,50 @@ static void ShortcutPanelLayoutKeepsNavigationAndOverflowContract()
     Assert(xaml.Contains("Content=\"导出 CSV\"", StringComparison.Ordinal) &&
            xaml.Contains("Click=\"OnExportCsvClick\"", StringComparison.Ordinal), "导出CSV入口尚未启用。") ;
     Assert(!xaml.Contains("Header=\"分类\"", StringComparison.Ordinal), "快捷键表仍显示分类列。") ;
-    Assert(xaml.Contains("<GridSplitter Grid.Column=\"1\"", StringComparison.Ordinal), "左侧功能区缺少可拖动分隔条。") ;
+    Assert(!xaml.Contains("<GridSplitter", StringComparison.Ordinal),
+        "左侧功能区仍使用会在 AutoCAD PaletteSet 中触发原生崩溃的 WPF GridSplitter。") ;
+    var moduleSplitter = xamlDocument.Descendants()
+        .Single(element => element.Name.LocalName == "Thumb" &&
+                           element.Attributes().Any(attribute =>
+                               attribute.Name.LocalName == "Name" &&
+                               (string?)attribute == "ModuleNavigationSplitter"));
+    Assert((string?)moduleSplitter.Attribute("DragDelta") == "OnModuleNavigationSplitterDragDelta" &&
+           xaml.Contains("x:Name=\"ModuleNavigationColumn\"", StringComparison.Ordinal) &&
+           xaml.Contains("x:Name=\"ModuleContentColumn\"", StringComparison.Ordinal),
+        "左侧功能区没有使用受边界约束的自定义拖动条。") ;
+    var rootMinimumWidth = double.Parse(
+        (string?)xamlDocument.Root?.Attribute("MinWidth") ?? "0",
+        CultureInfo.InvariantCulture);
+    var navigationColumn = xamlDocument.Descendants()
+        .Single(element => element.Name.LocalName == "ColumnDefinition" &&
+                           element.Attributes().Any(attribute =>
+                               attribute.Name.LocalName == "Name" &&
+                               attribute.Value == "ModuleNavigationColumn"));
+    var contentColumn = xamlDocument.Descendants()
+        .Single(element => element.Name.LocalName == "ColumnDefinition" &&
+                           element.Attributes().Any(attribute =>
+                               attribute.Name.LocalName == "Name" &&
+                               attribute.Value == "ModuleContentColumn"));
+    Assert(rootMinimumWidth <= 0 &&
+           double.Parse((string?)navigationColumn.Attribute("MinWidth") ?? "0", CultureInfo.InvariantCulture) <= 0 &&
+           double.Parse((string?)contentColumn.Attribute("MinWidth") ?? "0", CultureInfo.InvariantCulture) <= 0,
+        "工具箱外框或双栏布局仍把最小宽度锁在宽面板范围，无法缩成窄栏模式。") ;
+    var narrowSearchBoxes = xamlDocument.Descendants()
+        .Where(element => element.Name.LocalName == "TextBox" &&
+                          element.Attributes().Any(attribute =>
+                              attribute.Name.LocalName == "Name" &&
+                              (attribute.Value == "SearchBox" || attribute.Value == "CadSearchBox")));
+    Assert(narrowSearchBoxes.All(element =>
+            double.Parse((string?)element.Attribute("MinWidth") ?? "0", CultureInfo.InvariantCulture) <= 140),
+        "快捷键搜索框仍使用固定大宽度，会继续把窄面板顶宽。");
+    var toolboxPalette = File.ReadAllText(Path.Combine(Path.GetDirectoryName(xamlPath)!, "ToolboxPalette.cs"));
+    Assert(toolboxPalette.Contains("MinimumSize = new DrawingSize(32, 360)", StringComparison.Ordinal),
+        "AutoCAD PaletteSet 仍把工具箱最小宽度锁在 430px。") ;
     Assert(xaml.Contains("TextWrapping=\"Wrap\"", StringComparison.Ordinal), "左侧长功能名称未启用完整换行。") ;
-    Assert(xaml.Contains("<Setter Property=\"Foreground\" Value=\"#20242A\" />", StringComparison.Ordinal), "左侧选中项未保留默认深色文字。") ;
+    Assert(theme.Contains("x:Key=\"ThemeTextPrimaryBrush\"", StringComparison.Ordinal) &&
+           theme.Contains("Color=\"#20242A\"", StringComparison.Ordinal) &&
+           xaml.Contains("BasedOn=\"{StaticResource DcButtonStyle}\"", StringComparison.Ordinal),
+        "左侧选中项未使用全局深色文字主题。") ;
     Assert(CountOccurrences(xaml, "CanUserResizeColumns=\"True\"") == 2, "表格未全部启用列宽拖动。") ;
     var shortcutDataGrids = xamlDocument.Descendants()
         .Where(element => element.Name.LocalName == "DataGrid")
@@ -3502,16 +4391,49 @@ static void ShortcutPanelLayoutKeepsNavigationAndOverflowContract()
     Assert(shortcutDataGrids.Count == 2 && shortcutDataGrids.All(element =>
         (string?)element.Attribute("ScrollViewer.HorizontalScrollBarVisibility") == "Auto"),
         "快捷键与CAD命令表格未全部启用横向溢出滚动。");
+    Assert(theme.Contains("<Setter Property=\"MinColumnWidth\" Value=\"48\" />", StringComparison.Ordinal) &&
+           theme.Contains("<Setter Property=\"CanUserResizeColumns\" Value=\"True\" />", StringComparison.Ordinal) &&
+           theme.Contains("<Setter Property=\"ScrollViewer.HorizontalScrollBarVisibility\" Value=\"Auto\" />", StringComparison.Ordinal),
+        "全局表格样式没有统一最小列宽、列宽拖动和窄面板横向滚动契约。");
+    foreach (var gridName in new[] { "ShortcutGrid", "CadCommandGrid", "RadialMenuGrid", "LispPluginGrid" })
+    {
+        var columns = GetDataGridColumns(FindNamedDataGrid(xamlDocument, gridName));
+        Assert(columns.Length > 0 && columns.All(HasReadableMinimumWidth),
+            $"{gridName} 仍有列可被拖到遮挡标题或内容。");
+        Assert(columns.All(column => ((string?)column.Attribute("Width"))?.Contains('*') == true),
+            $"{gridName} 没有让全部内容列跟随外框按比例伸缩。");
+    }
+
+    var viewsRoot = Path.GetDirectoryName(xamlPath)!;
+    foreach (var fileName in new[] { "BatchPrintWindow.xaml", "PdfToolWindow.xaml" })
+    {
+        var toolWindowDocument = XDocument.Parse(File.ReadAllText(Path.Combine(viewsRoot, fileName)));
+        var unsafeFixedColumns = toolWindowDocument.Descendants()
+            .Where(element => element.Parent?.Name.LocalName == "DataGrid.Columns" &&
+                              element.Name.LocalName.EndsWith("Column", StringComparison.Ordinal))
+            .Where(column => !(((string?)column.Attribute("Width"))?.Contains('*') == true))
+            .Where(column => !HasReadableMinimumWidth(column))
+            .Select(column => (string?)column.Attribute("Header") ?? "(无标题)")
+            .ToArray();
+        Assert(unsafeFixedColumns.Length == 0,
+            $"{fileName} 仍有固定列可被缩到遮挡标题：{string.Join(", ", unsafeFixedColumns)}。");
+    }
+
+    var layerManager = File.ReadAllText(Path.Combine(viewsRoot, "LayerManagerWindow.cs"));
+    Assert(CountOccurrences(layerManager, "MinWidth =") >= 3,
+        "图层管理器的三列表格没有全部设置最小可读宽度。");
     Assert(xaml.Contains("CellStyle=\"{StaticResource MutedCellStyle}\"", StringComparison.Ordinal), "底层命令列未使用灰色文字。") ;
     Assert((string?)shortcutDescriptionColumn.Attribute("IsReadOnly") != "True", "功能说明仍不可编辑。") ;
     Assert((string?)defaultColumn.Attribute("IsReadOnly") != "True", "默认快捷键仍不可编辑。") ;
     Assert((string?)customColumn.Attribute("IsReadOnly") != "True", "自定义快捷键仍不可编辑。") ;
     Assert((string?)coreCommandColumn.Attribute("IsReadOnly") == "True", "底层命令未保持只读。") ;
     Assert(xaml.Contains("x:Key=\"GridTextBlockStyle\"", StringComparison.Ordinal) &&
-           xaml.Contains("<Setter Property=\"VerticalAlignment\" Value=\"Center\" />", StringComparison.Ordinal),
+           xaml.Contains("BasedOn=\"{StaticResource DcTextBlockStyle}\"", StringComparison.Ordinal) &&
+           theme.Contains("<Setter Property=\"VerticalAlignment\" Value=\"Center\" />", StringComparison.Ordinal),
         "表格文字未显式设置垂直居中。") ;
     Assert(xaml.Contains("<Style x:Key=\"GridCellStyle\"", StringComparison.Ordinal) &&
-           xaml.Contains("<Setter Property=\"Foreground\" Value=\"#20242A\" />", StringComparison.Ordinal),
+           xaml.Contains("BasedOn=\"{StaticResource DcDataGridCellStyle}\"", StringComparison.Ordinal) &&
+           theme.Contains("<Setter Property=\"Foreground\" Value=\"{StaticResource ThemeTextPrimaryBrush}\" />", StringComparison.Ordinal),
         "普通单元格未固定深色文字，活动选中时可能变白。") ;
     Assert(xaml.Contains("SetColumnMinimumWidth", StringComparison.Ordinal) ||
            File.ReadAllText(Path.ChangeExtension(xamlPath, ".xaml.cs")).Contains("SetColumnMinimumWidth", StringComparison.Ordinal),
@@ -3523,8 +4445,185 @@ static void ShortcutPanelLayoutKeepsNavigationAndOverflowContract()
     var imageCommands = File.ReadAllText(imageCommandsPath);
     Assert(imageCommands.Contains("[CommandMethod(\"DC_CMD_IMAGE_BATCH\"", StringComparison.Ordinal),
         "批量图片功能未使用DC_CMD_底层命令前缀。") ;
-    Assert(imageCommands.Contains("[ShortcutCommand(\"插入图片\", \"批量插入图片\", \"OLE\")]", StringComparison.Ordinal),
+    Assert(imageCommands.Contains("[ShortcutCommand(\"插入图片\", \"批量插入图片\", \"DCOLE\")]", StringComparison.Ordinal),
         "批量图片功能未登记默认OLE快捷键。") ;
+}
+
+static void InstallerAutoCadShutdownFlowIsSafe()
+{
+    var root = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
+    var installerPath = Path.Combine(root, "packaging", "Installer", "Program.cs");
+    var installer = File.ReadAllText(installerPath);
+
+    Assert(installer.Contains("EnsureAutoCadClosed", StringComparison.Ordinal),
+        "安装器仍在发现AutoCAD后直接失败，没有进入可恢复的关闭流程。");
+    Assert(installer.Contains("重新检测", StringComparison.Ordinal) &&
+           installer.Contains("强制关闭并继续", StringComparison.Ordinal) &&
+           installer.Contains("取消安装", StringComparison.Ordinal),
+        "AutoCAD占用提示缺少重新检测、强制关闭并继续或取消安装入口。");
+    Assert(installer.Contains("未保存的图纸修改会丢失", StringComparison.Ordinal),
+        "强制关闭AutoCAD前没有明确的未保存内容二次警告。");
+    Assert(installer.Contains("TryForceCloseAutoCadProcesses", StringComparison.Ordinal) &&
+           installer.Contains("IsVerifiedAutoCadExecutable", StringComparison.Ordinal) &&
+           installer.Contains("Path.GetFileName", StringComparison.Ordinal),
+        "强制关闭没有校验acad.exe的完整可执行文件身份。");
+}
+
+static void InstallerWizardSupportsScopePathAndProgress()
+{
+    var root = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
+    var installerRoot = Path.Combine(root, "packaging", "Installer");
+    var program = File.ReadAllText(Path.Combine(installerRoot, "Program.cs"));
+    var wizardPath = Path.Combine(installerRoot, "InstallerWizardForm.cs");
+
+    Assert(File.Exists(wizardPath), "安装器仍是消息框流程，缺少安装向导界面。");
+    var wizard = File.ReadAllText(wizardPath);
+    Assert(wizard.Contains("当前用户（推荐）", StringComparison.Ordinal) &&
+           wizard.Contains("所有用户（需要管理员权限）", StringComparison.Ordinal) &&
+           wizard.Contains("安装位置", StringComparison.Ordinal),
+        "安装向导没有提供两种AutoCAD标准安装范围和实际路径显示。");
+    Assert(wizard.Contains("正在准备安装", StringComparison.Ordinal) &&
+           wizard.Contains("安装完成", StringComparison.Ordinal) &&
+           wizard.Contains("旧版本备份", StringComparison.Ordinal),
+        "安装向导缺少安装进度或完成路径页面。");
+    Assert(program.Contains("SpecialFolder.CommonApplicationData", StringComparison.Ordinal) &&
+           program.Contains("SpecialFolder.ApplicationData", StringComparison.Ordinal) &&
+           program.Contains("Verb = \"runas\"", StringComparison.Ordinal) &&
+           program.Contains("--all-users", StringComparison.Ordinal),
+        "安装器没有按范围计算标准ApplicationPlugins路径，或所有用户安装没有申请管理员权限。");
+}
+
+static void InstallerUpgradePreservesUserResources()
+{
+    var root = Path.Combine(Path.GetTempPath(), "YiZhiMaoDc-installer-merge-" + Guid.NewGuid().ToString("N"));
+    try
+    {
+        var oldBundle = Path.Combine(root, "old", "YiZhiMaoDc.bundle");
+        var newBundle = Path.Combine(root, "new", "YiZhiMaoDc.bundle");
+        var oldModules = Path.Combine(oldBundle, "Contents", "Modules");
+        var newModules = Path.Combine(newBundle, "Contents", "Modules");
+        Directory.CreateDirectory(oldModules);
+        Directory.CreateDirectory(newModules);
+
+        var oldBuiltIn = Path.Combine(oldModules, "built-in.dwg");
+        var removedBuiltIn = Path.Combine(oldModules, "removed-built-in.dwg");
+        var modifiedRemoved = Path.Combine(oldModules, "modified-removed.dwg");
+        File.WriteAllText(oldBuiltIn, "old-original");
+        File.WriteAllText(removedBuiltIn, "old-packaged");
+        File.WriteAllText(modifiedRemoved, "original-before-user-change");
+        File.WriteAllLines(
+            Path.Combine(oldBundle, "bundle-hashes.sha256"),
+            new[]
+            {
+                Sha256Line(oldBundle, oldBuiltIn),
+                Sha256Line(oldBundle, removedBuiltIn),
+                Sha256Line(oldBundle, modifiedRemoved)
+            });
+
+        File.WriteAllText(oldBuiltIn, "user-modified-old");
+        File.WriteAllText(modifiedRemoved, "user-modified-removed");
+        var customFile = Path.Combine(oldModules, "FrameTemplates", "我的图框.dwg");
+        Directory.CreateDirectory(Path.GetDirectoryName(customFile)!);
+        File.WriteAllText(customFile, "custom-frame");
+        File.WriteAllText(Path.Combine(newModules, "built-in.dwg"), "new-version");
+
+        var result = YiZhiMao.Dc.Installer.InstallerFileOperations.MergeUserResources(
+            oldBundle,
+            newBundle);
+
+        Assert(File.ReadAllText(Path.Combine(newModules, "built-in.dwg")) == "new-version",
+            "升级时旧版同名资源覆盖了新版内置资源。") ;
+        Assert(!File.Exists(Path.Combine(newModules, "removed-built-in.dwg")),
+            "已从新版移除且用户未修改的内置资源被错误恢复。") ;
+        Assert(File.ReadAllText(Path.Combine(newModules, "modified-removed.dwg")) == "user-modified-removed" &&
+               File.ReadAllText(Path.Combine(newModules, "FrameTemplates", "我的图框.dwg")) == "custom-frame",
+            "用户新增或修改且新版不存在的资源没有恢复到活动Modules。") ;
+        Assert(result.AddedCount == 1 && result.ModifiedRestoredCount == 1 && result.ConflictCount == 1,
+            "资源恢复数量或同名冲突数量不正确。") ;
+    }
+    finally
+    {
+        DeleteTestDirectory(root);
+    }
+}
+
+static void InstallerUninstallPreservesDataByDefault()
+{
+    var root = Path.Combine(Path.GetTempPath(), "YiZhiMaoDc-installer-uninstall-" + Guid.NewGuid().ToString("N"));
+    try
+    {
+        var bundle = Path.Combine(root, "YiZhiMaoDc.bundle");
+        var modules = Path.Combine(bundle, "Contents", "Modules");
+        var preserved = Path.Combine(root, "preserved");
+        Directory.CreateDirectory(modules);
+        var packaged = Path.Combine(modules, "packaged.dwg");
+        var modified = Path.Combine(modules, "modified.lsp");
+        File.WriteAllText(packaged, "packaged");
+        File.WriteAllText(modified, "original");
+        File.WriteAllLines(
+            Path.Combine(bundle, "bundle-hashes.sha256"),
+            new[] { Sha256Line(bundle, packaged), Sha256Line(bundle, modified) });
+        File.WriteAllText(modified, "user-change");
+        var added = Path.Combine(modules, "LispPlugins", "custom.lsp");
+        Directory.CreateDirectory(Path.GetDirectoryName(added)!);
+        File.WriteAllText(added, "custom");
+
+        var result = YiZhiMao.Dc.Installer.InstallerFileOperations.ExportUserResources(
+            bundle,
+            preserved);
+
+        Assert(!File.Exists(Path.Combine(preserved, "Contents", "Modules", "packaged.dwg")),
+            "卸载备份不应复制未修改的内置资源。") ;
+        Assert(File.Exists(Path.Combine(preserved, "Contents", "Modules", "modified.lsp")) &&
+               File.Exists(Path.Combine(preserved, "Contents", "Modules", "LispPlugins", "custom.lsp")) &&
+               result.PreservedCount == 2,
+            "卸载没有保留用户修改和新增的资源。") ;
+
+        var projectRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
+        var wizard = File.ReadAllText(Path.Combine(projectRoot, "packaging", "Installer", "InstallerWizardForm.cs"));
+        Assert(wizard.Contains("同时删除当前用户配置和自定义资源", StringComparison.Ordinal) &&
+               wizard.Contains("Checked = false", StringComparison.Ordinal),
+            "卸载界面缺少默认不勾选的用户数据清理选项。") ;
+    }
+    finally
+    {
+        DeleteTestDirectory(root);
+    }
+}
+
+static void InstallerFailureRollsBackAndWritesLog()
+{
+    var root = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
+    var program = File.ReadAllText(Path.Combine(root, "packaging", "Installer", "Program.cs"));
+    var wizard = File.ReadAllText(Path.Combine(root, "packaging", "Installer", "InstallerWizardForm.cs"));
+
+    Assert(program.Contains("RollbackInstallation", StringComparison.Ordinal) &&
+           program.Contains("Directory.Delete(targetBundle, true)", StringComparison.Ordinal) &&
+           program.Contains("Directory.Move(backupBundle, targetBundle)", StringComparison.Ordinal),
+        "安装失败没有删除半安装的新Bundle并恢复旧Bundle。") ;
+    Assert(program.Contains("InstallerLog", StringComparison.Ordinal) &&
+           program.Contains("LogPath", StringComparison.Ordinal),
+        "安装和卸载流程没有记录可定位问题的日志。") ;
+    Assert(program.Contains("bundleBackup", StringComparison.Ordinal) &&
+           program.Contains("userDataBackup", StringComparison.Ordinal) &&
+           program.Contains("RestoreRegistryKey", StringComparison.Ordinal) &&
+           program.Contains("Directory.Move(bundleBackup, targetBundle)", StringComparison.Ordinal),
+        "卸载失败没有恢复Bundle、用户数据和卸载注册信息。") ;
+    Assert(program.Contains("CaptureRegistryKey", StringComparison.Ordinal) &&
+           program.Contains(".rollback-", StringComparison.Ordinal),
+        "卸载入口注册失败没有事务式恢复原注册信息和安装器副本。") ;
+    Assert(wizard.Contains("保留的用户资源", StringComparison.Ordinal) &&
+           wizard.Contains("安装日志", StringComparison.Ordinal),
+        "安装完成页没有显示用户资源保留数量或安装日志路径。") ;
+}
+
+static string Sha256Line(string bundleRoot, string filePath)
+{
+    using var sha256 = System.Security.Cryptography.SHA256.Create();
+    using var stream = File.OpenRead(filePath);
+    var hash = Convert.ToHexString(sha256.ComputeHash(stream)).ToLowerInvariant();
+    var relative = Path.GetRelativePath(bundleRoot, filePath).Replace('\\', '/');
+    return hash + " *" + relative;
 }
 
 static void AssertThrows<TException>(Action action, string message)

@@ -131,6 +131,6 @@ public static class CadCommandCatalog
 
     private static bool Contains(string value, string keyword)
     {
-        return value.Contains(keyword, StringComparison.OrdinalIgnoreCase);
+        return value.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0;
     }
 }

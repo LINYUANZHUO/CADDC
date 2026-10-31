@@ -27,14 +27,14 @@ public static class DrawerFaceLayoutCalculator
         DrawerFacePoint second,
         DrawerFaceOptions options)
     {
-        ArgumentNullException.ThrowIfNull(options);
+        Compatibility.NotNull(options, nameof(options));
         var left = Math.Min(first.X, second.X) - options.LeftExtension;
         var right = Math.Max(first.X, second.X) + options.RightExtension;
         var bottom = Math.Min(first.Y, second.Y) - options.BottomExtension;
         var top = Math.Max(first.Y, second.Y) + options.TopExtension;
         var width = right - left;
         var height = top - bottom;
-        if (!double.IsFinite(width) || !double.IsFinite(height) || width <= Tolerance || height <= Tolerance)
+        if (!Compatibility.IsFinite(width) || !Compatibility.IsFinite(height) || width <= Tolerance || height <= Tolerance)
         {
             throw new ArgumentOutOfRangeException(nameof(second), "柜体内空必须形成有效矩形。");
         }
@@ -69,7 +69,7 @@ public static class DrawerFaceLayoutCalculator
 
     public static IReadOnlyList<DrawerFaceLine> CalculateOpeningArrow(DrawerFaceRectangle face)
     {
-        if (!double.IsFinite(face.Width) || !double.IsFinite(face.Height) ||
+        if (!Compatibility.IsFinite(face.Width) || !Compatibility.IsFinite(face.Height) ||
             face.Width <= Tolerance || face.Height <= Tolerance)
         {
             throw new ArgumentOutOfRangeException(nameof(face), "抽面必须形成有效矩形。");

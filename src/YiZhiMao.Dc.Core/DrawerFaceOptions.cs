@@ -49,7 +49,7 @@ public sealed record DrawerFaceOptions(
         out string error)
     {
         options = Default;
-        if (!Enum.IsDefined(orientation))
+        if (!Enum.IsDefined(typeof(DrawerFaceOrientation), orientation))
         {
             error = "请选择有效的抽面排列方向。";
             return false;
@@ -89,7 +89,7 @@ public sealed record DrawerFaceOptions(
     {
         if ((!double.TryParse(value, NumberStyles.Float, CultureInfo.CurrentCulture, out result) &&
              !double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out result)) ||
-            !double.IsFinite(result) || result < 0)
+            !Compatibility.IsFinite(result) || result < 0)
         {
             error = $"{name}必须是大于或等于 0 的数字。";
             return false;

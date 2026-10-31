@@ -71,8 +71,8 @@ public partial class HingeTypeMenuWindow : Window
                           SystemParameters.VirtualScreenWidth - ActualWidth;
         var maximumTop = SystemParameters.VirtualScreenTop +
                          SystemParameters.VirtualScreenHeight - ActualHeight;
-        Left = Math.Clamp(left, SystemParameters.VirtualScreenLeft, maximumLeft);
-        Top = Math.Clamp(top, SystemParameters.VirtualScreenTop, maximumTop);
+        Left = Compatibility.Clamp(left, SystemParameters.VirtualScreenLeft, maximumLeft);
+        Top = Compatibility.Clamp(top, SystemParameters.VirtualScreenTop, maximumTop);
     }
 
     [DllImport("user32.dll")]

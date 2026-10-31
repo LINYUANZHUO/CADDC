@@ -11,10 +11,10 @@ public readonly record struct PrintFrame(
 
     public double Height => MaxY - MinY;
 
-    public bool IsFinite => double.IsFinite(MinX) &&
-                            double.IsFinite(MinY) &&
-                            double.IsFinite(MaxX) &&
-                            double.IsFinite(MaxY);
+    public bool IsFinite => Compatibility.IsFinite(MinX) &&
+                            Compatibility.IsFinite(MinY) &&
+                            Compatibility.IsFinite(MaxX) &&
+                            Compatibility.IsFinite(MaxY);
 
     public bool Contains(PrintFrame other, double tolerance = 0.0001)
     {
@@ -49,7 +49,7 @@ public static class PrintFrameProcessor
 
         var rowTolerance = outermost.Count == 0
             ? tolerance
-            : Math.Max(tolerance, outermost.Select(frame => frame.Height).Order().ElementAt(outermost.Count / 2) * 0.25);
+            : Math.Max(tolerance, outermost.Select(frame => frame.Height).OrderBy(height => height).ElementAt(outermost.Count / 2) * 0.25);
 
         var rows = new List<List<PrintFrame>>();
         foreach (var frame in outermost.OrderByDescending(frame => frame.MaxY))

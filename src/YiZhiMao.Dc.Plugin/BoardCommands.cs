@@ -285,9 +285,9 @@ public static class BoardCommands
         var offsets = BoardGeometryCalculator.GetParallelLineOffsets(lineCount, thickness);
         if (asRectangle)
         {
-            var first = start + normal * offsets[^1];
+            var first = start + normal * offsets[offsets.Count - 1];
             var second = start + normal * offsets[0];
-            var firstEnd = end + normal * offsets[^1];
+            var firstEnd = end + normal * offsets[offsets.Count - 1];
             var secondEnd = end + normal * offsets[0];
             AppendClosedPolyline(space, transaction, [first, firstEnd, secondEnd, second], 0);
             if (lineCount == 3)
@@ -388,7 +388,7 @@ public static class BoardCommands
             (extents.MinPoint.X + extents.MaxPoint.X) / 2,
             (extents.MinPoint.Y + extents.MaxPoint.Y) / 2,
             0);
-        var scale = Math.Clamp(BoardRuntimeSettings.TagScale, 0.1, 10);
+        var scale = Compatibility.Clamp(BoardRuntimeSettings.TagScale, 0.1, 10);
         var circle = new Circle(center, Vector3d.ZAxis, 3.6 * scale)
         {
             Layer = TagLayerName,
@@ -396,7 +396,7 @@ public static class BoardCommands
         };
         space.AppendEntity(circle);
         transaction.AddNewlyCreatedDBObject(circle, true);
-        if (!BoardRuntimeSettings.TagType.Contains("文字", StringComparison.Ordinal))
+        if (!Compatibility.Contains(BoardRuntimeSettings.TagType, "文字", StringComparison.Ordinal))
         {
             return;
         }
@@ -405,7 +405,7 @@ public static class BoardCommands
         {
             Position = center + new Vector3d(5 * scale, -2 * scale, 0),
             Height = 3.5 * scale,
-            TextString = BoardRuntimeSettings.TagType.Replace("带文字", string.Empty, StringComparison.Ordinal),
+            TextString = BoardRuntimeSettings.TagType.Replace("带文字", string.Empty),
             Layer = TagLayerName,
             Color = Color.FromColorIndex(ColorMethod.ByLayer, 256)
         };
@@ -476,7 +476,7 @@ public static class BoardCommands
         AddIfInside(x + width, y + slope * width + offset, x, y, width, height, hits);
         AddIfInside(x + (y - offset - y) / slope, y, x, y, width, height, hits);
         AddIfInside(x + (y + height - offset - y) / slope, y + height, x, y, width, height, hits);
-        hits = hits.DistinctBy(point => (Math.Round(point.X, 6), Math.Round(point.Y, 6))).ToList();
+        hits = hits.GroupBy(point => (Math.Round(point.X, 6), Math.Round(point.Y, 6))).Select(group => group.First()).ToList();
         start = hits.Count > 0 ? hits[0] : default;
         end = hits.Count > 1 ? hits[1] : default;
         return hits.Count >= 2 && start.DistanceTo(end) > Tolerance;

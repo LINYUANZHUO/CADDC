@@ -2,7 +2,6 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
-using Microsoft.Win32;
 using YiZhiMao.Dc.Core;
 
 namespace YiZhiMao.Dc.Plugin.Views;
@@ -19,32 +18,29 @@ public partial class PdfToolWindow : Window
 
     private void OnScanClick(object sender, RoutedEventArgs e)
     {
-        var dialog = new OpenFolderDialog { Title = "选择包含 PDF 的文件夹" };
-        if (Directory.Exists(SourceFolderBox.Text))
-        {
-            dialog.InitialDirectory = SourceFolderBox.Text;
-        }
-
-        if (dialog.ShowDialog(this) != true)
+        if (!FolderDialogService.TrySelectFolder(this, "选择包含 PDF 的文件夹", SourceFolderBox.Text, out var folderName))
         {
             return;
         }
 
-        SourceFolderBox.Text = dialog.FolderName;
+        SourceFolderBox.Text = folderName;
         if (string.IsNullOrWhiteSpace(OutputFolderBox.Text))
         {
-            OutputFolderBox.Text = dialog.FolderName;
+            OutputFolderBox.Text = folderName;
         }
 
         try
         {
             files.Clear();
-            foreach (var file in PdfToolService.Scan(dialog.FolderName))
+            var result = PdfToolService.ScanWithDiagnostics(folderName);
+            foreach (var file in result.Files)
             {
                 files.Add(file);
             }
 
-            PdfStatusText.Text = $"已扫描 {files.Count} 个 PDF。";
+            PdfStatusText.Text = result.Failures.Count == 0
+                ? $"已扫描 {files.Count} 个 PDF。"
+                : $"已扫描 {files.Count} 个 PDF，跳过 {result.Failures.Count} 个损坏、加密或无法读取的文件。";
         }
         catch (Exception exception)
         {
@@ -54,15 +50,9 @@ public partial class PdfToolWindow : Window
 
     private void OnChooseOutputClick(object sender, RoutedEventArgs e)
     {
-        var dialog = new OpenFolderDialog { Title = "选择合并文件的保存目录" };
-        if (Directory.Exists(OutputFolderBox.Text))
+        if (FolderDialogService.TrySelectFolder(this, "选择合并文件的保存目录", OutputFolderBox.Text, out var folderName))
         {
-            dialog.InitialDirectory = OutputFolderBox.Text;
-        }
-
-        if (dialog.ShowDialog(this) == true)
-        {
-            OutputFolderBox.Text = dialog.FolderName;
+            OutputFolderBox.Text = folderName;
         }
     }
 
@@ -107,7 +97,7 @@ public partial class PdfToolWindow : Window
             return;
         }
 
-        var outputPath = Path.Combine(OutputFolderBox.Text, $"合并文件_{DateTime.Now:yyyyMMdd_HHmmss}.pdf");
+        var outputPath = Path.Combine(OutputFolderBox.Text, $"合并文件_{DateTime.Now:yyyyMMdd_HHmmss_fff}.pdf");
         try
         {
             var pages = PdfToolService.Merge(selected, outputPath);

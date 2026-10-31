@@ -1,17 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net8.0-windows</TargetFramework>
-    <UseWPF>true</UseWPF>
-    <AssemblyName>YiZhiMao.Dc.Plugin</AssemblyName>
-    <RootNamespace>YiZhiMao.Dc.Plugin</RootNamespace>
+    <AssemblyName>YiZhiMao.Dc.HostProbe</AssemblyName>
+    <RootNamespace>YiZhiMao.Dc.HostProbe</RootNamespace>
     <PlatformTarget>x64</PlatformTarget>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Version>0.1.0</Version>
     <AutoCADDirectory Condition="'$(AutoCADDirectory)' == ''">D:\Autodesk\AutoCAD 2026</AutoCADDirectory>
-    <BundleRoot>$(MSBuildProjectDirectory)\..\..\artifacts\YiZhiMaoDc.bundle</BundleRoot>
-    <BundleContents>$(BundleRoot)\Contents</BundleContents>
   </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\YiZhiMao.Dc.Core\YiZhiMao.Dc.Core.csproj" />
+  </ItemGroup>
 
   <ItemGroup>
     <Reference Include="AcCoreMgd">
@@ -30,16 +30,6 @@
 
   <Target Name="ValidateAutoCADReferences" BeforeTargets="ResolveReferences">
     <Error Condition="!Exists('$(AutoCADDirectory)\AcMgd.dll')"
-           Text="未找到 AutoCAD 托管程序集。请通过 /p:AutoCADDirectory=... 指定 AutoCAD 2026 安装目录。" />
-  </Target>
-
-  <Target Name="BuildBundle" AfterTargets="Build">
-    <MakeDir Directories="$(BundleContents)" />
-    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(BundleContents)" />
-    <Copy SourceFiles="$(TargetDir)$(AssemblyName).pdb"
-          DestinationFolder="$(BundleContents)"
-          Condition="Exists('$(TargetDir)$(AssemblyName).pdb')" />
-    <Copy SourceFiles="$(MSBuildProjectDirectory)\..\..\packaging\YiZhiMaoDc.bundle\PackageContents.xml"
-          DestinationFolder="$(BundleRoot)" />
+           Text="AutoCAD managed assemblies were not found. Set AutoCADDirectory to the AutoCAD 2026 installation folder." />
   </Target>
 </Project>

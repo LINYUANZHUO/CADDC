@@ -25,6 +25,10 @@ internal sealed class RadialMenuWindow : Window
         ShowInTaskbar = false;
         Topmost = true;
         Opacity = options.Opacity;
+        Resources.MergedDictionaries.Add(new ResourceDictionary
+        {
+            Source = new Uri("/YiZhiMao.Dc.Plugin;component/Themes/ToolboxTheme.xaml", UriKind.RelativeOrAbsolute)
+        });
 
         var control = new RadialMenuControl(options);
         control.CloseRequested += Close;
@@ -63,10 +67,23 @@ internal sealed class RadialMenuWindow : Window
 
     private void ExecuteCommand(RadialMenuItem item)
     {
+        if (string.IsNullOrWhiteSpace(item.CommandAlias))
+        {
+            return;
+        }
+
         var document = AcadApplication.DocumentManager.MdiActiveDocument;
         if (document is null)
         {
             Close();
+            return;
+        }
+
+        if (RadialMenuOptions.IsUnsafeExternalCommandAlias(item.CommandAlias))
+        {
+            Close();
+            document.Editor.WriteMessage(
+                "\n[一只猫dc] 已阻止调用不稳定的外部拉伸命令；该圆盘位置已不再受支持。");
             return;
         }
 
@@ -87,6 +104,20 @@ internal sealed class RadialMenuWindow : Window
         if (e.Key == Key.Escape)
         {
             Close();
+        }
+    }
+
+    internal void ApplySkin(string skin)
+    {
+        if (!RadialMenuOptions.IsSupportedSkin(skin))
+        {
+            return;
+        }
+
+        options.Skin = skin;
+        if (Content is UIElement content)
+        {
+            content.InvalidateVisual();
         }
     }
 
@@ -117,6 +148,8 @@ internal static class RadialMenuWindowManager
         window.Closed += (_, _) => window = null;
         window.Show();
     }
+
+    public static void ApplySkin(string skin) => window?.ApplySkin(skin);
 
     public static void Dispose()
     {

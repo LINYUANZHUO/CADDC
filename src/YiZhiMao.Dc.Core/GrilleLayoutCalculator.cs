@@ -19,7 +19,7 @@ public static class GrilleLayoutCalculator
         double height,
         GrilleOptions options)
     {
-        ArgumentNullException.ThrowIfNull(options);
+        Compatibility.NotNull(options, nameof(options));
         ValidateBounds(left, bottom, width, height, options);
 
         var frame = new GrilleRectangle(left, bottom, width, height);
@@ -125,8 +125,8 @@ public static class GrilleLayoutCalculator
         double height,
         GrilleOptions options)
     {
-        if (!double.IsFinite(left) || !double.IsFinite(bottom) ||
-            !double.IsFinite(width) || !double.IsFinite(height) ||
+        if (!Compatibility.IsFinite(left) || !Compatibility.IsFinite(bottom) ||
+            !Compatibility.IsFinite(width) || !Compatibility.IsFinite(height) ||
             width <= 0 || height <= 0)
         {
             throw new ArgumentOutOfRangeException(nameof(width), "格栅范围必须是有效的正尺寸矩形。");

@@ -25,6 +25,18 @@ public sealed class RadialMenuItem
 
 public sealed class RadialMenuOptions
 {
+    public const string DefaultSkin = "橙灰极简 (Orange Slate)";
+    public const string CadDarkSkin = "CAD 深色";
+    public const string PurpleGraySkin = "紫灰";
+
+    private static readonly HashSet<string> UnsafeExternalCommandAliases = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "KS",
+        "SS",
+        "LS_CMD_KS_SMART",
+        "LS_CMD_SUPER_STRETCH"
+    };
+
     public bool Enabled { get; set; } = true;
 
     public bool AutoCloseAfterCommand { get; set; } = true;
@@ -35,7 +47,7 @@ public sealed class RadialMenuOptions
 
     public double Opacity { get; set; } = 1;
 
-    public string Skin { get; set; } = "科技深蓝 (Tech Blue)";
+    public string Skin { get; set; } = DefaultSkin;
 
     public List<RadialMenuItem> Items { get; set; } = [];
 
@@ -43,19 +55,19 @@ public sealed class RadialMenuOptions
     {
         Items =
         [
-            Item(1, 1, "快速拉伸", "KS"), Item(1, 2, "超级拉伸", "SS"),
-            Item(1, 3, "单元柜", "DG"), Item(1, 4, "吊柜", "WG"),
-            Item(1, 5, "框架柜", "KJ"), Item(1, 6, "切角柜", "JG"),
+            Empty(1, 1), Empty(1, 2),
+            Empty(1, 3), Empty(1, 4),
+            Empty(1, 5), Empty(1, 6),
             Item(1, 7, "生成门板", "DCMB"), Item(1, 8, "均分板件", "DCFC"),
 
             Item(2, 1, "单线变双", "DCZ2"), Item(2, 2, "单线变三", "DCZ3"),
-            Item(2, 3, "轮廓矩形", "LK"), Item(2, 4, "线转多段", "XD"),
-            Item(2, 5, "线去重", "XQC"), Item(2, 6, "多线连接", "XLJ"),
-            Item(2, 7, "线打断", "XDD"), Item(2, 8, "交点切断", "AB"),
-            Item(2, 9, "一键隐藏五金", "TCWJ"), Item(2, 10, "一键隐藏门板", "TCMB"),
-            Item(2, 11, "一键隐藏标注", "TCBZ"), Item(2, 12, "显示图层", "TCXS"),
-            Item(2, 13, "显示修复", "TXF"), Item(2, 14, "批量打印", "DCDY"),
-            Item(2, 15, "绘制背板", "DCBB"), Item(2, 16, "生成散板", "DCCB"),
+            Empty(2, 3), Empty(2, 4),
+            Empty(2, 5), Empty(2, 6),
+            Empty(2, 7), Empty(2, 8),
+            Item(2, 9, "一键隐藏五金", "DCTCWJ"), Item(2, 10, "一键隐藏门板", "DCTCMB"),
+            Item(2, 11, "一键隐藏标注", "DCTCBZ"), Item(2, 12, "显示图层", "DCTCXS"),
+            Item(2, 13, "显示修复", "DCTXF"), Item(2, 14, "批量打印", "DCDY"),
+            Item(2, 15, "绘制背板", "DCBB"), Item(2, 16, "绘制板件", "DCCB"),
 
             Item(3, 1, "直线", "L"), Item(3, 2, "多段线", "PL"),
             Item(3, 3, "圆", "C"), Item(3, 4, "矩形", "REC"),
@@ -83,16 +95,37 @@ public sealed class RadialMenuOptions
         Items = Items.Select(item => item.Clone()).ToList()
     };
 
+    public static bool IsUnsafeExternalCommandAlias(string? commandAlias)
+    {
+        if (string.IsNullOrWhiteSpace(commandAlias))
+        {
+            return false;
+        }
+
+        var normalized = commandAlias!.Trim().TrimStart('.');
+        return UnsafeExternalCommandAliases.Contains(normalized);
+    }
+
+    public static bool IsSupportedSkin(string? skin) =>
+        string.Equals(skin, DefaultSkin, StringComparison.Ordinal) ||
+        string.Equals(skin, CadDarkSkin, StringComparison.Ordinal) ||
+        string.Equals(skin, PurpleGraySkin, StringComparison.Ordinal);
+
     public void Validate()
     {
-        if (!double.IsFinite(Radius) || Radius < 120 || Radius > 320)
+        if (!Compatibility.IsFinite(Radius) || Radius < 120 || Radius > 320)
         {
             throw new InvalidOperationException("圆盘大小必须在 120 到 320 之间。");
         }
 
-        if (!double.IsFinite(Opacity) || Opacity < 0.35 || Opacity > 1)
+        if (!Compatibility.IsFinite(Opacity) || Opacity < 0.35 || Opacity > 1)
         {
             throw new InvalidOperationException("圆盘透明度必须在 0.35 到 1.0 之间。");
+        }
+
+        if (!IsSupportedSkin(Skin))
+        {
+            throw new InvalidOperationException("请选择有效的圆盘外观皮肤。");
         }
 
         Items ??= [];
@@ -111,11 +144,13 @@ public sealed class RadialMenuOptions
             }
         }
 
-        if (Items.Any(item => string.IsNullOrWhiteSpace(item.Name) || string.IsNullOrWhiteSpace(item.CommandAlias)))
+        if (Items.Any(item => string.IsNullOrWhiteSpace(item.Name) != string.IsNullOrWhiteSpace(item.CommandAlias)))
         {
-            throw new InvalidOperationException("圆盘命令名称和 CAD 快捷键不能为空。");
+            throw new InvalidOperationException("圆盘位置可以整项留空；填写时命令名称和 CAD 快捷键必须同时填写。");
         }
     }
+
+    private static RadialMenuItem Empty(int ring, int position) => Item(ring, position, string.Empty, string.Empty);
 
     private static RadialMenuItem Item(int ring, int position, string name, string commandAlias) => new()
     {
@@ -128,6 +163,16 @@ public sealed class RadialMenuOptions
 
 public static class RadialMenuOptionsStore
 {
+    private static readonly Dictionary<(int Ring, int Position, string Alias), string> LegacyDefaultAliases = new()
+    {
+        [(2, 9, "TCWJ")] = "DCTCWJ",
+        [(2, 10, "TCMB")] = "DCTCMB",
+        [(2, 11, "TCBZ")] = "DCTCBZ",
+        [(2, 12, "TCXS")] = "DCTCXS",
+        [(2, 13, "TXF")] = "DCTXF",
+        [(2, 14, "DY")] = "DCDY"
+    };
+
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
     public static RadialMenuOptions Load(string path)
@@ -141,6 +186,7 @@ public static class RadialMenuOptionsStore
         {
             var options = JsonSerializer.Deserialize<RadialMenuOptions>(File.ReadAllText(path), JsonOptions)
                 ?? RadialMenuOptions.CreateDefault();
+            ClearLegacyUnsupportedDefaults(options);
             options.Validate();
             return options;
         }
@@ -156,8 +202,9 @@ public static class RadialMenuOptionsStore
 
     public static void Save(string path, RadialMenuOptions options)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(path);
-        ArgumentNullException.ThrowIfNull(options);
+        Compatibility.NotNullOrWhiteSpace(path, nameof(path));
+        Compatibility.NotNull(options, nameof(options));
+        ClearLegacyUnsupportedDefaults(options);
         options.Validate();
         var directory = Path.GetDirectoryName(path);
         if (!string.IsNullOrWhiteSpace(directory))
@@ -167,7 +214,39 @@ public static class RadialMenuOptionsStore
 
         var temporaryPath = path + ".tmp";
         File.WriteAllText(temporaryPath, JsonSerializer.Serialize(options, JsonOptions));
-        File.Move(temporaryPath, path, overwrite: true);
+        Compatibility.MoveFileReplacingExisting(temporaryPath, path);
+    }
+
+    private static void ClearLegacyUnsupportedDefaults(RadialMenuOptions options)
+    {
+        if (!RadialMenuOptions.IsSupportedSkin(options.Skin))
+        {
+            options.Skin = RadialMenuOptions.DefaultSkin;
+        }
+
+        var obsolete = new HashSet<(string Name, string Alias)>
+        {
+            ("快速拉伸", "KS"), ("超级拉伸", "SS"),
+            ("单元柜", "DG"), ("吊柜", "WG"), ("框架柜", "KJ"), ("切角柜", "JG"),
+            ("轮廓矩形", "LK"), ("线转多段", "XD"), ("线去重", "XQC"),
+            ("多线连接", "XLJ"), ("线打断", "XDD"), ("交点切断", "AB")
+        };
+        foreach (var item in options.Items ?? [])
+        {
+            if (RadialMenuOptions.IsUnsafeExternalCommandAlias(item.CommandAlias) ||
+                obsolete.Contains((item.Name, item.CommandAlias)))
+            {
+                item.Name = string.Empty;
+                item.CommandAlias = string.Empty;
+            }
+
+            if (LegacyDefaultAliases.TryGetValue(
+                    (item.Ring, item.Position, item.CommandAlias),
+                    out var migratedAlias))
+            {
+                item.CommandAlias = migratedAlias;
+            }
+        }
     }
 }
 
@@ -177,7 +256,7 @@ public static class RadialMenuHitTester
 {
     public static RadialMenuSlot? HitTest(double x, double y, double radius, bool showThirdRing)
     {
-        if (!double.IsFinite(radius) || radius <= 0)
+        if (!Compatibility.IsFinite(radius) || radius <= 0)
         {
             return null;
         }

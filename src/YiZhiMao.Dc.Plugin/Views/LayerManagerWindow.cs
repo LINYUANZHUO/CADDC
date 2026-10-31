@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
+using System.Windows.Media;
 using Autodesk.AutoCAD.DatabaseServices;
 using TextBox = System.Windows.Controls.TextBox;
 
@@ -24,12 +25,20 @@ internal sealed class LayerManagerWindow : Window
         MinWidth = 430;
         MinHeight = 360;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
+        Resources.MergedDictionaries.Add(new ResourceDictionary
+        {
+            Source = new Uri("/YiZhiMao.Dc.Plugin;component/Themes/ToolboxTheme.xaml", UriKind.RelativeOrAbsolute)
+        });
+        Background = (Brush)FindResource("ThemePageBrush");
+        FontFamily = new FontFamily("Microsoft YaHei UI");
+        searchBox.Style = (Style)FindResource("DcTextBoxStyle");
+        searchBox.Height = 28;
 
         LoadRows();
         view = CollectionViewSource.GetDefaultView(rows);
         searchBox.TextChanged += (_, _) => view.Refresh();
         view.Filter = item => item is LayerRow row &&
-            (string.IsNullOrWhiteSpace(searchBox.Text) || row.Name.Contains(searchBox.Text, StringComparison.OrdinalIgnoreCase));
+            (string.IsNullOrWhiteSpace(searchBox.Text) || Compatibility.Contains(row.Name, searchBox.Text, StringComparison.OrdinalIgnoreCase));
 
         var grid = new Grid { Margin = new Thickness(10) };
         grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
@@ -40,7 +49,13 @@ internal sealed class LayerManagerWindow : Window
         toolbar.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         toolbar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         toolbar.Children.Add(searchBox);
-        var restore = new Button { Content = "恢复全部", Height = 28, Padding = new Thickness(12, 2, 12, 2) };
+        var restore = new Button
+        {
+            Content = "恢复全部",
+            Height = 28,
+            Padding = new Thickness(12, 2, 12, 2),
+            Style = (Style)FindResource("DcButtonStyle")
+        };
         restore.Click += (_, _) => { foreach (var row in rows) { row.Hidden = false; row.Isolate = false; } };
         Grid.SetColumn(restore, 1);
         toolbar.Children.Add(restore);
@@ -49,21 +64,37 @@ internal sealed class LayerManagerWindow : Window
         var dataGrid = new DataGrid
         {
             ItemsSource = view,
+            Style = (Style)FindResource("DcDataGridStyle"),
             AutoGenerateColumns = false,
             CanUserAddRows = false,
             CanUserDeleteRows = false,
             HeadersVisibility = DataGridHeadersVisibility.Column,
             Margin = new Thickness(0, 8, 0, 8)
         };
-        dataGrid.Columns.Add(new DataGridTextColumn { Header = "图层名称", Binding = new Binding(nameof(LayerRow.Name)), Width = new DataGridLength(1, DataGridLengthUnitType.Star), IsReadOnly = true });
-        dataGrid.Columns.Add(new DataGridCheckBoxColumn { Header = "隐藏", Binding = new Binding(nameof(LayerRow.Hidden)), Width = 66 });
-        dataGrid.Columns.Add(new DataGridCheckBoxColumn { Header = "选择只显示", Binding = new Binding(nameof(LayerRow.Isolate)), Width = 92 });
+        dataGrid.Columns.Add(new DataGridTextColumn { Header = "图层名称", Binding = new Binding(nameof(LayerRow.Name)), Width = new DataGridLength(1, DataGridLengthUnitType.Star), MinWidth = 120, IsReadOnly = true });
+        dataGrid.Columns.Add(new DataGridCheckBoxColumn { Header = "隐藏", Binding = new Binding(nameof(LayerRow.Hidden)), Width = 66, MinWidth = 66 });
+        dataGrid.Columns.Add(new DataGridCheckBoxColumn { Header = "选择只显示", Binding = new Binding(nameof(LayerRow.Isolate)), Width = 92, MinWidth = 92 });
         Grid.SetRow(dataGrid, 1);
         grid.Children.Add(dataGrid);
 
         var actions = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
-        var cancel = new Button { Content = "取消", Width = 84, Height = 30, Margin = new Thickness(0, 0, 8, 0), IsCancel = true };
-        var apply = new Button { Content = "应用", Width = 84, Height = 30, IsDefault = true };
+        var cancel = new Button
+        {
+            Content = "取消",
+            Width = 84,
+            Height = 30,
+            Margin = new Thickness(0, 0, 8, 0),
+            IsCancel = true,
+            Style = (Style)FindResource("DcButtonStyle")
+        };
+        var apply = new Button
+        {
+            Content = "应用",
+            Width = 84,
+            Height = 30,
+            IsDefault = true,
+            Style = (Style)FindResource("DcPrimaryButtonStyle")
+        };
         apply.Click += (_, _) => ApplyAndClose();
         actions.Children.Add(cancel);
         actions.Children.Add(apply);
@@ -87,7 +118,9 @@ internal sealed class LayerManagerWindow : Window
     {
         using var transaction = database.TransactionManager.StartTransaction();
         var layers = (LayerTable)transaction.GetObject(database.LayerTableId, OpenMode.ForRead);
-        var isolated = rows.Where(row => row.Isolate).Select(row => row.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var isolated = new HashSet<string>(
+            rows.Where(row => row.Isolate).Select(row => row.Name),
+            StringComparer.OrdinalIgnoreCase);
         if (layers.Has("0"))
         {
             database.Clayer = layers["0"];

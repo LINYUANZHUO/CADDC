@@ -28,9 +28,9 @@ public static class DoorPanelLayoutCalculator
         DoorPanelOptions options,
         bool singleDoorHingeOnLeft = true)
     {
-        ArgumentNullException.ThrowIfNull(options);
-        if (!double.IsFinite(innerLeft) || !double.IsFinite(innerRight) ||
-            !double.IsFinite(innerBottom) || !double.IsFinite(innerTop) ||
+        Compatibility.NotNull(options, nameof(options));
+        if (!Compatibility.IsFinite(innerLeft) || !Compatibility.IsFinite(innerRight) ||
+            !Compatibility.IsFinite(innerBottom) || !Compatibility.IsFinite(innerTop) ||
             innerRight - innerLeft <= Tolerance || innerTop - innerBottom <= Tolerance)
         {
             throw new ArgumentOutOfRangeException(nameof(innerRight), "柜体内空的宽度和高度必须大于 0。");

@@ -52,14 +52,19 @@ public sealed class PrintSettings
 
     public void Validate()
     {
-        if (VectorDpi is < 72 or > 4800 || GradientDpi is < 72 or > 4800 || ImageDpi is < 72 or > 4800)
+        if (!Enum.IsDefined(typeof(PdfOutputMode), PdfOutputMode))
         {
-            throw new InvalidOperationException("分辨率必须在 72 至 4800 DPI 之间。");
+            throw new InvalidOperationException("PDF 输出模式无效。");
         }
 
-        if (!double.IsFinite(Margin) || Margin < 0)
+        if (ImageDpi is < 72 or > 4800)
         {
-            throw new InvalidOperationException("页边留白不能为负数。");
+            throw new InvalidOperationException("着色/光栅分辨率必须在 72 至 4800 DPI 之间。");
+        }
+
+        if (!Compatibility.IsFinite(Margin) || Margin < 0)
+        {
+            throw new InvalidOperationException("图框外扩不能为负数。");
         }
 
         if (string.IsNullOrWhiteSpace(Printer))
@@ -110,6 +115,6 @@ public sealed class PrintSettingsStore(string path)
 
         var temporaryPath = path + ".tmp";
         File.WriteAllText(temporaryPath, JsonSerializer.Serialize(settings, JsonOptions));
-        File.Move(temporaryPath, path, overwrite: true);
+        Compatibility.MoveFileReplacingExisting(temporaryPath, path);
     }
 }

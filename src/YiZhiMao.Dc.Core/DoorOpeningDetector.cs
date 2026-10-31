@@ -17,7 +17,7 @@ public static class DoorOpeningDetector
         out DoorPanelBounds bounds)
     {
         bounds = default;
-        if (!double.IsFinite(clickX) || !double.IsFinite(clickY) || segments is null)
+        if (!Compatibility.IsFinite(clickX) || !Compatibility.IsFinite(clickY) || segments is null)
         {
             return false;
         }
@@ -80,8 +80,8 @@ public static class DoorOpeningDetector
 
     private static bool IsFinite(DoorOpeningSegment segment)
     {
-        return double.IsFinite(segment.StartX) && double.IsFinite(segment.StartY) &&
-               double.IsFinite(segment.EndX) && double.IsFinite(segment.EndY);
+        return Compatibility.IsFinite(segment.StartX) && Compatibility.IsFinite(segment.StartY) &&
+               Compatibility.IsFinite(segment.EndX) && Compatibility.IsFinite(segment.EndY);
     }
 
     private readonly record struct VerticalSpan(double X, double Bottom, double Top);

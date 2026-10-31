@@ -125,6 +125,6 @@ public sealed record PerforatedPanelOptions(
     {
         return (double.TryParse(value, NumberStyles.Float, CultureInfo.CurrentCulture, out result) ||
                 double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out result)) &&
-               double.IsFinite(result);
+               Compatibility.IsFinite(result);
     }
 }

@@ -68,7 +68,7 @@ public sealed record GrilleOptions(
             parsedStripThickness,
             parsedStripWidth,
             parsedStripGap,
-            string.IsNullOrWhiteSpace(hatchPattern) ? "无填充" : hatchPattern.Trim());
+            string.IsNullOrWhiteSpace(hatchPattern) ? "无填充" : hatchPattern!.Trim());
         error = string.Empty;
         return true;
     }
@@ -101,6 +101,6 @@ public sealed record GrilleOptions(
     {
         return (double.TryParse(value, NumberStyles.Float, CultureInfo.CurrentCulture, out result) ||
                 double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out result)) &&
-               double.IsFinite(result);
+               Compatibility.IsFinite(result);
     }
 }

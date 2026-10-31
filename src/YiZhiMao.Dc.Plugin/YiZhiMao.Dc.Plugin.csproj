@@ -1,24 +1,40 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net8.0-windows</TargetFramework>
+    <TargetFramework Condition="'$(BuildAllAutoCADVersions)' != 'true'">net8.0-windows</TargetFramework>
+    <TargetFrameworks Condition="'$(BuildAllAutoCADVersions)' == 'true'">net462;net47;net48;net8.0-windows;net10.0-windows</TargetFrameworks>
     <UseWPF>true</UseWPF>
     <AssemblyName>YiZhiMao.Dc.Plugin</AssemblyName>
     <RootNamespace>YiZhiMao.Dc.Plugin</RootNamespace>
     <PlatformTarget>x64</PlatformTarget>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <Version>0.1.0</Version>
-    <AutoCADDirectory Condition="'$(AutoCADDirectory)' == ''">D:\Autodesk\AutoCAD 2026</AutoCADDirectory>
+    <AutoCADR25Directory Condition="'$(AutoCADR25Directory)' == ''">D:\Autodesk\AutoCAD 2026</AutoCADR25Directory>
+    <AutoCADDirectory Condition="'$(AutoCADDirectory)' == '' and ('$(TargetFramework)' == 'net462' or '$(TargetFramework)' == 'net47' or '$(TargetFramework)' == 'net48')">$(AutoCADR24Directory)</AutoCADDirectory>
+    <AutoCADDirectory Condition="'$(AutoCADDirectory)' == '' and '$(TargetFramework)' == 'net8.0-windows'">$(AutoCADR25Directory)</AutoCADDirectory>
+    <AutoCADDirectory Condition="'$(AutoCADDirectory)' == '' and '$(TargetFramework)' == 'net10.0-windows'">$(AutoCADR26Directory)</AutoCADDirectory>
+    <DefineConstants Condition="'$(TargetFramework)' == 'net462' or '$(TargetFramework)' == 'net47' or '$(TargetFramework)' == 'net48'">$(DefineConstants);CAD_R24</DefineConstants>
+    <DefineConstants Condition="'$(TargetFramework)' == 'net8.0-windows'">$(DefineConstants);CAD_R25</DefineConstants>
+    <DefineConstants Condition="'$(TargetFramework)' == 'net10.0-windows'">$(DefineConstants);CAD_R26</DefineConstants>
     <BundleRoot>$(MSBuildProjectDirectory)\..\..\artifacts\YiZhiMaoDc.bundle</BundleRoot>
     <BundleContents>$(BundleRoot)\Contents</BundleContents>
+    <BundleVersionContents>$(BundleContents)\R25.1</BundleVersionContents>
     <ModulesRoot>$(MSBuildProjectDirectory)\..\..\Modules</ModulesRoot>
     <BundleModules>$(BundleContents)\Modules</BundleModules>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\YiZhiMao.Dc.Core\YiZhiMao.Dc.Core.csproj" />
-    <PackageReference Include="System.Drawing.Common" Version="8.0.0" />
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies.net462" Version="1.0.3" PrivateAssets="all" Condition="'$(TargetFramework)' == 'net462'" />
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies.net47" Version="1.0.3" PrivateAssets="all" Condition="'$(TargetFramework)' == 'net47'" />
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies.net48" Version="1.0.3" PrivateAssets="all" Condition="'$(TargetFramework)' == 'net48'" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net462' or '$(TargetFramework)' == 'net47' or '$(TargetFramework)' == 'net48'">
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Windows.Forms" />
   </ItemGroup>
 
   <ItemGroup>
@@ -40,28 +56,76 @@
     </Reference>
   </ItemGroup>
 
-  <Target Name="ValidateAutoCADReferences" BeforeTargets="ResolveReferences">
-    <Error Condition="!Exists('$(AutoCADDirectory)\AcMgd.dll')"
-           Text="未找到 AutoCAD 托管程序集。请通过 /p:AutoCADDirectory=... 指定 AutoCAD 2026 安装目录。" />
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net8.0-windows'">
+    <WindowsDesktopReferenceVersion>net8.0</WindowsDesktopReferenceVersion>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net10.0-windows'">
+    <WindowsDesktopReferenceVersion>net10.0</WindowsDesktopReferenceVersion>
+  </PropertyGroup>
+
+  <Target Name="PreferWindowsDesktopReferenceAssemblies"
+          BeforeTargets="ResolveAssemblyReferences"
+          DependsOnTargets="ResolveTargetingPackAssets"
+          Condition="'$(TargetFramework)' == 'net8.0-windows' or '$(TargetFramework)' == 'net10.0-windows'">
+    <ItemGroup>
+      <_WindowsDesktopFramework Include="@(ResolvedFrameworkReference)"
+                                Condition="'%(ResolvedFrameworkReference.Identity)' == 'Microsoft.WindowsDesktop.App.WPF' or '%(ResolvedFrameworkReference.Identity)' == 'Microsoft.WindowsDesktop.App'" />
+      <Reference Remove="@(Reference)"
+                 Condition="'%(Reference.FrameworkReferenceName)' == 'Microsoft.NETCore.App' and ('%(Reference.Filename)' == 'Microsoft.VisualBasic' or '%(Reference.Filename)' == 'System.Drawing')" />
+    </ItemGroup>
+    <PropertyGroup>
+      <WindowsDesktopTargetingPackPath>@(_WindowsDesktopFramework->'%(TargetingPackPath)')</WindowsDesktopTargetingPackPath>
+    </PropertyGroup>
+    <Error Condition="'$(WindowsDesktopTargetingPackPath)' == ''"
+           Text="未找到 Microsoft.WindowsDesktop.App.WPF targeting pack，无法与 AutoCAD 2026 统一桌面程序集引用。" />
+    <ItemGroup>
+      <Reference Include="Microsoft.VisualBasic">
+        <HintPath>$(WindowsDesktopTargetingPackPath)\ref\$(WindowsDesktopReferenceVersion)\Microsoft.VisualBasic.dll</HintPath>
+        <Private>false</Private>
+      </Reference>
+      <Reference Include="System.Drawing">
+        <HintPath>$(WindowsDesktopTargetingPackPath)\ref\$(WindowsDesktopReferenceVersion)\System.Drawing.dll</HintPath>
+        <Private>false</Private>
+      </Reference>
+      <Reference Include="System.Drawing.Common">
+        <HintPath>$(WindowsDesktopTargetingPackPath)\ref\$(WindowsDesktopReferenceVersion)\System.Drawing.Common.dll</HintPath>
+        <Private>false</Private>
+      </Reference>
+      <Reference Include="System.Windows.Forms">
+        <HintPath>$(WindowsDesktopTargetingPackPath)\ref\$(WindowsDesktopReferenceVersion)\System.Windows.Forms.dll</HintPath>
+        <Private>false</Private>
+      </Reference>
+    </ItemGroup>
   </Target>
 
-  <Target Name="BuildBundle" AfterTargets="Build">
+  <Target Name="ValidateAutoCADReferences" BeforeTargets="ResolveReferences">
+    <Error Condition="'$(AutoCADDirectory)' == '' or !Exists('$(AutoCADDirectory)\AcMgd.dll')"
+           Text="未找到当前 AutoCAD 版本的托管程序集。请指定 AutoCADDirectory，或对应的 AutoCADR24Directory、AutoCADR25Directory、AutoCADR26Directory。" />
+  </Target>
+
+  <Target Name="BuildBundle" AfterTargets="Build" Condition="'$(BuildBundle)' == 'true'">
     <Error Condition="!Exists('$(ModulesRoot)')" Text="未找到资源目录：$(ModulesRoot)" />
     <RemoveDir Directories="$(BundleContents)" Condition="Exists('$(BundleContents)')" />
     <MakeDir Directories="$(BundleContents)" />
+    <MakeDir Directories="$(BundleVersionContents)" />
     <MakeDir Directories="$(BundleModules)" />
     <ItemGroup>
       <BundleAssemblies Include="$(TargetDir)*.dll" />
+      <BundleDependencyMetadata Include="$(TargetDir)*.deps.json" />
       <BundleModuleFiles Include="$(ModulesRoot)\**\*" Exclude="$(ModulesRoot)\**\*.bak" />
     </ItemGroup>
-    <Copy SourceFiles="@(BundleAssemblies)" DestinationFolder="$(BundleContents)" />
+    <Copy SourceFiles="@(BundleAssemblies)" DestinationFolder="$(BundleVersionContents)" />
+    <Copy SourceFiles="@(BundleDependencyMetadata)"
+          DestinationFolder="$(BundleVersionContents)"
+          SkipUnchangedFiles="true" />
     <Copy SourceFiles="@(BundleModuleFiles)"
           DestinationFiles="@(BundleModuleFiles->'$(BundleContents)\Modules\%(RecursiveDir)%(Filename)%(Extension)')" />
     <Copy SourceFiles="$(TargetDir)$(AssemblyName).pdb"
-          DestinationFolder="$(BundleContents)"
+          DestinationFolder="$(BundleVersionContents)"
           Condition="Exists('$(TargetDir)$(AssemblyName).pdb')" />
     <Copy SourceFiles="$(TargetDir)YiZhiMao.Dc.Core.pdb"
-          DestinationFolder="$(BundleContents)"
+          DestinationFolder="$(BundleVersionContents)"
           Condition="Exists('$(TargetDir)YiZhiMao.Dc.Core.pdb')" />
     <Copy SourceFiles="$(MSBuildProjectDirectory)\..\..\packaging\YiZhiMaoDc.bundle\PackageContents.xml"
           DestinationFolder="$(BundleRoot)" />

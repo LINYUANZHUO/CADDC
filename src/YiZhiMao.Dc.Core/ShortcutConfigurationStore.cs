@@ -5,6 +5,37 @@ namespace YiZhiMao.Dc.Core;
 
 public sealed class ShortcutConfigurationStore(string configurationPath)
 {
+    private static readonly Dictionary<string, HashSet<string>> LegacyDefaultAliases =
+        new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["DC_CMD_STATUS"] = new(StringComparer.OrdinalIgnoreCase) { "JC" },
+            ["DC_CMD_IMAGE_BATCH"] = new(StringComparer.OrdinalIgnoreCase) { "OLE" },
+            ["DC_CMD_BATCH_PRINT"] = new(StringComparer.OrdinalIgnoreCase) { "DY" },
+            ["DC_CMD_PRINT_PAPER"] = new(StringComparer.OrdinalIgnoreCase) { "D1" },
+            ["DC_CMD_PRINT_PDF"] = new(StringComparer.OrdinalIgnoreCase) { "D2" },
+            ["DC_CMD_PRINT_LAYOUT_PAPER"] = new(StringComparer.OrdinalIgnoreCase) { "D3" },
+            ["DC_CMD_PRINT_LAYOUT_PDF"] = new(StringComparer.OrdinalIgnoreCase) { "D4" },
+            ["DC_CMD_LAYER_MANAGER"] = new(StringComparer.OrdinalIgnoreCase) { "TC" },
+            ["DC_CMD_LAYER_STANDARDIZE"] = new(StringComparer.OrdinalIgnoreCase) { "TCJZ" },
+            ["DC_CMD_LAYER_NORMALIZE"] = new(StringComparer.OrdinalIgnoreCase) { "TCGC" },
+            ["DC_CMD_DRAWING_PURGE"] = new(StringComparer.OrdinalIgnoreCase) { "PU" },
+            ["DC_CMD_LAYER_HIDE_HARDWARE"] = new(StringComparer.OrdinalIgnoreCase) { "TCWJ" },
+            ["DC_CMD_LAYER_HIDE_DOOR"] = new(StringComparer.OrdinalIgnoreCase) { "TCMB" },
+            ["DC_CMD_LAYER_HIDE_CABINET"] = new(StringComparer.OrdinalIgnoreCase) { "TCHG" },
+            ["DC_CMD_LAYER_HIDE_ANNOTATION"] = new(StringComparer.OrdinalIgnoreCase) { "TCBZ" },
+            ["DC_CMD_LAYER_SHOW_ALL"] = new(StringComparer.OrdinalIgnoreCase) { "TCXS" },
+            ["DC_CMD_DRAWING_DISPLAY_REPAIR"] = new(StringComparer.OrdinalIgnoreCase) { "TXF" },
+            ["DC_CMD_LIGHT_STRIP"] = new(StringComparer.OrdinalIgnoreCase) { "DD" },
+            ["DC_CMD_HINGE_INSERT"] = new(StringComparer.OrdinalIgnoreCase) { "JL" },
+            ["DC_CMD_HANGING_ROD"] = new(StringComparer.OrdinalIgnoreCase) { "YG" },
+            ["DC_CMD_HINGE_LABEL"] = new(StringComparer.OrdinalIgnoreCase) { "HJL" },
+            ["DC_CMD_WAINSCOT_GRILLE_DRAW"] = new(StringComparer.OrdinalIgnoreCase) { "GS" },
+            ["DC_CMD_WAINSCOT_GRILLE_FILL"] = new(StringComparer.OrdinalIgnoreCase) { "GST" },
+            ["DC_CMD_WAINSCOT_PERFORATED_DRAW"] = new(StringComparer.OrdinalIgnoreCase) { "DB" },
+            ["DC_CMD_WAINSCOT_PERFORATED_FILL"] = new(StringComparer.OrdinalIgnoreCase) { "DBT" },
+            ["DC_CMD_WAINSCOT_BACKGROUND_DRAW"] = new(StringComparer.OrdinalIgnoreCase) { "BJQ" }
+        };
+
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNameCaseInsensitive = true,
@@ -48,16 +79,22 @@ public sealed class ShortcutConfigurationStore(string configurationPath)
                 continue;
             }
 
-            if (savedConfiguration!.SchemaVersion >= ShortcutConfiguration.CurrentSchemaVersion)
-            {
-                item.Description = savedItem.Description;
-                item.DefaultAlias = ShortcutValidator.NormalizeAlias(savedItem.DefaultAlias);
-            }
-
             var savedDefaultAlias = ShortcutValidator.NormalizeAlias(savedItem.DefaultAlias);
             var savedCustomAlias = ShortcutValidator.NormalizeAlias(savedItem.CustomAlias);
+            var savedDefaultIsLegacy =
+                savedConfiguration!.SchemaVersion < ShortcutConfiguration.CurrentSchemaVersion &&
+                IsLegacyDefaultAlias(item.CoreCommand, savedDefaultAlias);
+
+            if (savedConfiguration.SchemaVersion >= ShortcutConfiguration.CurrentSchemaVersion ||
+                (savedDefaultAlias.Length > 0 && !savedDefaultIsLegacy))
+            {
+                item.Description = savedItem.Description;
+                item.DefaultAlias = savedDefaultAlias;
+            }
+
             var unchangedLegacyAlias =
                 savedConfiguration.SchemaVersion < ShortcutConfiguration.CurrentSchemaVersion &&
+                savedDefaultIsLegacy &&
                 savedCustomAlias.Length > 0 &&
                 string.Equals(savedCustomAlias, savedDefaultAlias, StringComparison.Ordinal) &&
                 !string.Equals(savedDefaultAlias, item.DefaultAlias, StringComparison.Ordinal);
@@ -111,14 +148,14 @@ public sealed class ShortcutConfigurationStore(string configurationPath)
             throw new InvalidDataException(string.Join(Environment.NewLine, errors));
         }
 
-        var tempPath = $"{ConfigurationPath}.{Environment.ProcessId}.{Guid.NewGuid():N}.tmp";
+        var tempPath = $"{ConfigurationPath}.{System.Diagnostics.Process.GetCurrentProcess().Id}.{Guid.NewGuid():N}.tmp";
         try
         {
             File.WriteAllText(
                 tempPath,
                 JsonSerializer.Serialize(normalized, JsonOptions),
                 new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
-            File.Move(tempPath, ConfigurationPath, overwrite: true);
+            Compatibility.MoveFileReplacingExisting(tempPath, ConfigurationPath);
         }
         finally
         {
@@ -129,6 +166,11 @@ public sealed class ShortcutConfigurationStore(string configurationPath)
         }
     }
 
+    private static bool IsLegacyDefaultAlias(string coreCommand, string alias) =>
+        alias.Length > 0 &&
+        LegacyDefaultAliases.TryGetValue(coreCommand, out var aliases) &&
+        aliases.Contains(alias);
+
     private static bool Equivalent(ShortcutConfiguration saved, ShortcutConfiguration merged)
     {
         var savedItems = saved.ShortcutItems ?? [];
@@ -138,7 +180,7 @@ public sealed class ShortcutConfigurationStore(string configurationPath)
             return false;
         }
 
-        return savedItems.Zip(merged.ShortcutItems).All(pair =>
+        return savedItems.Zip(merged.ShortcutItems, (first, second) => (First: first, Second: second)).All(pair =>
             string.Equals(pair.First.Category, pair.Second.Category, StringComparison.Ordinal) &&
             string.Equals(pair.First.Description, pair.Second.Description, StringComparison.Ordinal) &&
             string.Equals(pair.First.CoreCommand, pair.Second.CoreCommand, StringComparison.OrdinalIgnoreCase) &&

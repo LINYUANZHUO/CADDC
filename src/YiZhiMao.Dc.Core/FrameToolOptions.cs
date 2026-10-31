@@ -44,25 +44,25 @@ public sealed class FrameToolOptions
 
     public void Validate()
     {
-        if (!double.IsFinite(FrameMargin) || FrameMargin < 0)
+        if (!Compatibility.IsFinite(FrameMargin) || FrameMargin < 0)
         {
             throw new InvalidOperationException("图形到图框的距离不能小于 0。");
         }
 
-        if (!double.IsFinite(HorizontalGap) || HorizontalGap < 0 ||
-            !double.IsFinite(VerticalGap) || VerticalGap < 0)
+        if (!Compatibility.IsFinite(HorizontalGap) || HorizontalGap < 0 ||
+            !Compatibility.IsFinite(VerticalGap) || VerticalGap < 0)
         {
             throw new InvalidOperationException("图框排列间距不能小于 0。");
         }
 
-        if (!double.IsFinite(DetailScale) || DetailScale <= 0 ||
-            !double.IsFinite(ClipScale) || ClipScale <= 0)
+        if (!Compatibility.IsFinite(DetailScale) || DetailScale <= 0 ||
+            !Compatibility.IsFinite(ClipScale) || ClipScale <= 0)
         {
             throw new InvalidOperationException("局部放大和截图倍数必须大于 0。");
         }
 
-        if (!double.IsFinite(DetailCornerRadius) || DetailCornerRadius < 0 ||
-            !double.IsFinite(ClipCornerRadius) || ClipCornerRadius < 0)
+        if (!Compatibility.IsFinite(DetailCornerRadius) || DetailCornerRadius < 0 ||
+            !Compatibility.IsFinite(ClipCornerRadius) || ClipCornerRadius < 0)
         {
             throw new InvalidOperationException("矩形圆角不能小于 0。");
         }
@@ -108,7 +108,7 @@ public sealed class FrameToolOptionsStore(string path)
 
         var temporaryPath = path + ".tmp";
         File.WriteAllText(temporaryPath, JsonSerializer.Serialize(options, JsonOptions));
-        File.Move(temporaryPath, path, overwrite: true);
+        Compatibility.MoveFileReplacingExisting(temporaryPath, path);
     }
 }
 
@@ -128,7 +128,7 @@ public static class FramePlacementCalculator
             throw new ArgumentOutOfRangeException(nameof(contentFrame), "内容范围必须具有有效宽高。");
         }
 
-        if (!double.IsFinite(margin) || margin < 0)
+        if (!Compatibility.IsFinite(margin) || margin < 0)
         {
             throw new ArgumentOutOfRangeException(nameof(margin));
         }
@@ -151,13 +151,13 @@ public static class FrameTemplateLibraryService
 {
     public static string EnsureDefaultFolder(string pluginDirectory)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(pluginDirectory);
+        Compatibility.NotNullOrWhiteSpace(pluginDirectory, nameof(pluginDirectory));
         return EnsureFolder(Path.Combine(pluginDirectory, "Modules"));
     }
 
     public static string EnsureFolder(string modulesRoot)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(modulesRoot);
+        Compatibility.NotNullOrWhiteSpace(modulesRoot, nameof(modulesRoot));
         var directory = Path.Combine(Path.GetFullPath(modulesRoot), "FrameTemplates");
         Directory.CreateDirectory(directory);
         return directory;

@@ -1,185 +1,153 @@
 <UserControl x:Class="YiZhiMao.Dc.Plugin.Views.ShortcutPanelView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             Background="#F5F6F8"
+             xmlns:views="clr-namespace:YiZhiMao.Dc.Plugin.Views"
+             Background="{DynamicResource ThemePageBrush}"
              FontFamily="Microsoft YaHei UI"
-             MinWidth="430"
+             MinWidth="0"
              MinHeight="320">
     <UserControl.Resources>
-        <SolidColorBrush x:Key="AccentBrush" Color="#EF5E25" />
-        <SolidColorBrush x:Key="AccentSoftBrush" Color="#FFF1EB" />
-        <SolidColorBrush x:Key="GridLineBrush" Color="#D9DDE3" />
-        <SolidColorBrush x:Key="MutedTextBrush" Color="#737B86" />
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/YiZhiMao.Dc.Plugin;component/Themes/ToolboxTheme.xaml" />
+            </ResourceDictionary.MergedDictionaries>
 
-        <Style x:Key="FlatButtonStyle" TargetType="Button">
+        <!-- 兼容现有页面中的资源键；颜色值仍由全局主题统一维护。 -->
+        <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource ThemeAccentColor}" />
+        <SolidColorBrush x:Key="AccentSoftBrush" Color="{StaticResource ThemeAccentSoftColor}" />
+        <SolidColorBrush x:Key="GridLineBrush" Color="{StaticResource ThemeBorderColor}" />
+        <SolidColorBrush x:Key="MutedTextBrush" Color="{StaticResource ThemeTextSecondaryColor}" />
+
+        <Style TargetType="TextBlock" BasedOn="{StaticResource DcTextBlockStyle}" />
+        <Style TargetType="CheckBox" BasedOn="{StaticResource DcCheckBoxStyle}" />
+        <Style TargetType="RadioButton" BasedOn="{StaticResource DcRadioButtonStyle}" />
+        <Style TargetType="ComboBox" BasedOn="{StaticResource DcComboBoxStyle}" />
+        <Style TargetType="ComboBoxItem" BasedOn="{StaticResource DcComboBoxItemStyle}" />
+        <Style TargetType="ListBox" BasedOn="{StaticResource DcListBoxStyle}" />
+        <Style TargetType="ListBoxItem" BasedOn="{StaticResource DcListBoxItemStyle}" />
+        <Style TargetType="Expander" BasedOn="{StaticResource DcExpanderStyle}" />
+        <Style TargetType="Slider" BasedOn="{StaticResource DcSliderStyle}" />
+        <Style TargetType="ScrollBar" BasedOn="{StaticResource DcScrollBarStyle}" />
+        <Style TargetType="GroupBox" BasedOn="{StaticResource DcGroupBoxStyle}" />
+        <Style TargetType="TabControl" BasedOn="{StaticResource DcTabControlStyle}" />
+        <Style TargetType="DataGrid" BasedOn="{StaticResource DcDataGridStyle}" />
+
+        <Style x:Key="FlatButtonStyle" TargetType="Button" BasedOn="{StaticResource DcButtonStyle}">
             <Setter Property="Padding" Value="12,7" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border x:Name="ButtonBorder"
-                                Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="3">
-                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="ButtonBorder" Property="Opacity" Value="0.88" />
-                            </Trigger>
-                            <Trigger Property="IsEnabled" Value="False">
-                                <Setter Property="Cursor" Value="Arrow" />
-                                <Setter TargetName="ButtonBorder" Property="Opacity" Value="0.62" />
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
         </Style>
 
-        <Style x:Key="ModuleButtonStyle" TargetType="Button" BasedOn="{StaticResource FlatButtonStyle}">
+        <Style x:Key="ModuleButtonStyle" TargetType="Button" BasedOn="{StaticResource DcButtonStyle}">
             <Setter Property="Margin" Value="7,5,7,0" />
             <Setter Property="Padding" Value="8,6" />
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-            <Setter Property="Background" Value="White" />
-            <Setter Property="BorderBrush" Value="#E1E4E8" />
-            <Setter Property="Foreground" Value="#20242A" />
             <Setter Property="FontWeight" Value="SemiBold" />
         </Style>
 
         <Style x:Key="SelectedModuleButtonStyle" TargetType="Button" BasedOn="{StaticResource ModuleButtonStyle}">
-            <Setter Property="Background" Value="{StaticResource AccentSoftBrush}" />
-            <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}" />
+            <Setter Property="Background" Value="{StaticResource ThemeAccentSoftBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource ThemeAccentBrush}" />
         </Style>
 
-        <Style x:Key="TopTabStyle" TargetType="TabItem">
-            <Setter Property="Foreground" Value="#555D68" />
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderBrush" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0,0,0,2" />
-            <Setter Property="Padding" Value="12,8,12,7" />
+        <Style x:Key="TopTabStyle" TargetType="TabItem" BasedOn="{StaticResource DcTabItemStyle}" />
+
+        <Style x:Key="ShortcutRowStyle" TargetType="DataGridRow" BasedOn="{StaticResource DcDataGridRowStyle}" />
+
+        <Style x:Key="GridCellStyle" TargetType="DataGridCell" BasedOn="{StaticResource DcDataGridCellStyle}" />
+
+        <Style x:Key="AccentCellStyle" TargetType="DataGridCell" BasedOn="{StaticResource GridCellStyle}">
+            <Setter Property="Foreground" Value="{StaticResource ThemeAccentBrush}" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+
+        <Style x:Key="MutedCellStyle" TargetType="DataGridCell" BasedOn="{StaticResource GridCellStyle}">
+            <Setter Property="Foreground" Value="{StaticResource ThemeTextSecondaryBrush}" />
+        </Style>
+
+        <Style x:Key="GridTextBlockStyle" TargetType="TextBlock" BasedOn="{StaticResource DcDataGridTextBlockStyle}" />
+
+        <Style x:Key="MutedGridTextBlockStyle" TargetType="TextBlock" BasedOn="{StaticResource DcDataGridTextBlockStyle}">
+            <Setter Property="Foreground" Value="{StaticResource ThemeTextSecondaryBrush}" />
+            <Setter Property="FontWeight" Value="Normal" />
+        </Style>
+
+        <Style x:Key="GridTextBoxStyle" TargetType="TextBox" BasedOn="{StaticResource DcTextBoxStyle}">
+            <Setter Property="Height" Value="29" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+
+        <Style x:Key="SearchBoxStyle" TargetType="TextBox" BasedOn="{StaticResource DcTextBoxStyle}">
+            <Setter Property="Height" Value="34" />
+            <Setter Property="Padding" Value="30,0,10,0" />
+        </Style>
+
+        <Style x:Key="FormTextBoxStyle" TargetType="TextBox" BasedOn="{StaticResource DcTextBoxStyle}">
+            <Setter Property="Height" Value="34" />
+            <Setter Property="Padding" Value="9,0" />
+        </Style>
+
+        <Style x:Key="HardwareInputStyle" TargetType="TextBox" BasedOn="{StaticResource DcTextBoxStyle}">
+            <Setter Property="Height" Value="30" />
+            <Setter Property="Padding" Value="8,0" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+
+        <Style x:Key="DoorPanelCompactGroupStyle" TargetType="GroupBox" BasedOn="{StaticResource DcCompactGroupBoxStyle}" />
+        <Style x:Key="DoorPanelCompactInputStyle"
+               TargetType="TextBox"
+               BasedOn="{StaticResource DcCompactTextBoxStyle}" />
+        <Style x:Key="DoorPanelCompactComboStyle" TargetType="ComboBox" BasedOn="{StaticResource DcCompactComboBoxStyle}" />
+        <Style x:Key="DoorPanelCompactActionStyle"
+               TargetType="Button"
+               BasedOn="{StaticResource DcButtonStyle}">
+            <Setter Property="Height" Value="29" />
+            <Setter Property="Padding" Value="7,3" />
+        </Style>
+        <Style x:Key="PointStyleListItemStyle" TargetType="ListBoxItem">
+            <Setter Property="Width" Value="42" />
+            <Setter Property="Height" Value="38" />
+            <Setter Property="Margin" Value="2" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="ToolTip" Value="{Binding Name}" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
             <Setter Property="Template">
                 <Setter.Value>
-                    <ControlTemplate TargetType="TabItem">
-                        <Border x:Name="TabBorder"
-                                Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                Padding="{TemplateBinding Padding}">
-                            <ContentPresenter ContentSource="Header"
-                                              HorizontalAlignment="Center"
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <Border x:Name="PointStyleBorder"
+                                Background="{StaticResource ThemeSurfaceBrush}"
+                                BorderBrush="{StaticResource ThemeBorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="3">
+                            <ContentPresenter HorizontalAlignment="Center"
                                               VerticalAlignment="Center" />
                         </Border>
                         <ControlTemplate.Triggers>
-                            <Trigger Property="IsSelected" Value="True">
-                                <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
-                                <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}" />
-                                <Setter Property="FontWeight" Value="SemiBold" />
-                            </Trigger>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="#FFF8F4" />
+                                <Setter TargetName="PointStyleBorder" Property="Background" Value="{StaticResource ThemeControlHoverBrush}" />
+                                <Setter TargetName="PointStyleBorder" Property="BorderBrush" Value="{StaticResource ThemeAccentBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="PointStyleBorder" Property="Background" Value="{StaticResource ThemeAccentSoftBrush}" />
+                                <Setter TargetName="PointStyleBorder" Property="BorderBrush" Value="{StaticResource ThemeAccentBrush}" />
+                                <Setter TargetName="PointStyleBorder" Property="BorderThickness" Value="2" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="PointStyleBorder" Property="Opacity" Value="0.45" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
         </Style>
-
-        <Style x:Key="ShortcutRowStyle" TargetType="DataGridRow">
-            <Setter Property="Foreground" Value="#20242A" />
-            <Setter Property="Background" Value="White" />
-            <Setter Property="MinHeight" Value="31" />
-            <Setter Property="VerticalContentAlignment" Value="Center" />
-            <Style.Triggers>
-                <Trigger Property="IsSelected" Value="True">
-                    <Setter Property="Background" Value="{StaticResource AccentSoftBrush}" />
-                </Trigger>
-            </Style.Triggers>
-        </Style>
-
-        <Style x:Key="GridCellStyle" TargetType="DataGridCell">
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="Padding" Value="8,0" />
-            <Setter Property="Foreground" Value="#20242A" />
-            <Setter Property="VerticalContentAlignment" Value="Center" />
-            <Style.Triggers>
-                <Trigger Property="IsSelected" Value="True">
-                    <Setter Property="Background" Value="Transparent" />
-                </Trigger>
-            </Style.Triggers>
-        </Style>
-
-        <Style x:Key="AccentCellStyle" TargetType="DataGridCell" BasedOn="{StaticResource GridCellStyle}">
-            <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
-            <Setter Property="FontWeight" Value="SemiBold" />
-        </Style>
-
-        <Style x:Key="MutedCellStyle" TargetType="DataGridCell" BasedOn="{StaticResource GridCellStyle}">
-            <Setter Property="Foreground" Value="{StaticResource MutedTextBrush}" />
-        </Style>
-
-        <Style x:Key="GridTextBlockStyle" TargetType="TextBlock">
-            <Setter Property="VerticalAlignment" Value="Center" />
-        </Style>
-
-        <Style x:Key="GridTextBoxStyle" TargetType="TextBox">
-            <Setter Property="Padding" Value="0" />
-            <Setter Property="VerticalContentAlignment" Value="Center" />
-        </Style>
-
-        <Style x:Key="SearchBoxStyle" TargetType="TextBox">
-            <Setter Property="Height" Value="34" />
-            <Setter Property="Padding" Value="30,6,10,6" />
-            <Setter Property="VerticalContentAlignment" Value="Center" />
-            <Setter Property="Background" Value="White" />
-            <Setter Property="BorderBrush" Value="#C8CDD4" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="SelectionBrush" Value="{StaticResource AccentBrush}" />
-        </Style>
-
-        <Style x:Key="FormTextBoxStyle" TargetType="TextBox">
-            <Setter Property="Height" Value="34" />
-            <Setter Property="Padding" Value="9,5" />
-            <Setter Property="VerticalContentAlignment" Value="Center" />
-            <Setter Property="Background" Value="White" />
-            <Setter Property="BorderBrush" Value="#C8CDD4" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="SelectionBrush" Value="{StaticResource AccentBrush}" />
-        </Style>
-
-        <Style x:Key="DoorPanelCompactGroupStyle" TargetType="GroupBox">
-            <Setter Property="Margin" Value="0,5,0,0" />
-            <Setter Property="Padding" Value="6" />
-            <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}" />
-            <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
-        </Style>
-        <Style x:Key="DoorPanelCompactInputStyle"
-               TargetType="TextBox"
-               BasedOn="{StaticResource FormTextBoxStyle}">
-            <Setter Property="Height" Value="27" />
-            <Setter Property="Padding" Value="7,2" />
-        </Style>
-        <Style x:Key="DoorPanelCompactComboStyle" TargetType="ComboBox">
-            <Setter Property="Height" Value="27" />
-            <Setter Property="HorizontalContentAlignment" Value="Center" />
-            <Setter Property="VerticalContentAlignment" Value="Center" />
-        </Style>
-        <Style x:Key="DoorPanelCompactActionStyle"
-               TargetType="Button"
-               BasedOn="{StaticResource FlatButtonStyle}">
-            <Setter Property="Height" Value="29" />
-            <Setter Property="Padding" Value="7,3" />
-        </Style>
+        </ResourceDictionary>
     </UserControl.Resources>
 
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="92" MinWidth="78" />
+            <ColumnDefinition x:Name="ModuleNavigationColumn" Width="76" MinWidth="0" />
             <ColumnDefinition Width="5" />
-            <ColumnDefinition Width="*" MinWidth="330" />
+            <ColumnDefinition x:Name="ModuleContentColumn" Width="*" MinWidth="0" />
         </Grid.ColumnDefinitions>
 
         <Border Grid.Column="0"
@@ -187,24 +155,17 @@
                 BorderBrush="#D9DDE3"
                 BorderThickness="0,0,1,0">
             <StackPanel>
-                <Button x:Name="ShortcutModuleButton"
+                <Button x:Name="PreferencesModuleButton"
                         Style="{StaticResource SelectedModuleButtonStyle}"
-                        Click="OnShortcutModuleClick">
-                    <TextBlock Text="快捷键"
+                        Click="OnPreferencesModuleClick">
+                    <TextBlock Text="偏好设置"
                                TextAlignment="Center"
                                TextWrapping="Wrap" />
                 </Button>
-                <Button x:Name="ImageModuleButton"
+                <Button x:Name="BoardModuleButton"
                         Style="{StaticResource ModuleButtonStyle}"
-                        Click="OnImageModuleClick">
-                    <TextBlock Text="插入图片"
-                               TextAlignment="Center"
-                               TextWrapping="Wrap" />
-                </Button>
-                <Button x:Name="BatchPrintModuleButton"
-                        Style="{StaticResource ModuleButtonStyle}"
-                        Click="OnBatchPrintModuleClick">
-                    <TextBlock Text="批量打印"
+                        Click="OnBoardModuleClick">
+                    <TextBlock Text="板件"
                                TextAlignment="Center"
                                TextWrapping="Wrap" />
                 </Button>
@@ -229,10 +190,24 @@
                                TextAlignment="Center"
                                TextWrapping="Wrap" />
                 </Button>
-                <Button x:Name="BoardModuleButton"
+                <Button x:Name="ImageModuleButton"
                         Style="{StaticResource ModuleButtonStyle}"
-                        Click="OnBoardModuleClick">
-                    <TextBlock Text="板件"
+                        Click="OnImageModuleClick">
+                    <TextBlock Text="插入图片"
+                               TextAlignment="Center"
+                               TextWrapping="Wrap" />
+                </Button>
+                <Button x:Name="OneClickFrameModuleButton"
+                        Style="{StaticResource ModuleButtonStyle}"
+                        Click="OnOneClickFrameModuleClick">
+                    <TextBlock Text="一键图框"
+                               TextAlignment="Center"
+                               TextWrapping="Wrap" />
+                </Button>
+                <Button x:Name="BatchPrintModuleButton"
+                        Style="{StaticResource ModuleButtonStyle}"
+                        Click="OnBatchPrintModuleClick">
+                    <TextBlock Text="批量打印"
                                TextAlignment="Center"
                                TextWrapping="Wrap" />
                 </Button>
@@ -250,13 +225,6 @@
                                TextAlignment="Center"
                                TextWrapping="Wrap" />
                 </Button>
-                <Button x:Name="OneClickFrameModuleButton"
-                        Style="{StaticResource ModuleButtonStyle}"
-                        Click="OnOneClickFrameModuleClick">
-                    <TextBlock Text="一键图框"
-                               TextAlignment="Center"
-                               TextWrapping="Wrap" />
-                </Button>
                 <Button x:Name="RadialMenuModuleButton"
                         Style="{StaticResource ModuleButtonStyle}"
                         Click="OnRadialMenuModuleClick">
@@ -271,22 +239,310 @@
                                TextAlignment="Center"
                                TextWrapping="Wrap" />
                 </Button>
+                <Button x:Name="ShortcutModuleButton"
+                        Style="{StaticResource ModuleButtonStyle}"
+                        Click="OnShortcutModuleClick">
+                    <TextBlock Text="快捷键"
+                               TextAlignment="Center"
+                               TextWrapping="Wrap" />
+                </Button>
             </StackPanel>
         </Border>
 
-        <GridSplitter Grid.Column="1"
-                      Width="5"
-                      HorizontalAlignment="Stretch"
-                      VerticalAlignment="Stretch"
-                      Background="#D9DDE3"
-                      Cursor="SizeWE"
-                      ResizeBehavior="PreviousAndNext"
-                      ResizeDirection="Columns"
-                      ShowsPreview="True"
-                      ToolTip="拖动调整左侧功能区宽度" />
+        <Thumb x:Name="ModuleNavigationSplitter"
+               Grid.Column="1"
+               Width="5"
+               HorizontalAlignment="Stretch"
+               VerticalAlignment="Stretch"
+               Background="#D9DDE3"
+               Cursor="SizeWE"
+               Focusable="False"
+               DragDelta="OnModuleNavigationSplitterDragDelta"
+               ToolTip="拖动调整左侧功能区宽度">
+            <Thumb.Template>
+                <ControlTemplate TargetType="{x:Type Thumb}">
+                    <Border Background="{TemplateBinding Background}" />
+                </ControlTemplate>
+            </Thumb.Template>
+        </Thumb>
 
         <Grid Grid.Column="2">
+        <ScrollViewer x:Name="PreferencesModuleView"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled"
+                      Background="#F5F6F8">
+            <StackPanel Margin="12,10,12,12">
+                <TextBlock Text="偏好设置"
+                           FontSize="18"
+                           FontWeight="SemiBold"
+                           Foreground="#20242A" />
+
+                <TextBlock Margin="0,14,0,6"
+                           Text="常规设置"
+                           FontSize="14"
+                           FontWeight="SemiBold"
+                           Foreground="{StaticResource AccentBrush}" />
+                <Border Padding="12,10"
+                        Background="White"
+                        BorderBrush="#D9DDE3"
+                        BorderThickness="1"
+                        CornerRadius="4">
+                    <StackPanel>
+                        <CheckBox x:Name="AutoExpandSidebarCheckBox"
+                                  Content="启动时自动展开侧边栏"
+                                  FontWeight="SemiBold"
+                                  Click="OnAutoExpandSidebarChanged" />
+                        <TextBlock Margin="22,5,0,0"
+                                   Foreground="#68707C"
+                                   TextWrapping="Wrap"
+                                   Text="关闭后插件仍会正常加载，需要时输入 DCS 打开工具箱。" />
+                    </StackPanel>
+                </Border>
+
+                <Border Margin="0,8,0,0"
+                        Padding="12,10"
+                        Background="White"
+                        BorderBrush="#D9DDE3"
+                        BorderThickness="1"
+                        CornerRadius="4">
+                    <StackPanel>
+                        <CheckBox x:Name="SmartInputMethodEnabledCheckBox"
+                                  Content="启用智能输入法"
+                                  FontWeight="SemiBold"
+                                  Click="OnSmartInputMethodChanged" />
+                        <TextBlock Margin="22,4,0,6"
+                                   Foreground="#68707C"
+                                   TextWrapping="Wrap"
+                                   Text="仅响应 AutoCAD 绘图与文字编辑；不模拟按键，不控制插件面板和文件窗口。" />
+                        <CheckBox x:Name="KeepCadCommandsEnglishCheckBox"
+                                  Margin="22,3,0,0"
+                                  Content="普通 CAD 操作保持英文"
+                                  Click="OnSmartInputMethodChanged" />
+                        <CheckBox x:Name="AutoChineseForTextCheckBox"
+                                  Margin="22,5,0,0"
+                                  Content="进入文字编辑自动切换中文"
+                                  Click="OnSmartInputMethodChanged" />
+                        <CheckBox x:Name="RestoreEnglishAfterTextCheckBox"
+                                  Margin="22,5,0,0"
+                                  Content="退出文字编辑恢复英文"
+                                  Click="OnSmartInputMethodChanged" />
+                    </StackPanel>
+                </Border>
+
+                <Expander x:Name="CadQuickToggleExpander"
+                          Margin="0,8,0,0"
+                          IsExpanded="False"
+                          Expanded="OnCadQuickToggleExpanded">
+                    <Expander.Header>
+                        <TextBlock Text="CAD 快捷开关"
+                                   FontSize="14"
+                                   FontWeight="SemiBold"
+                                   Foreground="{StaticResource AccentBrush}" />
+                    </Expander.Header>
+                    <Border Margin="0,6,0,0"
+                            Padding="12,10"
+                            Background="White"
+                            BorderBrush="#D9DDE3"
+                            BorderThickness="1"
+                            CornerRadius="4">
+                        <StackPanel>
+                            <CheckBox x:Name="PointerInputCheckBox"
+                                      Content="指针输入（P）"
+                                      FontWeight="SemiBold"
+                                      Click="OnPointerInputChanged" />
+                            <TextBlock Margin="22,5,0,0"
+                                       Foreground="#68707C"
+                                       TextWrapping="Wrap"
+                                       Text="实时切换 AutoCAD 动态输入中的指针输入，保留其他动态输入设置。" />
+                            <Border Margin="0,10,0,8"
+                                    BorderBrush="#E4E7EB"
+                                    BorderThickness="0,1,0,0" />
+                            <StackPanel>
+                                <TextBlock Text="点样式"
+                                           FontWeight="SemiBold" />
+                                <TextBlock Margin="0,3,0,0"
+                                           Foreground="#68707C"
+                                           Text="点击图标立即应用" />
+                                <ListBox x:Name="PointStyleListBox"
+                                         Margin="0,8,0,0"
+                                         MaxWidth="250"
+                                         HorizontalAlignment="Left"
+                                         Background="Transparent"
+                                         BorderThickness="0"
+                                         Padding="0"
+                                         SelectedValuePath="Mode"
+                                         SelectionChanged="OnPointStyleChanged"
+                                         ItemContainerStyle="{StaticResource PointStyleListItemStyle}"
+                                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                         ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                                         ToolTip="点样式快捷设置">
+                                    <ListBox.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <UniformGrid Columns="5" />
+                                        </ItemsPanelTemplate>
+                                    </ListBox.ItemsPanel>
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <views:PointStyleIcon Width="28"
+                                                                  Height="28"
+                                                                  HorizontalAlignment="Center"
+                                                                  VerticalAlignment="Center"
+                                                                  Mode="{Binding Mode}" />
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+                            </StackPanel>
+                            <Border Margin="0,10,0,8"
+                                    BorderBrush="#E4E7EB"
+                                    BorderThickness="0,1,0,0" />
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="默认保存版本"
+                                               FontWeight="SemiBold" />
+                                    <TextBlock Margin="0,3,8,0"
+                                               Foreground="#68707C"
+                                               Text="首次默认 AutoCAD 2007" />
+                                </StackPanel>
+                                <ComboBox x:Name="SaveFileFormatComboBox"
+                                          Grid.Column="1"
+                                          Width="210"
+                                          Height="30"
+                                          DisplayMemberPath="Name"
+                                          SelectedValuePath="Format"
+                                          SelectionChanged="OnSaveFileFormatChanged"
+                                          ToolTip="选择 AutoCAD 默认 DWG 保存版本" />
+                            </Grid>
+                            <Border Margin="0,10,0,8"
+                                    BorderBrush="#E4E7EB"
+                                    BorderThickness="0,1,0,0" />
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel VerticalAlignment="Center">
+                                    <CheckBox x:Name="AutoReplaceMissingShxCheckBox"
+                                              Content="自动替换缺失文字 SHX"
+                                              FontWeight="SemiBold"
+                                              Click="OnAutoReplaceMissingShxChanged" />
+                                    <TextBlock Margin="22,3,8,0"
+                                               Foreground="#68707C"
+                                               TextWrapping="Wrap"
+                                               Text="默认开启；先匹配 Modules\Fonts，普通文字缺失改用 simplex.shx，中文大字体缺失改用 gbcbig.shx；形文件只提示。" />
+                                    <Border Margin="0,8,0,8"
+                                            BorderBrush="#E4E7EB"
+                                            BorderThickness="0,1,0,0" />
+                                    <CheckBox x:Name="SyncReferencedShxOnSaveCheckBox"
+                                              Content="保存图纸时同步本图 SHX"
+                                              FontWeight="SemiBold"
+                                              Click="OnSyncReferencedShxOnSaveChanged" />
+                                    <TextBlock Margin="22,3,8,0"
+                                               Foreground="#68707C"
+                                               TextWrapping="Wrap"
+                                               Text="默认关闭；只从 Modules\Fonts 复制本图引用字体，冲突不覆盖。" />
+                                </StackPanel>
+                                <Button x:Name="ExportCurrentShxButton"
+                                        Grid.Column="1"
+                                        MinWidth="118"
+                                        Height="30"
+                                        Padding="10,0"
+                                        VerticalAlignment="Center"
+                                        Content="立即导出本图 SHX"
+                                        Click="OnExportCurrentShxClick" />
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                </Expander>
+
+                <TextBlock Margin="0,14,0,3"
+                           Text="模块加载管理"
+                           FontSize="14"
+                           FontWeight="SemiBold"
+                           Foreground="{StaticResource AccentBrush}" />
+                <TextBlock Margin="0,0,0,7"
+                           Foreground="#68707C"
+                           TextWrapping="Wrap"
+                           Text="取消勾选后左侧入口会立即隐藏，对应命令也会停止执行；至少保留一个功能模块。" />
+                <Border Background="White"
+                        BorderBrush="#D9DDE3"
+                        BorderThickness="1"
+                        CornerRadius="4">
+                    <StackPanel>
+                        <CheckBox x:Name="AllModulesVisibleCheckBox"
+                                  Margin="12,9,12,8"
+                                  Content="全部显示"
+                                  FontWeight="SemiBold"
+                                  Click="OnShowAllModulesClick" />
+                        <Border BorderBrush="#E4E7EB" BorderThickness="0,1,0,0" />
+                        <Border Padding="12,8"
+                                BorderBrush="#ECEEF1"
+                                BorderThickness="0,0,0,1">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock Text="偏好设置"
+                                               FontWeight="SemiBold"
+                                               Foreground="#20242A" />
+                                    <TextBlock Margin="0,2,12,0"
+                                               Text="常规设置与模块加载管理，始终保留"
+                                               Foreground="#68707C"
+                                               TextWrapping="Wrap" />
+                                </StackPanel>
+                                <CheckBox x:Name="PinnedPreferencesCheckBox"
+                                          Grid.Column="1"
+                                          VerticalAlignment="Center"
+                                          IsChecked="True"
+                                          IsEnabled="False" />
+                            </Grid>
+                        </Border>
+                        <ItemsControl x:Name="ModulePreferenceItemsControl">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Padding="12,8"
+                                            BorderBrush="#ECEEF1"
+                                            BorderThickness="0,0,0,1">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel>
+                                                <TextBlock Text="{Binding Name}"
+                                                           FontWeight="SemiBold"
+                                                           Foreground="#20242A" />
+                                                <TextBlock Margin="0,2,0,0"
+                                                           Text="{Binding Description}"
+                                                           Foreground="#68707C"
+                                                           TextWrapping="Wrap" />
+                                            </StackPanel>
+                                            <CheckBox Grid.Column="1"
+                                                      Margin="12,0,0,0"
+                                                      VerticalAlignment="Center"
+                                                      IsChecked="{Binding IsEnabled}"
+                                                      Click="OnModulePreferenceChanged" />
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+                <TextBlock x:Name="PreferenceStatusText"
+                           Margin="0,8,0,0"
+                           Foreground="#68707C"
+                           TextWrapping="Wrap" />
+            </StackPanel>
+        </ScrollViewer>
+
         <TabControl x:Name="ShortcutModuleView"
+                    Visibility="Collapsed"
                     Background="#F5F6F8"
                     BorderThickness="0"
                     ItemContainerStyle="{StaticResource TopTabStyle}"
@@ -301,9 +557,8 @@
                         <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
 
-                    <Grid MaxWidth="520" HorizontalAlignment="Left">
+                    <Grid HorizontalAlignment="Stretch">
                         <TextBox x:Name="SearchBox"
-                                 MinWidth="260"
                                  Style="{StaticResource SearchBoxStyle}"
                                  ToolTip="搜索功能说明、快捷键或底层命令"
                                  TextChanged="OnSearchTextChanged" />
@@ -382,19 +637,19 @@
                                                     Binding="{Binding Description, UpdateSourceTrigger=PropertyChanged}"
                                                     ElementStyle="{StaticResource GridTextBlockStyle}"
                                                     EditingElementStyle="{StaticResource GridTextBoxStyle}"
-                                                    Width="SizeToCells"
+                                                    Width="1.7*"
                                                     MinWidth="138" />
                                 <DataGridTextColumn Header="默认"
                                                     Binding="{Binding DefaultAlias, UpdateSourceTrigger=PropertyChanged}"
                                                     ElementStyle="{StaticResource GridTextBlockStyle}"
                                                     EditingElementStyle="{StaticResource GridTextBoxStyle}"
-                                                    Width="SizeToCells"
+                                                    Width="0.8*"
                                                     MinWidth="72" />
                                 <DataGridTextColumn Header="自定义"
                                                     Binding="{Binding CustomAlias, UpdateSourceTrigger=PropertyChanged}"
                                                     CellStyle="{StaticResource AccentCellStyle}"
                                                     ElementStyle="{StaticResource GridTextBlockStyle}"
-                                                    Width="SizeToCells"
+                                                    Width="0.9*"
                                                     MinWidth="82">
                                     <DataGridTextColumn.EditingElementStyle>
                                         <Style TargetType="TextBox" BasedOn="{StaticResource GridTextBoxStyle}">
@@ -405,15 +660,15 @@
                                         </Style>
                                     </DataGridTextColumn.EditingElementStyle>
                                 </DataGridTextColumn>
-                                <DataGridCheckBoxColumn Header="禁用默认" Binding="{Binding DisableDefault}" Width="SizeToCells" MinWidth="82">
+                                <DataGridCheckBoxColumn Header="禁用默认" Binding="{Binding DisableDefault}" Width="0.9*" MinWidth="82">
                                     <DataGridCheckBoxColumn.ElementStyle>
-                                        <Style TargetType="CheckBox">
+                                        <Style TargetType="CheckBox" BasedOn="{StaticResource DcCheckBoxStyle}">
                                             <Setter Property="HorizontalAlignment" Value="Center" />
                                             <Setter Property="VerticalAlignment" Value="Center" />
                                         </Style>
                                     </DataGridCheckBoxColumn.ElementStyle>
                                     <DataGridCheckBoxColumn.EditingElementStyle>
-                                        <Style TargetType="CheckBox">
+                                        <Style TargetType="CheckBox" BasedOn="{StaticResource DcCheckBoxStyle}">
                                             <Setter Property="HorizontalAlignment" Value="Center" />
                                             <Setter Property="VerticalAlignment" Value="Center" />
                                         </Style>
@@ -422,9 +677,9 @@
                                 <DataGridTextColumn Header="底层命令"
                                                     Binding="{Binding CoreCommand}"
                                                     CellStyle="{StaticResource MutedCellStyle}"
-                                                    ElementStyle="{StaticResource GridTextBlockStyle}"
+                                                    ElementStyle="{StaticResource MutedGridTextBlockStyle}"
                                                     IsReadOnly="True"
-                                                    Width="SizeToCells"
+                                                    Width="2*"
                                                     MinWidth="150" />
                             </DataGrid.Columns>
                         </DataGrid>
@@ -461,9 +716,8 @@
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
 
-                    <Grid MaxWidth="520" HorizontalAlignment="Left" Margin="0,0,0,8">
+                    <Grid HorizontalAlignment="Stretch" Margin="0,0,0,8">
                         <TextBox x:Name="CadSearchBox"
-                                 MinWidth="260"
                                  Style="{StaticResource SearchBoxStyle}"
                                  ToolTip="搜索快捷键、完整命令、功能说明或分类"
                                  TextChanged="OnCadSearchTextChanged" />
@@ -529,9 +783,9 @@
                                 </GroupStyle>
                             </DataGrid.GroupStyle>
                             <DataGrid.Columns>
-                                <DataGridTextColumn Header="快捷键" Binding="{Binding Shortcut}" Width="SizeToCells" MinWidth="138" />
-                                <DataGridTextColumn Header="完整命令" Binding="{Binding FullCommand}" Width="SizeToCells" MinWidth="168" />
-                                <DataGridTextColumn Header="功能说明" Binding="{Binding Description}" Width="SizeToCells" MinWidth="180" />
+                                <DataGridTextColumn Header="快捷键" Binding="{Binding Shortcut}" ElementStyle="{StaticResource DcDataGridTextBlockStyle}" Width="0.8*" MinWidth="138" />
+                                <DataGridTextColumn Header="完整命令" Binding="{Binding FullCommand}" ElementStyle="{StaticResource DcDataGridTextBlockStyle}" Width="1.3*" MinWidth="168" />
+                                <DataGridTextColumn Header="功能说明" Binding="{Binding Description}" ElementStyle="{StaticResource DcDataGridTextBlockStyle}" Width="1*" MinWidth="180" />
                             </DataGrid.Columns>
                         </DataGrid>
                     </Border>
@@ -580,7 +834,7 @@
                                 BorderBrush="{StaticResource AccentBrush}"
                                 Foreground="White"
                                 FontWeight="SemiBold"
-                                Content="批量插入图片 (OLE)"
+                                Content="批量插入图片 (DCOLE)"
                                 Click="OnInsertImagesClick" />
 
                         <TextBlock x:Name="ImageStatusText"
@@ -610,10 +864,10 @@
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
-                        <Button Margin="3" Height="32" FontSize="11" Padding="2,0" Style="{StaticResource FlatButtonStyle}" Background="{StaticResource AccentBrush}" BorderBrush="{StaticResource AccentBrush}" Foreground="White" Content="D1 选框打印纸张" Tag="DC_CMD_PRINT_PAPER" Click="OnRunPrintCommandClick" />
-                        <Button Grid.Column="1" Margin="3" Height="32" FontSize="11" Padding="2,0" Style="{StaticResource FlatButtonStyle}" Background="{StaticResource AccentBrush}" BorderBrush="{StaticResource AccentBrush}" Foreground="White" Content="D2 选框打印 PDF" Tag="DC_CMD_PRINT_PDF" Click="OnRunPrintCommandClick" />
-                        <Button Grid.Row="1" Margin="3" Height="32" FontSize="11" Padding="2,0" Style="{StaticResource FlatButtonStyle}" Background="{StaticResource AccentBrush}" BorderBrush="{StaticResource AccentBrush}" Foreground="White" Content="D3 布局打印纸张" Tag="DC_CMD_PRINT_LAYOUT_PAPER" Click="OnRunPrintCommandClick" />
-                        <Button Grid.Row="1" Grid.Column="1" Margin="3" Height="32" FontSize="11" Padding="2,0" Style="{StaticResource FlatButtonStyle}" Background="{StaticResource AccentBrush}" BorderBrush="{StaticResource AccentBrush}" Foreground="White" Content="D4 布局打印 PDF" Tag="DC_CMD_PRINT_LAYOUT_PDF" Click="OnRunPrintCommandClick" />
+                        <Button Margin="3" Height="32" FontSize="11" Padding="2,0" Style="{StaticResource FlatButtonStyle}" Background="{StaticResource AccentBrush}" BorderBrush="{StaticResource AccentBrush}" Foreground="White" Content="DCD1 选框打印纸张" Tag="DC_CMD_PRINT_PAPER" Click="OnRunPrintCommandClick" />
+                        <Button Grid.Column="1" Margin="3" Height="32" FontSize="11" Padding="2,0" Style="{StaticResource FlatButtonStyle}" Background="{StaticResource AccentBrush}" BorderBrush="{StaticResource AccentBrush}" Foreground="White" Content="DCD2 选框打印 PDF" Tag="DC_CMD_PRINT_PDF" Click="OnRunPrintCommandClick" />
+                        <Button Grid.Row="1" Margin="3" Height="32" FontSize="11" Padding="2,0" Style="{StaticResource FlatButtonStyle}" Background="{StaticResource AccentBrush}" BorderBrush="{StaticResource AccentBrush}" Foreground="White" Content="DCD3 布局打印纸张" Tag="DC_CMD_PRINT_LAYOUT_PAPER" Click="OnRunPrintCommandClick" />
+                        <Button Grid.Row="1" Grid.Column="1" Margin="3" Height="32" FontSize="11" Padding="2,0" Style="{StaticResource FlatButtonStyle}" Background="{StaticResource AccentBrush}" BorderBrush="{StaticResource AccentBrush}" Foreground="White" Content="DCD4 布局打印 PDF" Tag="DC_CMD_PRINT_LAYOUT_PDF" Click="OnRunPrintCommandClick" />
                         <Button Grid.Row="2" Margin="3" Height="32" FontSize="11" Padding="2,0" Style="{StaticResource FlatButtonStyle}" Content="绘制打印图框" Tag="DC_CMD_DRAW_PRINT_FRAME" Click="OnRunPrintCommandClick" />
                         <Button Grid.Row="2" Grid.Column="1" Margin="3" Height="32" FontSize="11" Padding="2,0" Style="{StaticResource FlatButtonStyle}" Content="PDF 工具" Tag="DC_CMD_PDF_TOOL" Click="OnRunPrintCommandClick" />
                     </Grid>
@@ -652,26 +906,15 @@
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="64" />
                             </Grid.ColumnDefinitions>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto" />
-                                <RowDefinition Height="Auto" />
-                                <RowDefinition Height="Auto" />
-                            </Grid.RowDefinitions>
-                            <TextBlock Margin="0,5" VerticalAlignment="Center" Foreground="#20242A" Text="矢量分辨率" />
-                            <Slider x:Name="VectorDpiSlider" Grid.Column="1" Margin="10,0" Minimum="72" Maximum="4800" TickFrequency="72" ValueChanged="OnDpiSliderChanged" />
-                            <TextBox x:Name="VectorDpiBox" Grid.Column="2" Height="28" VerticalContentAlignment="Center" />
-                            <TextBlock Grid.Row="1" Margin="0,5" VerticalAlignment="Center" Foreground="#20242A" Text="光栅分辨率" />
-                            <Slider x:Name="GradientDpiSlider" Grid.Row="1" Grid.Column="1" Margin="10,0" Minimum="72" Maximum="4800" TickFrequency="72" ValueChanged="OnDpiSliderChanged" />
-                            <TextBox x:Name="GradientDpiBox" Grid.Row="1" Grid.Column="2" Height="28" VerticalContentAlignment="Center" />
-                            <TextBlock Grid.Row="2" Margin="0,5" VerticalAlignment="Center" Foreground="#20242A" Text="图片分辨率" />
-                            <Slider x:Name="ImageDpiSlider" Grid.Row="2" Grid.Column="1" Margin="10,0" Minimum="72" Maximum="4800" TickFrequency="72" ValueChanged="OnDpiSliderChanged" />
-                            <TextBox x:Name="PrintImageDpiBox" Grid.Row="2" Grid.Column="2" Height="28" VerticalContentAlignment="Center" />
+                            <TextBlock Margin="0,5" VerticalAlignment="Center" Foreground="#20242A" Text="着色/光栅分辨率" />
+                            <Slider x:Name="ImageDpiSlider" Grid.Column="1" Margin="10,0" Minimum="72" Maximum="4800" TickFrequency="72" ValueChanged="OnDpiSliderChanged" />
+                            <TextBox x:Name="PrintImageDpiBox" Grid.Column="2" Height="28" VerticalContentAlignment="Center" />
                         </Grid>
                         <TextBlock Margin="0,7,0,0"
                                    Foreground="#737B86"
                                    FontSize="11"
                                    TextWrapping="Wrap"
-                                   Text="图片 DPI 直接应用于着色/光栅输出；矢量与光栅目标值会保存，最终上限仍受所选 PC3 驱动配置约束。" />
+                                   Text="该值直接应用于 AutoCAD 着色/光栅输出；矢量线条分辨率由所选 PC3 驱动配置控制。" />
                     </StackPanel>
                 </GroupBox>
 
@@ -901,7 +1144,7 @@
                                         Background="#E9EBEE"
                                         BorderBrush="#C9CDD3"
                                         Foreground="#20242A"
-                                        Content="单独插入铰链 (JL)"
+                                        Content="单独插入铰链 (DCJL)"
                                         Click="OnInsertHingesClick" />
                                 <Button Grid.Row="2"
                                         Grid.Column="2"
@@ -1331,7 +1574,7 @@
                                 BorderBrush="{StaticResource AccentBrush}"
                                 Foreground="White"
                                 FontWeight="SemiBold"
-                                Content="插入灯带 (DD)"
+                                Content="插入灯带 (DCDD)"
                                 Click="OnInsertLightStripClick" />
                         <Button Margin="0,8,0,0"
                                 Height="34"
@@ -1370,54 +1613,47 @@
                                 <TextBlock VerticalAlignment="Center" Foreground="#20242A" Text="距门顶" />
                                 <TextBox x:Name="HardwareHingeTopOffsetBox"
                                          Grid.Column="1"
-                                         Height="30"
-                                         Style="{StaticResource FormTextBoxStyle}"
+                                         Style="{StaticResource HardwareInputStyle}"
                                          Text="{Binding Text, ElementName=HingeTopOffsetBox, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                                 <TextBlock Grid.Column="3" VerticalAlignment="Center" Foreground="#20242A" Text="距门底" />
                                 <TextBox x:Name="HardwareHingeBottomOffsetBox"
                                          Grid.Column="4"
-                                         Height="30"
-                                         Style="{StaticResource FormTextBoxStyle}"
+                                         Style="{StaticResource HardwareInputStyle}"
                                          Text="{Binding Text, ElementName=HingeBottomOffsetBox, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                                 <TextBlock Grid.Row="1" Margin="0,4,0,0" VerticalAlignment="Center" Foreground="#20242A" Text="H&lt;0.9m数" />
                                 <TextBox x:Name="HardwareHingeCountBelow900Box"
                                          Grid.Row="1"
                                          Grid.Column="1"
                                          Margin="0,4,0,0"
-                                         Height="30"
-                                         Style="{StaticResource FormTextBoxStyle}"
+                                         Style="{StaticResource HardwareInputStyle}"
                                          Text="{Binding Text, ElementName=HingeCountBelow900Box, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                                 <TextBlock Grid.Row="1" Grid.Column="3" Margin="0,4,0,0" VerticalAlignment="Center" Foreground="#20242A" Text="0.9-1.5m数" />
                                 <TextBox x:Name="HardwareHingeCount900To1500Box"
                                          Grid.Row="1"
                                          Grid.Column="4"
                                          Margin="0,4,0,0"
-                                         Height="30"
-                                         Style="{StaticResource FormTextBoxStyle}"
+                                         Style="{StaticResource HardwareInputStyle}"
                                          Text="{Binding Text, ElementName=HingeCount900To1500Box, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                                 <TextBlock Grid.Row="2" Margin="0,4,0,0" VerticalAlignment="Center" Foreground="#20242A" Text="1.5-2.0m数" />
                                 <TextBox x:Name="HardwareHingeCount1500To2000Box"
                                          Grid.Row="2"
                                          Grid.Column="1"
                                          Margin="0,4,0,0"
-                                         Height="30"
-                                         Style="{StaticResource FormTextBoxStyle}"
+                                         Style="{StaticResource HardwareInputStyle}"
                                          Text="{Binding Text, ElementName=HingeCount1500To2000Box, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                                 <TextBlock Grid.Row="2" Grid.Column="3" Margin="0,4,0,0" VerticalAlignment="Center" Foreground="#20242A" Text="2.0-2.5m数" />
                                 <TextBox x:Name="HardwareHingeCount2000To2500Box"
                                          Grid.Row="2"
                                          Grid.Column="4"
                                          Margin="0,4,0,0"
-                                         Height="30"
-                                         Style="{StaticResource FormTextBoxStyle}"
+                                         Style="{StaticResource HardwareInputStyle}"
                                          Text="{Binding Text, ElementName=HingeCount2000To2500Box, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                                 <TextBlock Grid.Row="3" Margin="0,4,0,0" VerticalAlignment="Center" Foreground="#20242A" Text="H≥2.5m数" />
                                 <TextBox x:Name="HardwareHingeCountAtLeast2500Box"
                                          Grid.Row="3"
                                          Grid.Column="1"
                                          Margin="0,4,0,0"
-                                         Height="30"
-                                         Style="{StaticResource FormTextBoxStyle}"
+                                         Style="{StaticResource HardwareInputStyle}"
                                          Text="{Binding Text, ElementName=HingeCountAtLeast2500Box, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                                 <CheckBox x:Name="HardwareUseFixedHingeSpacingCheck"
                                           Grid.Row="3"
@@ -1431,8 +1667,7 @@
                                          Grid.Row="3"
                                          Grid.Column="4"
                                          Margin="0,4,0,0"
-                                         Height="30"
-                                         Style="{StaticResource FormTextBoxStyle}"
+                                         Style="{StaticResource HardwareInputStyle}"
                                          Text="{Binding Text, ElementName=FixedHingeSpacingBox, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                             </Grid>
                         </GroupBox>
@@ -1472,24 +1707,21 @@
                                          Grid.Row="1"
                                          Grid.Column="1"
                                          Margin="0,4,0,0"
-                                         Height="30"
-                                         Style="{StaticResource FormTextBoxStyle}"
+                                         Style="{StaticResource HardwareInputStyle}"
                                          Text="{Binding Text, ElementName=HingeDimensionOffsetBox, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                                 <TextBlock Grid.Row="2" Margin="0,4,8,0" VerticalAlignment="Center" Foreground="#20242A" Text="多层标注间距 (mm)" />
                                 <TextBox x:Name="HardwareHingeDimensionLineSpacingBox"
                                          Grid.Row="2"
                                          Grid.Column="1"
                                          Margin="0,4,0,0"
-                                         Height="30"
-                                         Style="{StaticResource FormTextBoxStyle}"
+                                         Style="{StaticResource HardwareInputStyle}"
                                          Text="{Binding Text, ElementName=HingeDimensionLineSpacingBox, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                                 <TextBlock Grid.Row="3" Margin="0,4,8,0" VerticalAlignment="Center" Foreground="#20242A" Text="标注文字高度 (mm)" />
                                 <TextBox x:Name="HardwareHingeDimensionTextHeightBox"
                                          Grid.Row="3"
                                          Grid.Column="1"
                                          Margin="0,4,0,0"
-                                         Height="30"
-                                         Style="{StaticResource FormTextBoxStyle}"
+                                         Style="{StaticResource HardwareInputStyle}"
                                          Text="{Binding Text, ElementName=HingeDimensionTextHeightBox, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                             </Grid>
                         </GroupBox>
@@ -1511,16 +1743,14 @@
                                 <TextBlock Margin="0,0,8,0" VerticalAlignment="Center" Foreground="#20242A" Text="文字高度 (mm)" />
                                 <TextBox x:Name="HardwareHingeTypeTextHeightBox"
                                          Grid.Column="1"
-                                         Height="30"
-                                         Style="{StaticResource FormTextBoxStyle}"
+                                         Style="{StaticResource HardwareInputStyle}"
                                          Text="{Binding Text, ElementName=HingeTypeTextHeightBox, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                                 <TextBlock Grid.Row="1" Margin="0,4,8,0" VerticalAlignment="Center" Foreground="#20242A" Text="距铰链圆间距 (mm)" />
                                 <TextBox x:Name="HardwareHingeTypeTextSpacingBox"
                                          Grid.Row="1"
                                          Grid.Column="1"
                                          Margin="0,4,0,0"
-                                         Height="30"
-                                         Style="{StaticResource FormTextBoxStyle}"
+                                         Style="{StaticResource HardwareInputStyle}"
                                          Text="{Binding Text, ElementName=HingeTypeTextSpacingBox, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                             </Grid>
                         </GroupBox>
@@ -1550,7 +1780,7 @@
                                     Background="#E9EBEE"
                                     BorderBrush="#C9CDD3"
                                     Foreground="#20242A"
-                                    Content="单独插入铰链 (JL)"
+                                    Content="单独插入铰链 (DCJL)"
                                     Click="OnHardwareInsertHingesClick" />
                             <Button Grid.Row="2"
                                     Grid.ColumnSpan="3"
@@ -2227,11 +2457,11 @@
             <StackPanel Margin="8">
                 <GroupBox Header="图层规范与清理" Style="{StaticResource DoorPanelCompactGroupStyle}">
                     <StackPanel>
-                        <Button Style="{StaticResource DoorPanelCompactActionStyle}" Content="快速图层管理器 (TC)" Click="OnLayerManagerClick" />
-                        <Button Margin="0,5,0,0" Style="{StaticResource DoorPanelCompactActionStyle}" Content="一键生成标准图层 (TCJZ)" Click="OnCreateStandardLayersClick" />
-                        <Button Margin="0,5,0,0" Style="{StaticResource DoorPanelCompactActionStyle}" Content="一键智能归层 (TCGC)" Click="OnNormalizeLayersClick" />
+                        <Button Style="{StaticResource DoorPanelCompactActionStyle}" Content="快速图层管理器 (DCTC)" Click="OnLayerManagerClick" />
+                        <Button Margin="0,5,0,0" Style="{StaticResource DoorPanelCompactActionStyle}" Content="一键生成标准图层 (DCTCJZ)" Click="OnCreateStandardLayersClick" />
+                        <Button Margin="0,5,0,0" Style="{StaticResource DoorPanelCompactActionStyle}" Content="一键智能归层 (DCTCGC)" Click="OnNormalizeLayersClick" />
                         <TextBlock Margin="0,6,0,3" Foreground="#E64B3C" TextWrapping="Wrap" Text="警告：深度清理会删除未使用的图层和块，请谨慎操作。" />
-                        <Button Style="{StaticResource DoorPanelCompactActionStyle}" Background="#FFF0EE" BorderBrush="#F3AAA2" Foreground="#C92A1D" Content="图纸垃圾清理 (PU)" Click="OnPurgeDrawingClick" />
+                        <Button Style="{StaticResource DoorPanelCompactActionStyle}" Background="#FFF0EE" BorderBrush="#F3AAA2" Foreground="#C92A1D" Content="图纸垃圾清理 (DCPU)" Click="OnPurgeDrawingClick" />
                     </StackPanel>
                 </GroupBox>
 
@@ -2239,11 +2469,11 @@
                     <Grid>
                         <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="6" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
                         <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="5" /><RowDefinition Height="Auto" /><RowDefinition Height="5" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
-                        <Button Style="{StaticResource DoorPanelCompactActionStyle}" Content="隐藏五金 (TCWJ)" Click="OnHideHardwareLayersClick" />
-                        <Button Grid.Column="2" Style="{StaticResource DoorPanelCompactActionStyle}" Content="隐藏门板 (TCMB)" Click="OnHideDoorLayersClick" />
-                        <Button Grid.Row="2" Style="{StaticResource DoorPanelCompactActionStyle}" Content="隐藏柜体 (TCHG)" Click="OnHideCabinetLayersClick" />
-                        <Button Grid.Row="2" Grid.Column="2" Style="{StaticResource DoorPanelCompactActionStyle}" Content="隐藏标注 (TCBZ)" Click="OnHideAnnotationLayersClick" />
-                        <Button Grid.Row="4" Grid.ColumnSpan="3" Style="{StaticResource DoorPanelCompactActionStyle}" Background="{StaticResource AccentBrush}" BorderBrush="{StaticResource AccentBrush}" Foreground="White" Content="显示所有图层 (TCXS)" Click="OnShowAllLayersClick" />
+                        <Button Style="{StaticResource DoorPanelCompactActionStyle}" Content="隐藏五金 (DCTCWJ)" Click="OnHideHardwareLayersClick" />
+                        <Button Grid.Column="2" Style="{StaticResource DoorPanelCompactActionStyle}" Content="隐藏门板 (DCTCMB)" Click="OnHideDoorLayersClick" />
+                        <Button Grid.Row="2" Style="{StaticResource DoorPanelCompactActionStyle}" Content="隐藏柜体 (DCTCHG)" Click="OnHideCabinetLayersClick" />
+                        <Button Grid.Row="2" Grid.Column="2" Style="{StaticResource DoorPanelCompactActionStyle}" Content="隐藏标注 (DCTCBZ)" Click="OnHideAnnotationLayersClick" />
+                        <Button Grid.Row="4" Grid.ColumnSpan="3" Style="{StaticResource DoorPanelCompactActionStyle}" Background="{StaticResource AccentBrush}" BorderBrush="{StaticResource AccentBrush}" Foreground="White" Content="显示所有图层 (DCTCXS)" Click="OnShowAllLayersClick" />
                     </Grid>
                 </GroupBox>
 
@@ -2255,7 +2485,7 @@
                         <TextBox x:Name="DrawingLinetypeScaleBox" Grid.Column="1" Style="{StaticResource DoorPanelCompactInputStyle}" Text="40" />
                         <TextBlock Grid.Row="1" Margin="0,4,0,0" VerticalAlignment="Center" Foreground="#20242A" Text="墙体填充比例" />
                         <TextBox x:Name="WallHatchScaleBox" Grid.Row="1" Grid.Column="1" Margin="0,4,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="1" />
-                        <Button Grid.Row="2" Grid.ColumnSpan="2" Margin="0,6,0,0" Style="{StaticResource DoorPanelCompactActionStyle}" Background="{StaticResource AccentBrush}" BorderBrush="{StaticResource AccentBrush}" Foreground="White" Content="一键修复显示 (TXF)" Click="OnRepairDrawingDisplayClick" />
+                        <Button Grid.Row="2" Grid.ColumnSpan="2" Margin="0,6,0,0" Style="{StaticResource DoorPanelCompactActionStyle}" Background="{StaticResource AccentBrush}" BorderBrush="{StaticResource AccentBrush}" Foreground="White" Content="一键修复显示 (DCTXF)" Click="OnRepairDrawingDisplayClick" />
                     </Grid>
                 </GroupBox>
                 <TextBlock x:Name="DrawingLayerStatusText" Margin="0,6,0,0" Foreground="#68707C" TextWrapping="Wrap" />
@@ -2405,8 +2635,10 @@
                         <Slider x:Name="RadialMenuOpacitySlider" Grid.Row="3" Margin="80,8,0,0" Minimum="0.35" Maximum="1" TickFrequency="0.05" IsSnapToTickEnabled="True" />
                         <TextBlock Grid.Row="3" Grid.Column="1" Margin="5,8,0,0" VerticalAlignment="Center" FontWeight="SemiBold" Text="{Binding ElementName=RadialMenuOpacitySlider, Path=Value, StringFormat={}{0:0.00}}" />
                         <TextBlock Grid.Row="4" Margin="0,8,0,0" VerticalAlignment="Center" Text="外观皮肤" />
-                        <ComboBox x:Name="RadialMenuSkinCombo" Grid.Row="4" Grid.ColumnSpan="2" Margin="80,8,0,0" Style="{StaticResource DoorPanelCompactComboStyle}">
-                            <ComboBoxItem Content="科技深蓝 (Tech Blue)" />
+                        <ComboBox x:Name="RadialMenuSkinCombo" Grid.Row="4" Grid.ColumnSpan="2" Margin="80,8,0,0" Style="{StaticResource DoorPanelCompactComboStyle}" SelectionChanged="OnRadialMenuSkinSelectionChanged">
+                            <ComboBoxItem Content="橙灰极简 (Orange Slate)" />
+                            <ComboBoxItem Content="CAD 深色" />
+                            <ComboBoxItem Content="紫灰" />
                         </ComboBox>
                     </Grid>
                 </GroupBox>
@@ -2430,9 +2662,9 @@
                                   MouseMove="OnRadialMenuGridMouseMove"
                                   Drop="OnRadialMenuGridDrop">
                             <DataGrid.Columns>
-                                <DataGridTextColumn Header="位置" Width="86" IsReadOnly="True" Binding="{Binding PositionLabel}" />
-                                <DataGridTextColumn Header="命令名称" Width="*" MinWidth="140" Binding="{Binding Name, UpdateSourceTrigger=PropertyChanged}" />
-                                <DataGridTextColumn Header="CAD快捷键" Width="105" Binding="{Binding CommandAlias, UpdateSourceTrigger=PropertyChanged}" />
+                                <DataGridTextColumn Header="位置" Width="0.8*" MinWidth="86" IsReadOnly="True" Binding="{Binding PositionLabel}" ElementStyle="{StaticResource DcDataGridTextBlockStyle}" />
+                                <DataGridTextColumn Header="命令名称" Width="1.6*" MinWidth="140" Binding="{Binding Name, UpdateSourceTrigger=PropertyChanged}" ElementStyle="{StaticResource DcDataGridTextBlockStyle}" />
+                                <DataGridTextColumn Header="CAD快捷键" Width="1*" MinWidth="105" Binding="{Binding CommandAlias, UpdateSourceTrigger=PropertyChanged}" ElementStyle="{StaticResource DcDataGridTextBlockStyle}" />
                             </DataGrid.Columns>
                         </DataGrid>
                         <Grid Margin="0,7,0,0">
@@ -2501,10 +2733,10 @@
                                       ScrollViewer.HorizontalScrollBarVisibility="Auto"
                                       ScrollViewer.VerticalScrollBarVisibility="Auto">
                                 <DataGrid.Columns>
-                                    <DataGridTextColumn Header="插件名称" Binding="{Binding Name}" Width="SizeToCells" MinWidth="120" />
-                                    <DataGridTextColumn Header="类型" Binding="{Binding Type}" Width="60" />
-                                    <DataGridTextColumn Header="本地路径" Binding="{Binding RelativePath}" Width="*" MinWidth="150" />
-                                    <DataGridTextColumn Header="大小" Binding="{Binding SizeText}" Width="75" />
+                                    <DataGridTextColumn Header="插件名称" Binding="{Binding Name}" ElementStyle="{StaticResource DcDataGridTextBlockStyle}" Width="1.15*" MinWidth="120" />
+                                    <DataGridTextColumn Header="类型" Binding="{Binding Type}" ElementStyle="{StaticResource DcDataGridTextBlockStyle}" Width="0.65*" MinWidth="60" />
+                                    <DataGridTextColumn Header="本地路径" Binding="{Binding RelativePath}" ElementStyle="{StaticResource DcDataGridTextBlockStyle}" Width="2*" MinWidth="150" />
+                                    <DataGridTextColumn Header="大小" Binding="{Binding SizeText}" ElementStyle="{StaticResource DcDataGridTextBlockStyle}" Width="0.75*" MinWidth="75" />
                                 </DataGrid.Columns>
                             </DataGrid>
                         </Border>

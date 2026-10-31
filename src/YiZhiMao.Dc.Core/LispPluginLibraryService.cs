@@ -18,13 +18,13 @@ public static class LispPluginLibraryService
 
     public static string EnsureDefaultFolder(string pluginDirectory)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(pluginDirectory);
+        Compatibility.NotNullOrWhiteSpace(pluginDirectory, nameof(pluginDirectory));
         return EnsureFolder(Path.Combine(pluginDirectory, "Modules"));
     }
 
     public static string EnsureFolder(string modulesRoot)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(modulesRoot);
+        Compatibility.NotNullOrWhiteSpace(modulesRoot, nameof(modulesRoot));
 
         var directory = Path.Combine(Path.GetFullPath(modulesRoot), "LispPlugins");
         Directory.CreateDirectory(directory);
@@ -42,11 +42,11 @@ public static class LispPluginLibraryService
         return Directory.EnumerateFiles(root, "*", SearchOption.AllDirectories)
             .Where(path => SupportedExtensions.Contains(Path.GetExtension(path), StringComparer.OrdinalIgnoreCase))
             .Select(Path.GetFullPath)
-            .OrderBy(path => Path.GetRelativePath(root, path), StringComparer.CurrentCultureIgnoreCase)
+            .OrderBy(path => Compatibility.GetRelativePath(root, path), StringComparer.CurrentCultureIgnoreCase)
             .Select(path => new LispPluginItem(
                 Path.GetFileNameWithoutExtension(path),
                 Path.GetExtension(path).TrimStart('.').ToUpperInvariant(),
-                Path.GetRelativePath(root, path),
+                Compatibility.GetRelativePath(root, path),
                 path,
                 new FileInfo(path).Length))
             .ToList();
@@ -54,7 +54,7 @@ public static class LispPluginLibraryService
 
     public static string BuildLoadExpression(string path)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        Compatibility.NotNullOrWhiteSpace(path, nameof(path));
 
         var fullPath = Path.GetFullPath(path);
         if (!SupportedExtensions.Contains(Path.GetExtension(fullPath), StringComparer.OrdinalIgnoreCase))

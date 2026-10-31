@@ -1,5 +1,6 @@
 using Autodesk.AutoCAD.Runtime;
 using Autodesk.AutoCAD.ApplicationServices;
+using System.IO;
 using YiZhiMao.Dc.Plugin.Shortcuts;
 using YiZhiMao.Dc.Plugin.Views;
 using AcadApplication = Autodesk.AutoCAD.ApplicationServices.Core.Application;
@@ -26,9 +27,29 @@ namespace YiZhiMao.Dc.Plugin;
 
 public sealed class PluginApplication : IExtensionApplication
 {
+    private static bool autoExpandPending;
+
     public void Initialize()
     {
+        PluginDependencyResolver.Initialize();
         AcadApplication.DocumentManager.DocumentCreated += OnDocumentCreated;
+        if (IsCoreConsole())
+        {
+            return;
+        }
+
+        TryAutoExpandImmediately();
+
+        if (!CadQuickToggleRuntime.TryApplyConfiguredSaveFileFormat(out var saveFormatError))
+        {
+            AcadApplication.DocumentManager.MdiActiveDocument?.Editor.WriteMessage(
+                $"\n一只猫dc 默认保存版本应用失败：{saveFormatError}");
+        }
+
+        SmartInputMethodRuntime.Initialize();
+        MissingShxReplacementRuntime.Initialize();
+        ShxFontSyncRuntime.Initialize();
+        ModuleCommandGuard.Initialize();
         RadialMenuMouseActivation.Initialize();
 
         try
@@ -46,14 +67,76 @@ public sealed class PluginApplication : IExtensionApplication
 
     public void Terminate()
     {
+        AcadApplication.Idle -= OnInitialIdle;
+        autoExpandPending = false;
         AcadApplication.DocumentManager.DocumentCreated -= OnDocumentCreated;
+        SmartInputMethodRuntime.Dispose();
+        MissingShxReplacementRuntime.Dispose();
+        ShxFontSyncRuntime.Dispose();
+        ModuleCommandGuard.Dispose();
         RadialMenuMouseActivation.Dispose();
         ToolboxPalette.Dispose();
         RadialMenuWindowManager.Dispose();
+        PluginDependencyResolver.Dispose();
     }
 
     private static void OnDocumentCreated(object sender, DocumentCollectionEventArgs e)
     {
+        if (IsCoreConsole())
+        {
+            return;
+        }
+
         ShortcutManager.ApplyTo(e.Document);
     }
+
+    private static void ScheduleAutoExpand()
+    {
+        if (!ToolboxSettingsRuntime.Settings.Preferences.AutoExpandSidebar || autoExpandPending)
+        {
+            return;
+        }
+
+        autoExpandPending = true;
+        AcadApplication.Idle += OnInitialIdle;
+    }
+
+    private static void TryAutoExpandImmediately()
+    {
+        if (!ToolboxSettingsRuntime.Settings.Preferences.AutoExpandSidebar)
+        {
+            return;
+        }
+
+        try
+        {
+            ToolboxPalette.Show();
+        }
+        catch (System.Exception)
+        {
+            ToolboxPalette.Dispose();
+            ScheduleAutoExpand();
+        }
+    }
+
+    private static void OnInitialIdle(object? sender, EventArgs e)
+    {
+        if (AcadApplication.DocumentManager.MdiActiveDocument is null)
+        {
+            return;
+        }
+
+        AcadApplication.Idle -= OnInitialIdle;
+        autoExpandPending = false;
+        if (ToolboxSettingsRuntime.Settings.Preferences.AutoExpandSidebar)
+        {
+            ToolboxPalette.Show();
+        }
+    }
+
+    private static bool IsCoreConsole() =>
+        string.Equals(
+            Path.GetFileNameWithoutExtension(System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName),
+            "accoreconsole",
+            StringComparison.OrdinalIgnoreCase);
 }

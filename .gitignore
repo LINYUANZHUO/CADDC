@@ -9,3 +9,5 @@ artifacts/
 .ai-memory/*/
 !.ai-memory/project_memory.md
 !.ai-memory/handoff.md
+lib/AutoCAD/**/*.dll
+lib/AutoCAD/**/*.download

@@ -7,7 +7,7 @@ namespace YiZhiMao.Dc.Plugin;
 public static class StatusCommands
 {
     [CommandMethod("DC_CMD_STATUS", CommandFlags.Modal)]
-    [ShortcutCommand("系统", "检查插件运行状态", "JC")]
+    [ShortcutCommand("系统", "检查插件运行状态", "DCJC")]
     public static void ShowStatus()
     {
         var document = AcadApplication.DocumentManager.MdiActiveDocument;

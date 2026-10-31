@@ -25,7 +25,7 @@ public partial class BatchPrintWindow : Window
         JobGrid.ItemsSource = this.jobs;
 
         var settings = PrintRuntime.Settings.Clone();
-        var devices = toPdf ? CadPlotService.GetDevices() : CadPlotService.GetPaperDevices();
+        var devices = toPdf ? CadPlotService.GetPdfDevices() : CadPlotService.GetPaperDevices();
         PrinterCombo.ItemsSource = devices;
         var plotStyles = CadPlotService.GetPlotStyles(document.Database);
         PlotStyleCombo.ItemsSource = plotStyles;
@@ -37,7 +37,7 @@ public partial class BatchPrintWindow : Window
         if (devices.Count > 0)
         {
             var preferredPrinter = PrintOptionSelector.SelectRequired(
-                toPdf ? ["DWG To PDF.pc3", settings.Printer] : [settings.Printer, GetDefaultPrinter()],
+                toPdf ? [settings.Printer, "DWG To PDF.pc3"] : [settings.Printer, GetDefaultPrinter()],
                 devices,
                 "打印设备");
             PrinterCombo.SelectedItem = preferredPrinter;
@@ -46,7 +46,9 @@ public partial class BatchPrintWindow : Window
         }
         else
         {
-            StatusText.Text = "未检测到实体打印机；仍可使用预览，实际出纸前请启用 Print Spooler 并安装打印机。";
+            StatusText.Text = toPdf
+                ? "未检测到可用的 PDF 打印设备，请检查 DWG To PDF.pc3 配置。"
+                : "未检测到实体打印机；仍可使用预览，实际出纸前请启用 Print Spooler 并安装打印机。";
         }
     }
 
@@ -141,20 +143,19 @@ public partial class BatchPrintWindow : Window
     {
         if (!double.TryParse(MarginBox.Text, NumberStyles.Float, CultureInfo.CurrentCulture, out var margin) || margin < 0)
         {
-            StatusText.Text = "页边留白必须是非负数。";
+            StatusText.Text = "图框外扩必须是非负数。";
             return;
         }
 
         string? outputDirectory = null;
         if (toPdf)
         {
-            var folderDialog = new OpenFolderDialog { Title = "选择 PDF 输出目录" };
-            if (folderDialog.ShowDialog(this) != true)
+            if (!FolderDialogService.TrySelectFolder(this, "选择 PDF 输出目录", null, out var folderName))
             {
                 return;
             }
 
-            outputDirectory = folderDialog.FolderName;
+            outputDirectory = folderName;
         }
 
         var settings = PrintRuntime.Settings.Clone();
@@ -173,7 +174,7 @@ public partial class BatchPrintWindow : Window
                 if (paperDevices.Count == 0)
                 {
                     throw new InvalidOperationException(
-                        "未检测到可用于纸张输出的实体打印机。请先在 Windows 安装打印机并启动 Print Spooler 服务；输出文件请使用 D2。");
+                        "未检测到可用于纸张输出的实体打印机。请先在 Windows 安装打印机并启动 Print Spooler 服务；输出文件请使用 DCD2。");
                 }
             }
 
@@ -203,7 +204,7 @@ public partial class BatchPrintWindow : Window
     {
         if (!double.TryParse(MarginBox.Text, NumberStyles.Float, CultureInfo.CurrentCulture, out var margin) || margin < 0)
         {
-            StatusText.Text = "页边留白必须是非负数。";
+            StatusText.Text = "图框外扩必须是非负数。";
             return;
         }
 

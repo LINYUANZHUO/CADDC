@@ -12,26 +12,27 @@
         FontFamily="Microsoft YaHei UI"
         KeyDown="OnWindowKeyDown">
     <Window.Resources>
-        <Style TargetType="Button">
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/YiZhiMao.Dc.Plugin;component/Themes/ToolboxTheme.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        <Style TargetType="Button" BasedOn="{StaticResource DcButtonStyle}">
             <Setter Property="Height" Value="34" />
             <Setter Property="Margin" Value="4,2" />
             <Setter Property="Padding" Value="12,5" />
             <Setter Property="HorizontalContentAlignment" Value="Left" />
-            <Setter Property="Background" Value="White" />
-            <Setter Property="BorderBrush" Value="#D9DDE3" />
-            <Setter Property="Foreground" Value="#20242A" />
-            <Setter Property="Cursor" Value="Hand" />
         </Style>
+        </ResourceDictionary>
     </Window.Resources>
 
-    <Border Background="#F7F7F8"
-            BorderBrush="#AEB4BC"
+    <Border Background="{StaticResource ThemePageBrush}"
+            BorderBrush="{StaticResource ThemeBorderBrush}"
             BorderThickness="1"
             CornerRadius="3"
             Padding="4">
         <StackPanel>
             <TextBlock Margin="8,5,8,4"
-                       Foreground="#68707C"
+                       Foreground="{StaticResource ThemeTextSecondaryBrush}"
                        FontSize="12"
                        Text="选择铰链类型" />
             <Button Content="内嵌 (D)" Tag="内嵌" Click="OnTypeClick" />
@@ -39,8 +40,8 @@
             <Button x:Name="FullCoverButton"
                     Content="全盖 (Z)"
                     Tag="全盖"
-                    Background="#EF5E25"
-                    BorderBrush="#EF5E25"
+                    Background="{StaticResource ThemeAccentBrush}"
+                    BorderBrush="{StaticResource ThemeAccentBrush}"
                     Foreground="White"
                     Click="OnTypeClick" />
         </StackPanel>

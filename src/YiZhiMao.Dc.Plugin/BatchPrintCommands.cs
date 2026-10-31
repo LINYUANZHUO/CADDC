@@ -12,35 +12,35 @@ namespace YiZhiMao.Dc.Plugin;
 public static class BatchPrintCommands
 {
     [CommandMethod("DC_CMD_BATCH_PRINT", CommandFlags.Modal)]
-    [ShortcutCommand("批量打印", "打开批量打印面板", "DY")]
+    [ShortcutCommand("批量打印", "打开批量打印面板", "DCDY")]
     public static void ShowBatchPrintModule()
     {
         ToolboxPalette.Show(ToolboxModule.BatchPrint);
     }
 
     [CommandMethod("DC_CMD_PRINT_PAPER", CommandFlags.Modal)]
-    [ShortcutCommand("批量打印", "选中图框打印到纸张", "D1")]
+    [ShortcutCommand("批量打印", "选中图框打印到纸张", "DCD1")]
     public static void PrintSelectedFramesToPaper()
     {
         OpenSelectedFrameCenter(toPdf: false);
     }
 
     [CommandMethod("DC_CMD_PRINT_PDF", CommandFlags.Modal)]
-    [ShortcutCommand("批量打印", "选中图框打印到 PDF", "D2")]
+    [ShortcutCommand("批量打印", "选中图框打印到 PDF", "DCD2")]
     public static void PrintSelectedFramesToPdf()
     {
         OpenSelectedFrameCenter(toPdf: true);
     }
 
     [CommandMethod("DC_CMD_PRINT_LAYOUT_PAPER", CommandFlags.Modal)]
-    [ShortcutCommand("批量打印", "当前布局打印到纸张", "D3")]
+    [ShortcutCommand("批量打印", "当前布局打印到纸张", "DCD3")]
     public static void PrintLayoutsToPaper()
     {
         OpenLayoutCenter(toPdf: false);
     }
 
     [CommandMethod("DC_CMD_PRINT_LAYOUT_PDF", CommandFlags.Modal)]
-    [ShortcutCommand("批量打印", "当前布局打印到 PDF", "D4")]
+    [ShortcutCommand("批量打印", "当前布局打印到 PDF", "DCD4")]
     public static void PrintLayoutsToPdf()
     {
         OpenLayoutCenter(toPdf: true);
@@ -133,10 +133,10 @@ public static class BatchPrintCommands
 
         try
         {
-            var job = FrameRecognitionService.GetCurrentPaperSpaceLayout(document.Database, PrintRuntime.Settings);
+            var job = FrameRecognitionService.GetCurrentOrActivateFirstPaperSpaceLayout(document, PrintRuntime.Settings);
             if (job is null)
             {
-                document.Editor.WriteMessage("\n当前处于模型空间；请先切换到要打印的布局，再执行 D3 或 D4。");
+                document.Editor.WriteMessage("\n当前图纸没有可打印的布局；请先新建布局，再执行 DCD3 或 DCD4。");
                 return;
             }
 

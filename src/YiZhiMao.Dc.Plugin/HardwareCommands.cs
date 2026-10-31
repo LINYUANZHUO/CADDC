@@ -81,14 +81,14 @@ public static class HardwareCommands
     }
 
     [CommandMethod("DC_CMD_LIGHT_STRIP", CommandFlags.Modal)]
-    [ShortcutCommand("五金件", "插入灯带", "DD")]
+    [ShortcutCommand("五金件", "插入灯带", "DCDD")]
     public static void InsertLightStrip()
     {
         InsertSelected(HardwareRuntimeSettings.SelectedLightStrip, "灯带");
     }
 
     [CommandMethod("DC_CMD_HINGE_INSERT", CommandFlags.Modal)]
-    [ShortcutCommand("门板抽面", "插入铰链", "JL")]
+    [ShortcutCommand("门板抽面", "插入铰链", "DCJL")]
     public static void InsertHinges()
     {
         RunHingeCommand();
@@ -815,7 +815,7 @@ public static class HardwareCommands
             }
 
             var adjustedValue = currentValue + worldWidthDifference / scaleX;
-            if (!double.IsFinite(adjustedValue) || adjustedValue <= 0)
+            if (!Compatibility.IsFinite(adjustedValue) || adjustedValue <= 0)
             {
                 return false;
             }
@@ -831,15 +831,15 @@ public static class HardwareCommands
     {
         var propertyName = property.PropertyName.ToUpperInvariant();
         return !property.ReadOnly &&
-               (propertyName.Contains("长度", StringComparison.Ordinal) ||
-                propertyName.Contains("距离", StringComparison.Ordinal) ||
-                propertyName.Contains("LENGTH", StringComparison.Ordinal) ||
-                propertyName.Contains("DISTANCE", StringComparison.Ordinal));
+               (Compatibility.Contains(propertyName, "长度", StringComparison.Ordinal) ||
+                Compatibility.Contains(propertyName, "距离", StringComparison.Ordinal) ||
+                Compatibility.Contains(propertyName, "LENGTH", StringComparison.Ordinal) ||
+                Compatibility.Contains(propertyName, "DISTANCE", StringComparison.Ordinal));
     }
 
     private static void EnsureValidHangingRodWidth(double width)
     {
-        if (!double.IsFinite(width) || width <= 0.000001)
+        if (!Compatibility.IsFinite(width) || width <= 0.000001)
         {
             throw new InvalidOperationException("挂衣杆素材宽度无效，无法自动拉伸。");
         }
@@ -885,7 +885,7 @@ public static class HardwareCommands
         var safeName = builder.Length == 0 ? "BLOCK" : builder.ToString();
         if (safeName.Length > 60)
         {
-            safeName = safeName[..60];
+            safeName = safeName.Substring(0, 60);
         }
 
         return $"DC_HW_{safeName}_{File.GetLastWriteTimeUtc(filePath).Ticks:X}";

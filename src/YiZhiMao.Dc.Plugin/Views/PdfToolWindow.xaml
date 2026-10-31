@@ -7,15 +7,18 @@
         MinWidth="600"
         MinHeight="480"
         WindowStartupLocation="CenterOwner"
-        Background="#F7F7F8"
+        Background="{DynamicResource ThemePageBrush}"
         FontFamily="Microsoft YaHei UI">
     <Window.Resources>
-        <SolidColorBrush x:Key="AccentBrush" Color="#EF5E25" />
-        <Style x:Key="ButtonStyle" TargetType="Button">
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/YiZhiMao.Dc.Plugin;component/Themes/ToolboxTheme.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        <Style x:Key="ButtonStyle" TargetType="Button" BasedOn="{StaticResource DcButtonStyle}">
             <Setter Property="Padding" Value="13,7" />
             <Setter Property="Margin" Value="5,0,0,0" />
-            <Setter Property="Cursor" Value="Hand" />
         </Style>
+        </ResourceDictionary>
     </Window.Resources>
     <Grid Margin="20">
         <Grid.RowDefinitions>
@@ -27,8 +30,8 @@
         </Grid.RowDefinitions>
 
         <StackPanel>
-            <TextBlock Foreground="{StaticResource AccentBrush}" FontSize="16" FontWeight="SemiBold" Text="PDF 自由合并工具" />
-            <TextBlock Margin="0,5,0,12" Foreground="#7A818B" Text="选择来源目录，勾选需要的文件后按当前列表顺序合并。" />
+            <TextBlock Foreground="{StaticResource ThemeAccentBrush}" FontSize="16" FontWeight="SemiBold" Text="PDF 自由合并工具" />
+            <TextBlock Margin="0,5,0,12" Foreground="{StaticResource ThemeTextSecondaryBrush}" Text="选择来源目录，勾选需要的文件后按当前列表顺序合并。" />
         </StackPanel>
 
         <Grid Grid.Row="1">
@@ -64,15 +67,16 @@
             </StackPanel>
             <DataGrid x:Name="PdfGrid"
                       Grid.Row="1"
+                      Style="{StaticResource DcDataGridStyle}"
                       AutoGenerateColumns="False"
                       CanUserAddRows="False"
                       GridLinesVisibility="Horizontal"
-                      HorizontalGridLinesBrush="#D9DDE3"
+                      HorizontalGridLinesBrush="{StaticResource ThemeBorderBrush}"
                       RowHeaderWidth="0">
                 <DataGrid.Columns>
-                    <DataGridCheckBoxColumn Header="勾选" Binding="{Binding IsSelected}" Width="70" />
-                    <DataGridTextColumn Header="文件名称" Binding="{Binding FileName}" IsReadOnly="True" Width="*" />
-                    <DataGridTextColumn Header="页数" Binding="{Binding PageCount}" IsReadOnly="True" Width="80" />
+                    <DataGridCheckBoxColumn Header="勾选" Binding="{Binding IsSelected}" Width="70" MinWidth="70" />
+                    <DataGridTextColumn Header="文件名称" Binding="{Binding FileName}" ElementStyle="{StaticResource DcDataGridTextBlockStyle}" IsReadOnly="True" Width="*" MinWidth="180" />
+                    <DataGridTextColumn Header="页数" Binding="{Binding PageCount}" ElementStyle="{StaticResource DcDataGridTextBlockStyle}" IsReadOnly="True" Width="80" MinWidth="80" />
                 </DataGrid.Columns>
             </DataGrid>
         </Grid>
@@ -84,8 +88,8 @@
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <Button Style="{StaticResource ButtonStyle}" Margin="0" Content="清空列表" Click="OnClearClick" />
-            <TextBlock x:Name="PdfStatusText" Grid.Column="1" Margin="12,0" VerticalAlignment="Center" Foreground="#68707C" TextWrapping="Wrap" />
-            <Button Grid.Column="2" Style="{StaticResource ButtonStyle}" Background="{StaticResource AccentBrush}" BorderBrush="{StaticResource AccentBrush}" Foreground="White" FontWeight="SemiBold" Content="开始合并所选文件" Click="OnMergeClick" />
+            <TextBlock x:Name="PdfStatusText" Grid.Column="1" Margin="12,0" Style="{StaticResource DcStatusTextStyle}" />
+            <Button Grid.Column="2" Style="{StaticResource DcPrimaryButtonStyle}" Margin="5,0,0,0" Padding="13,7" Content="开始合并所选文件" Click="OnMergeClick" />
         </Grid>
     </Grid>
 </Window>

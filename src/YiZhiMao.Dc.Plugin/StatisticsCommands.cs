@@ -56,15 +56,15 @@ public static class StatisticsCommands
             AllowNone = false,
             AppendKeywordsToMessage = true
         };
-        outputOptions.Keywords.Add("Table", "T", "放置CAD表格");
-        outputOptions.Keywords.Add("Excel", "E", "导出Excel总表");
+        outputOptions.Keywords.Add("CAD", "CAD", "放置CAD表格");
+        outputOptions.Keywords.Add("Excel", "Excel", "导出Excel总表");
         var output = document.Editor.GetKeywords(outputOptions);
         if (output.Status != PromptStatus.OK)
         {
             return;
         }
 
-        if (string.Equals(output.StringResult, "Table", StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(output.StringResult, "CAD", StringComparison.OrdinalIgnoreCase))
         {
             PlaceCadTable(document, rows);
             return;
@@ -246,19 +246,19 @@ public static class StatisticsCommands
     private static string? Classify(string layer, string name, StatisticsMode mode)
     {
         var combined = layer + " " + name;
-        var isDoor = combined.Contains("门板", StringComparison.OrdinalIgnoreCase) ||
-                     combined.Contains("抽面", StringComparison.OrdinalIgnoreCase);
-        var isFrameDoor = isDoor && (combined.Contains("边框", StringComparison.OrdinalIgnoreCase) ||
-                                     combined.Contains("玻璃", StringComparison.OrdinalIgnoreCase));
-        var isBoard = combined.Contains("柜体", StringComparison.OrdinalIgnoreCase) ||
-                      combined.Contains("层板", StringComparison.OrdinalIgnoreCase) ||
-                      combined.Contains("背板", StringComparison.OrdinalIgnoreCase) ||
-                      combined.Contains("板件", StringComparison.OrdinalIgnoreCase);
+        var isDoor = Compatibility.Contains(combined, "门板", StringComparison.OrdinalIgnoreCase) ||
+                     Compatibility.Contains(combined, "抽面", StringComparison.OrdinalIgnoreCase);
+        var isFrameDoor = isDoor && (Compatibility.Contains(combined, "边框", StringComparison.OrdinalIgnoreCase) ||
+                                     Compatibility.Contains(combined, "玻璃", StringComparison.OrdinalIgnoreCase));
+        var isBoard = Compatibility.Contains(combined, "柜体", StringComparison.OrdinalIgnoreCase) ||
+                      Compatibility.Contains(combined, "层板", StringComparison.OrdinalIgnoreCase) ||
+                      Compatibility.Contains(combined, "背板", StringComparison.OrdinalIgnoreCase) ||
+                      Compatibility.Contains(combined, "板件", StringComparison.OrdinalIgnoreCase);
         var isPart = isBoard || isDoor ||
-                     combined.Contains("铰链", StringComparison.OrdinalIgnoreCase) ||
-                     combined.Contains("拉手", StringComparison.OrdinalIgnoreCase) ||
-                     combined.Contains("挂衣杆", StringComparison.OrdinalIgnoreCase) ||
-                     combined.Contains("灯带", StringComparison.OrdinalIgnoreCase);
+                     Compatibility.Contains(combined, "铰链", StringComparison.OrdinalIgnoreCase) ||
+                     Compatibility.Contains(combined, "拉手", StringComparison.OrdinalIgnoreCase) ||
+                     Compatibility.Contains(combined, "挂衣杆", StringComparison.OrdinalIgnoreCase) ||
+                     Compatibility.Contains(combined, "灯带", StringComparison.OrdinalIgnoreCase);
 
         return mode switch
         {
@@ -324,7 +324,7 @@ public static class StatisticsCommands
             if (entity is Polyline polyline && Math.Abs(polyline.Thickness) > 0.001)
             {
                 var extrusion = Math.Abs(polyline.Thickness);
-                if (polyline.Layer.Contains("柜体结构", StringComparison.OrdinalIgnoreCase))
+                if (Compatibility.Contains(polyline.Layer, "柜体结构", StringComparison.OrdinalIgnoreCase))
                 {
                     var length = Math.Max(width, height);
                     var boardThickness = Math.Min(width, height);

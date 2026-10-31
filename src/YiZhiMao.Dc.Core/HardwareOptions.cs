@@ -35,7 +35,7 @@ public sealed record HardwareOptions(
 
     public int GetHingeCount(double panelHeight)
     {
-        if (!double.IsFinite(panelHeight) || panelHeight <= 0)
+        if (!Compatibility.IsFinite(panelHeight) || panelHeight <= 0)
         {
             throw new ArgumentOutOfRangeException(nameof(panelHeight), "门板高度必须大于 0。");
         }
@@ -109,7 +109,7 @@ public sealed record HardwareOptions(
             return false;
         }
 
-        if (!Enum.IsDefined(hingeDimensionMode))
+        if (!Enum.IsDefined(typeof(HingeDimensionMode), hingeDimensionMode))
         {
             error = "请选择有效的铰链标注模式。";
             return false;
@@ -140,7 +140,7 @@ public sealed record HardwareOptions(
 
     private static bool TryNonNegative(string? value, string name, out double result, out string error)
     {
-        if (!TryDouble(value, out result) || !double.IsFinite(result) || result < 0)
+        if (!TryDouble(value, out result) || !Compatibility.IsFinite(result) || result < 0)
         {
             error = $"{name}必须是大于或等于 0 的数字。";
             return false;
@@ -152,7 +152,7 @@ public sealed record HardwareOptions(
 
     private static bool TryPositive(string? value, string name, out double result, out string error)
     {
-        if (!TryDouble(value, out result) || !double.IsFinite(result) || result <= 0)
+        if (!TryDouble(value, out result) || !Compatibility.IsFinite(result) || result <= 0)
         {
             error = $"{name}必须是大于 0 的数字。";
             return false;

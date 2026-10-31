@@ -24,11 +24,11 @@ public static class PlanDoorPanelLayoutCalculator
         PlanDoorPanelOptions options,
         bool flipDirection)
     {
-        ArgumentNullException.ThrowIfNull(options);
+        Compatibility.NotNull(options, nameof(options));
         var deltaX = end.X - start.X;
         var deltaY = end.Y - start.Y;
         var baselineLength = Math.Sqrt(deltaX * deltaX + deltaY * deltaY);
-        if (!double.IsFinite(baselineLength) || baselineLength <= Tolerance)
+        if (!Compatibility.IsFinite(baselineLength) || baselineLength <= Tolerance)
         {
             throw new ArgumentOutOfRangeException(nameof(end), "柜体前沿长度必须大于 0。");
         }

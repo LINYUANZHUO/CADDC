@@ -34,7 +34,7 @@ public sealed record PlanDoorPanelOptions(
         out string error)
     {
         options = Default;
-        if (!Enum.IsDefined(calculationMode))
+        if (!Enum.IsDefined(typeof(DoorPanelCalculationMode), calculationMode))
         {
             error = "请选择有效的门板尺寸计算模式。";
             return false;
@@ -96,6 +96,6 @@ public sealed record PlanDoorPanelOptions(
     {
         return (double.TryParse(value, NumberStyles.Float, CultureInfo.CurrentCulture, out result) ||
                 double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out result)) &&
-               double.IsFinite(result);
+               Compatibility.IsFinite(result);
     }
 }

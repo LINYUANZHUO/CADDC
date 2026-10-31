@@ -23,7 +23,7 @@ internal static class CadPlotService
             if (spooler?.GetValue("Start") is int startMode && startMode == 4)
             {
                 throw new InvalidOperationException(
-                    "Windows 打印后台处理程序已被禁用。请先启用并启动 Print Spooler 服务，再使用 D1 打印纸张。");
+                    "Windows 打印后台处理程序已被禁用。请先启用并启动 Print Spooler 服务，再使用 DCD1 打印纸张。");
             }
         }
         catch (System.Security.SecurityException)
@@ -62,6 +62,33 @@ internal static class CadPlotService
         }
 
         return devices;
+    }
+
+    public static IReadOnlyList<string> GetPdfDevices()
+    {
+        var devices = new List<string>();
+        foreach (var device in GetDevices().Where(device =>
+                     !device.Equals("None", StringComparison.OrdinalIgnoreCase) &&
+                     device.IndexOf("PDF", StringComparison.OrdinalIgnoreCase) >= 0))
+        {
+            try
+            {
+                using var configuration = PlotConfigManager.SetCurrentConfig(device);
+                if (configuration.PlotToFileCapability == PlotToFileCapability.MustPlotToFile)
+                {
+                    devices.Add(device);
+                }
+            }
+            catch (Autodesk.AutoCAD.Runtime.Exception)
+            {
+                // Unavailable PDF configurations are not valid output devices.
+            }
+        }
+
+        return devices
+            .OrderByDescending(device => device.Equals("DWG To PDF.pc3", StringComparison.OrdinalIgnoreCase))
+            .ThenBy(device => device, StringComparer.OrdinalIgnoreCase)
+            .ToList();
     }
 
     public static IReadOnlyList<string> GetPlotStyles(Database database)
@@ -109,6 +136,7 @@ internal static class CadPlotService
         }
 
         var previousBackgroundPlot = AcadApplication.GetSystemVariable("BACKGROUNDPLOT");
+        string? temporarySinglesDirectory = null;
         AcadApplication.SetSystemVariable("BACKGROUNDPLOT", 0);
         try
         {
@@ -123,38 +151,37 @@ internal static class CadPlotService
                 Directory.CreateDirectory(outputDirectory);
             }
 
-            var printed = 0;
-            foreach (var job in selectedJobs)
+            var runTag = $"{DateTime.Now:yyyyMMdd_HHmmss_fff}_{Guid.NewGuid():N}".Substring(0, 28);
+            var singleOutputDirectory = outputDirectory;
+            if (toPdf && settings.PdfOutputMode == PdfOutputMode.MergedOnly)
             {
-                var copies = settings.Collate ? job.Copies : 1;
-                var repetitions = settings.Collate ? 1 : job.Copies;
-                for (var copy = 0; copy < repetitions; copy++)
-                {
-                    var outputPath = toPdf
-                        ? CreateOutputPath(outputDirectory!, document.Name, job, copy, repetitions)
-                        : null;
-                    PlotOne(document, job, settings, outputPath, copies);
-                    if (outputPath is not null)
-                    {
-                        individualPdfs.Add(outputPath);
-                    }
+                temporarySinglesDirectory = Path.Combine(outputDirectory!, $".YiZhiMaoDc-{runTag}");
+                Directory.CreateDirectory(temporarySinglesDirectory);
+                singleOutputDirectory = temporarySinglesDirectory;
+            }
 
-                    printed++;
+            var printed = 0;
+            var plan = PrintCopyPlanner.Build(selectedJobs.Select(job => job.Copies).ToList(), settings.Collate);
+            foreach (var step in plan)
+            {
+                var job = selectedJobs[step.JobPosition];
+                var outputPath = toPdf
+                    ? CreateOutputPath(singleOutputDirectory!, document.Name, job, step.CopyIndex, job.Copies, runTag)
+                    : null;
+                PlotOne(document, job, settings, outputPath);
+                if (outputPath is not null)
+                {
+                    individualPdfs.Add(outputPath);
                 }
+
+                printed++;
             }
 
             string? mergedPath = null;
             if (toPdf && settings.PdfOutputMode is PdfOutputMode.MergedOnly or PdfOutputMode.SeparateAndMerged)
             {
-                mergedPath = Path.Combine(outputDirectory!, $"{Path.GetFileNameWithoutExtension(document.Name)}_合并_{DateTime.Now:yyyyMMdd_HHmmss}.pdf");
+                mergedPath = Path.Combine(outputDirectory!, $"{Path.GetFileNameWithoutExtension(document.Name)}_合并_{runTag}.pdf");
                 PdfToolService.Merge(individualPdfs, mergedPath);
-                if (settings.PdfOutputMode == PdfOutputMode.MergedOnly)
-                {
-                    foreach (var path in individualPdfs.Where(path => !path.Equals(mergedPath, StringComparison.OrdinalIgnoreCase)))
-                    {
-                        File.Delete(path);
-                    }
-                }
             }
 
             if (settings.OpenMergedPdf && mergedPath is not null)
@@ -170,6 +197,11 @@ internal static class CadPlotService
         }
         finally
         {
+            if (temporarySinglesDirectory is not null)
+            {
+                TryDeleteDirectory(temporarySinglesDirectory);
+            }
+
             AcadApplication.SetSystemVariable("BACKGROUNDPLOT", previousBackgroundPlot);
         }
     }
@@ -197,17 +229,17 @@ internal static class CadPlotService
         var previewSettings = settings.Clone();
         previewSettings.Printer = PrintOptionSelector.SelectRequired(
             ["DWG To PDF.pc3"],
-            GetDevices(),
+            GetPdfDevices(),
             "PDF打印设备");
         previewSettings.PdfOutputMode = PdfOutputMode.MergedOnly;
         previewSettings.OpenMergedPdf = false;
         previewSettings.OpenOutputFolder = false;
         previewSettings.Collate = true;
 
+        var previewRoot = Path.Combine(Path.GetTempPath(), "YiZhiMaoDc", "Preview");
+        CleanupOldPreviewDirectories(previewRoot);
         var previewDirectory = Path.Combine(
-            Path.GetTempPath(),
-            "YiZhiMaoDc",
-            "Preview",
+            previewRoot,
             $"{DateTime.Now:yyyyMMdd_HHmmss_fff}_{Guid.NewGuid():N}");
         var result = Run(document, previewJobs, previewSettings, toPdf: true, previewDirectory);
         var previewPath = result.MergedPdfPath;
@@ -260,7 +292,7 @@ internal static class CadPlotService
         });
     }
 
-    private static void PlotOne(Document document, CadPrintJob job, PrintSettings settings, string? outputPath, int copies)
+    private static void PlotOne(Document document, CadPrintJob job, PrintSettings settings, string? outputPath)
     {
         var currentStage = "读取布局";
         try
@@ -374,28 +406,69 @@ internal static class CadPlotService
 
             currentStage = "生成打印输出";
             using var progress = new PlotProgressDialog(false, 1, true);
-            progress.set_PlotMsgString(PlotMessageIndex.DialogTitle, "一只猫dc 批量打印");
-            progress.set_PlotMsgString(PlotMessageIndex.CancelJobButtonMessage, "取消");
-            progress.set_PlotMsgString(PlotMessageIndex.SheetSetProgressCaption, "打印进度");
-            progress.set_PlotMsgString(PlotMessageIndex.SheetProgressCaption, job.Notes);
-            progress.LowerPlotProgressRange = 0;
-            progress.UpperPlotProgressRange = 100;
-            progress.PlotProgressPos = 0;
-            progress.OnBeginPlot();
-            progress.IsVisible = true;
-
             using var engine = PlotFactory.CreatePublishEngine();
-            engine.BeginPlot(progress, null);
-            engine.BeginDocument(plotInfo, document.Name, null, Math.Max(1, copies), outputPath is not null, outputPath);
-            using var pageInfo = new PlotPageInfo();
-            engine.BeginPage(pageInfo, plotInfo, true, null);
-            engine.BeginGenerateGraphics(null);
-            engine.EndGenerateGraphics(null);
-            engine.EndPage(null);
-            engine.EndDocument(null);
-            progress.PlotProgressPos = 100;
-            engine.EndPlot(null);
-            progress.OnEndPlot();
+            var progressStarted = false;
+            var plotStarted = false;
+            var documentStarted = false;
+            var pageStarted = false;
+            var graphicsStarted = false;
+            try
+            {
+                progress.set_PlotMsgString(PlotMessageIndex.DialogTitle, "一只猫dc 批量打印");
+                progress.set_PlotMsgString(PlotMessageIndex.CancelJobButtonMessage, "取消");
+                progress.set_PlotMsgString(PlotMessageIndex.SheetSetProgressCaption, "打印进度");
+                progress.set_PlotMsgString(PlotMessageIndex.SheetProgressCaption, job.Notes);
+                progress.LowerPlotProgressRange = 0;
+                progress.UpperPlotProgressRange = 100;
+                progress.PlotProgressPos = 0;
+                progress.OnBeginPlot();
+                progressStarted = true;
+                progress.IsVisible = true;
+
+                engine.BeginPlot(progress, null);
+                plotStarted = true;
+                engine.BeginDocument(plotInfo, document.Name, null, 1, outputPath is not null, outputPath);
+                documentStarted = true;
+                using var pageInfo = new PlotPageInfo();
+                engine.BeginPage(pageInfo, plotInfo, true, null);
+                pageStarted = true;
+                engine.BeginGenerateGraphics(null);
+                graphicsStarted = true;
+                engine.EndGenerateGraphics(null);
+                graphicsStarted = false;
+                engine.EndPage(null);
+                pageStarted = false;
+                engine.EndDocument(null);
+                documentStarted = false;
+                progress.PlotProgressPos = 100;
+                engine.EndPlot(null);
+                plotStarted = false;
+                progress.OnEndPlot();
+                progressStarted = false;
+            }
+            finally
+            {
+                if (graphicsStarted)
+                {
+                    TryCompletePlotStage(() => engine.EndGenerateGraphics(null));
+                }
+                if (pageStarted)
+                {
+                    TryCompletePlotStage(() => engine.EndPage(null));
+                }
+                if (documentStarted)
+                {
+                    TryCompletePlotStage(() => engine.EndDocument(null));
+                }
+                if (plotStarted)
+                {
+                    TryCompletePlotStage(() => engine.EndPlot(null));
+                }
+                if (progressStarted)
+                {
+                    TryCompletePlotStage(progress.OnEndPlot);
+                }
+            }
             transaction.Commit();
         }
         catch (Autodesk.AutoCAD.Runtime.Exception exception)
@@ -423,8 +496,8 @@ internal static class CadPlotService
             extents.MinPoint.Y,
             extents.MaxPoint.X,
             extents.MaxPoint.Y);
-        if (!double.IsFinite(result.MinPoint.X) || !double.IsFinite(result.MinPoint.Y) ||
-            !double.IsFinite(result.MaxPoint.X) || !double.IsFinite(result.MaxPoint.Y) ||
+        if (!Compatibility.IsFinite(result.MinPoint.X) || !Compatibility.IsFinite(result.MinPoint.Y) ||
+            !Compatibility.IsFinite(result.MaxPoint.X) || !Compatibility.IsFinite(result.MaxPoint.Y) ||
             result.MaxPoint.X <= result.MinPoint.X || result.MaxPoint.Y <= result.MinPoint.Y)
         {
             throw new InvalidOperationException("图框转换后的打印窗口范围无效。");
@@ -441,11 +514,68 @@ internal static class CadPlotService
         return ToList(validator.GetCanonicalMediaNameList(plotSettings));
     }
 
-    private static string CreateOutputPath(string directory, string drawingName, CadPrintJob job, int copy, int repetitions)
+    private static string CreateOutputPath(
+        string directory,
+        string drawingName,
+        CadPrintJob job,
+        int copyIndex,
+        int copyCount,
+        string runTag)
     {
-        var copySuffix = repetitions > 1 ? $"_{copy + 1}" : string.Empty;
-        var fileName = $"{Path.GetFileNameWithoutExtension(drawingName)}_{job.Index:000}_{Sanitize(job.LayoutName)}{copySuffix}.pdf";
+        var copySuffix = copyCount > 1 ? $"_{copyIndex + 1}" : string.Empty;
+        var fileName = $"{Path.GetFileNameWithoutExtension(drawingName)}_{job.Index:000}_{Sanitize(job.LayoutName)}{copySuffix}_{runTag}.pdf";
         return Path.Combine(directory, fileName);
+    }
+
+    private static void TryCompletePlotStage(Action action)
+    {
+        try
+        {
+            action();
+        }
+        catch
+        {
+            // Preserve the original plot/cancellation exception while releasing native plot state.
+        }
+    }
+
+    private static void CleanupOldPreviewDirectories(string previewRoot)
+    {
+        if (!Directory.Exists(previewRoot))
+        {
+            return;
+        }
+
+        var cutoff = DateTime.UtcNow.AddDays(-7);
+        foreach (var directory in Directory.EnumerateDirectories(previewRoot))
+        {
+            try
+            {
+                if (Directory.GetLastWriteTimeUtc(directory) < cutoff)
+                {
+                    Directory.Delete(directory, recursive: true);
+                }
+            }
+            catch
+            {
+                // An opened preview can remain locked; retry during a later preview.
+            }
+        }
+    }
+
+    private static void TryDeleteDirectory(string directory)
+    {
+        try
+        {
+            if (Directory.Exists(directory))
+            {
+                Directory.Delete(directory, recursive: true);
+            }
+        }
+        catch
+        {
+            // A PDF driver can briefly retain a file handle; a later preview cleanup can remove it.
+        }
     }
 
     private static string Sanitize(string value)
