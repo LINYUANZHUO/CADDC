@@ -111,6 +111,65 @@ public static class DoorPanelDivisionCalculator
         return new DoorPanelDivision(widths, actualGap);
     }
 
+    public static DoorPanelDivision CalculateWithExteriorGaps(
+        double totalWidth,
+        int doorCount,
+        double targetGap,
+        DoorPanelCalculationMode calculationMode)
+    {
+        ValidateInputs(totalWidth, doorCount, targetGap, calculationMode);
+
+        var gapCount = doorCount + 1;
+        var roundedGap = Math.Round(targetGap, MidpointRounding.AwayFromZero);
+        var configuredGap = calculationMode is DoorPanelCalculationMode.DoorRoundedGapDistributed or
+            DoorPanelCalculationMode.GapFixedDoorDistributed
+            ? targetGap
+            : roundedGap;
+        var availableWidth = totalWidth - configuredGap * gapCount;
+        if (availableWidth <= Tolerance)
+        {
+            throw new ArgumentOutOfRangeException(nameof(targetGap), "门缝总宽度不能大于门板总宽度。");
+        }
+
+        if (calculationMode == DoorPanelCalculationMode.GapFixedDoorDistributed)
+        {
+            return new DoorPanelDivision(
+                Enumerable.Repeat(availableWidth / doorCount, doorCount).ToArray(),
+                targetGap);
+        }
+
+        if (calculationMode == DoorPanelCalculationMode.DoorRoundedGapDistributed)
+        {
+            var roundedDoor = Math.Round(availableWidth / doorCount, MidpointRounding.AwayFromZero);
+            var actualGap = (totalWidth - roundedDoor * doorCount) / gapCount;
+            if (roundedDoor <= Tolerance || actualGap < -Tolerance)
+            {
+                throw new ArgumentOutOfRangeException(nameof(targetGap), "门板取整后没有可用的门缝宽度。");
+            }
+
+            return new DoorPanelDivision(
+                Enumerable.Repeat(roundedDoor, doorCount).ToArray(),
+                Math.Max(0, actualGap));
+        }
+
+        if (calculationMode == DoorPanelCalculationMode.GapRoundedDoorDistributed)
+        {
+            return new DoorPanelDivision(
+                Enumerable.Repeat(availableWidth / doorCount, doorCount).ToArray(),
+                roundedGap);
+        }
+
+        var integerDoor = Math.Floor(availableWidth / doorCount);
+        if (integerDoor <= Tolerance)
+        {
+            throw new ArgumentOutOfRangeException(nameof(totalWidth), "门板取整后的宽度必须大于 0。");
+        }
+
+        var integerWidths = Enumerable.Repeat(integerDoor, doorCount).ToArray();
+        integerWidths[integerWidths.Length - 1] += availableWidth - integerDoor * doorCount;
+        return new DoorPanelDivision(integerWidths, roundedGap);
+    }
+
     private static void ValidateInputs(
         double totalWidth,
         int doorCount,

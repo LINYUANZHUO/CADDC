@@ -2,7 +2,7 @@ namespace YiZhiMao.Dc.Core;
 
 public sealed class ShortcutConfiguration
 {
-    public const int CurrentSchemaVersion = 8;
+    public const int CurrentSchemaVersion = 10;
 
     public int SchemaVersion { get; set; } = CurrentSchemaVersion;
 

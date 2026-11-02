@@ -5,3 +5,5 @@
 3. 标注模板放入 DimTemplate。
 4. 构建时整个 Modules 目录会复制到 YiZhiMaoDc.bundle\Contents\Modules。
 5. 五金件面板直接读取安装后 bundle 内的 Modules；新增 DWG 无需重新编译代码，但正式安装包需要重新构建。
+6. 超级图库放入 SuperLibrary；一级文件夹即分类，DWG 与同名 PNG/JPG/JPEG/BMP 自动配对预览，.bak 文件不会显示或打包。
+7. 输入 DCTK 打开超级图库，输入 DCBCT 将当前选中图形保存到已选分类。

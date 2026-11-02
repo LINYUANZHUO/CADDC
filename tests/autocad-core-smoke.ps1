@@ -17,8 +17,13 @@ $pluginPath = Join-Path $repoRoot "src\YiZhiMao.Dc.Plugin\bin\$Configuration\net
 $probeProjectPath = Join-Path $repoRoot 'tests\YiZhiMao.Dc.HostProbe\YiZhiMao.Dc.HostProbe.csproj'
 $probePath = Join-Path $repoRoot "tests\YiZhiMao.Dc.HostProbe\bin\$Configuration\net8.0-windows\YiZhiMao.Dc.HostProbe.dll"
 $fixturePath = Join-Path $repoRoot 'Modules\DimTemplate\DimTemplate.dwg'
+$syncTemplateFixture = Get-ChildItem -LiteralPath (Join-Path $repoRoot 'Modules\DimTemplate') -Filter '*.dwg' -File |
+    Where-Object { $_.Name -ne 'DimTemplate.dwg' } |
+    Sort-Object Name |
+    Select-Object -First 1
+$syncTemplateFixturePath = if ($null -eq $syncTemplateFixture) { '' } else { $syncTemplateFixture.FullName }
 
-foreach ($requiredPath in @($solutionPath, $consolePath, $fixturePath, $probeProjectPath)) {
+foreach ($requiredPath in @($solutionPath, $consolePath, $fixturePath, $syncTemplateFixturePath, $probeProjectPath)) {
     if (-not (Test-Path -LiteralPath $requiredPath -PathType Leaf)) {
         throw "Required host-smoke input is missing: $requiredPath"
     }
@@ -49,6 +54,8 @@ New-Item -ItemType Directory -Path $runDirectory -Force | Out-Null
 $scriptPath = Join-Path $runDirectory 'host-smoke.scr'
 $stdoutPath = Join-Path $runDirectory 'stdout.txt'
 $stderrPath = Join-Path $runDirectory 'stderr.txt'
+$syncTemplatePath = Join-Path $runDirectory 'dim-style-source.dwg'
+Copy-Item -LiteralPath $syncTemplateFixturePath -Destination $syncTemplatePath
 
 $scriptLines = @(
     '_.FILEDIA',
@@ -64,6 +71,8 @@ $scriptLines = @(
     '_.NETLOAD',
     $probePath.Replace('\', '/'),
     'DC_CMD_STATUS',
+    'DC_TEST_DIM_STYLE_SYNC',
+    $syncTemplatePath.Replace('\', '/'),
     '_.LINE',
     '100000,102000',
     '101000,102000',
@@ -164,6 +173,14 @@ if (-not ($outputLines | Where-Object { $_ -match '^\s*DC_HOST_GEOMETRY_PASS' })
     $failures.Add('Board geometry success marker was not found.')
 }
 
+if (-not ($outputLines | Where-Object { $_ -match '^\s*DC_HOST_DIM_STYLE_SYNC_PASS' })) {
+    $failures.Add('Dimension style cross-drawing synchronization success marker was not found.')
+}
+
+if ($outputLines | Where-Object { $_ -match '^\s*DC_HOST_DIM_STYLE_SYNC_(FAIL|ERROR)' }) {
+    $failures.Add('Dimension style cross-drawing synchronization failure marker was found.')
+}
+
 if ($outputLines | Where-Object { $_ -match '^\s*DC_HOST_GEOMETRY_FAIL' }) {
     $failures.Add('Board geometry failure marker was found.')
 }
@@ -196,6 +213,7 @@ if ($outputLines | Where-Object { $_ -match '^\s*DC_HOST_FRAME_CONTENT_(FAIL|ERR
 foreach ($forbiddenPattern in @(
     'DC_HOST_FRAME_SCAN_ERROR',
     'DC_HOST_FRAME_CONTENT_ERROR',
+    'DC_HOST_DIM_STYLE_SYNC_ERROR',
     'Unknown command',
     '未知命令',
     'Unhandled exception',
@@ -215,6 +233,7 @@ Write-Output 'AcCoreConsole host smoke test passed.'
 Write-Output '  Loaded: YiZhiMao.Dc.Plugin.dll'
 Write-Output '  Command: DC_CMD_STATUS'
 Write-Output '  Geometry: DC_CMD_BOARD_DRAW -> closed 4-vertex polyline'
+Write-Output '  Dimension styles: source DWG -> target DimStyleTableId without eInvalidInput'
 Write-Output '  Frames: 3 outer frames -> deduplicated, de-nested, reading order verified'
 Write-Output '  Frame content: overlapping block and ordinary geometry -> one candidate'
 Write-Output "  Log: $stdoutPath"

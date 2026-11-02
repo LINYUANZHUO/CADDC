@@ -1,0 +1,210 @@
+<Window x:Class="YiZhiMao.Dc.Plugin.Views.SuperLibraryWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="一只猫dc 超级图库"
+        Width="1080"
+        Height="720"
+        MinWidth="760"
+        MinHeight="480"
+        Background="{StaticResource ThemePageBrush}"
+        WindowStartupLocation="CenterOwner">
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/YiZhiMao.Dc.Plugin;component/Themes/ToolboxTheme.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+            <Style x:Key="LibraryToolbarButtonStyle"
+                   TargetType="Button"
+                   BasedOn="{StaticResource DcButtonStyle}">
+                <Setter Property="Margin" Value="0,0,8,0" />
+                <Setter Property="Height" Value="32" />
+            </Style>
+        </ResourceDictionary>
+    </Window.Resources>
+
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Border Padding="10"
+                Background="{StaticResource ThemeSurfaceBrush}"
+                BorderBrush="{StaticResource ThemeBorderBrush}"
+                BorderThickness="1"
+                CornerRadius="4">
+            <DockPanel LastChildFill="True">
+                <StackPanel DockPanel.Dock="Left" Orientation="Horizontal">
+                    <Button Style="{StaticResource LibraryToolbarButtonStyle}"
+                            Content="打开文件夹"
+                            Click="OnOpenFolderClick" />
+                    <Button Style="{StaticResource LibraryToolbarButtonStyle}"
+                            Content="+ 保存选中图形 (DCBCT)"
+                            Click="OnSaveSelectionClick" />
+                    <Button Style="{StaticResource LibraryToolbarButtonStyle}"
+                            Content="刷新"
+                            Click="OnRefreshClick" />
+                    <Button Style="{StaticResource DcDangerButtonStyle}"
+                            Height="32"
+                            Margin="0,0,8,0"
+                            Content="批量删除"
+                            Click="OnBatchDeleteClick" />
+                </StackPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right">
+                    <TextBlock Margin="0,0,8,0"
+                               VerticalAlignment="Center"
+                               Foreground="{StaticResource ThemeTextSecondaryBrush}"
+                               Text="预览缩放" />
+                    <Slider x:Name="PreviewScaleSlider"
+                            Width="120"
+                            Minimum="150"
+                            Maximum="300"
+                            Value="210"
+                            ValueChanged="OnPreviewScaleChanged" />
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <Grid Grid.Row="1" Margin="0,12,0,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="190" />
+                <ColumnDefinition Width="12" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <Border Padding="10"
+                    Background="{StaticResource ThemeSurfaceBrush}"
+                    BorderBrush="{StaticResource ThemeBorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="4">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <TextBlock Margin="2,0,0,8"
+                               FontSize="15"
+                               FontWeight="SemiBold"
+                               Foreground="{StaticResource ThemeTextPrimaryBrush}"
+                               Text="组件分类" />
+                    <ListBox x:Name="CategoryList"
+                             Grid.Row="1"
+                             BorderBrush="{StaticResource ThemeBorderBrush}"
+                             SelectionChanged="OnCategorySelectionChanged">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <DockPanel Margin="3">
+                                    <TextBlock Text="{Binding ItemCount}"
+                                               DockPanel.Dock="Right"
+                                               Foreground="{StaticResource ThemeTextSecondaryBrush}" />
+                                    <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                                </DockPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                    <TextBox x:Name="CategoryNameBox"
+                             Grid.Row="2"
+                             Margin="0,10,0,6"
+                             Style="{StaticResource DcTextBoxStyle}"
+                             ToolTip="输入新分类名，或修改当前分类名" />
+                    <UniformGrid Grid.Row="3" Columns="3">
+                        <Button Margin="0,0,4,0" Style="{StaticResource DcButtonStyle}" Content="新增" Click="OnAddCategoryClick" />
+                        <Button Margin="2,0" Style="{StaticResource DcButtonStyle}" Content="改名" Click="OnRenameCategoryClick" />
+                        <Button Margin="4,0,0,0" Style="{StaticResource DcDangerButtonStyle}" Content="删除" Click="OnDeleteCategoryClick" />
+                    </UniformGrid>
+                </Grid>
+            </Border>
+
+            <Border Grid.Column="2"
+                    Padding="10"
+                    Background="{StaticResource ThemeSurfaceBrush}"
+                    BorderBrush="{StaticResource ThemeBorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="4">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <DockPanel Margin="2,0,2,8">
+                        <TextBlock x:Name="CurrentCategoryText"
+                                   FontSize="15"
+                                   FontWeight="SemiBold"
+                                   Foreground="{StaticResource ThemeTextPrimaryBrush}" />
+                        <TextBlock x:Name="ItemCountText"
+                                   Margin="10,2,0,0"
+                                   Foreground="{StaticResource ThemeTextSecondaryBrush}" />
+                    </DockPanel>
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                        <ItemsControl x:Name="LibraryItemsControl">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Width="{Binding CardWidth}"
+                                            Height="{Binding CardHeight}"
+                                            Margin="5"
+                                            Padding="5"
+                                            Background="#F7F8FA"
+                                            BorderBrush="{StaticResource ThemeBorderBrush}"
+                                            BorderThickness="1"
+                                            CornerRadius="3"
+                                            Cursor="Hand"
+                                            Tag="{Binding}"
+                                            MouseLeftButtonUp="OnLibraryItemClick"
+                                            MouseRightButtonUp="OnLibraryItemPreviewClick">
+                                        <Grid>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="*" />
+                                                <RowDefinition Height="28" />
+                                            </Grid.RowDefinitions>
+                                            <Border Background="#20252B" CornerRadius="2">
+                                                <Grid>
+                                                    <TextBlock HorizontalAlignment="Center"
+                                                               VerticalAlignment="Center"
+                                                               FontSize="22"
+                                                               FontWeight="SemiBold"
+                                                               Foreground="#7D8792"
+                                                               Text="DWG" />
+                                                    <Image Source="{Binding PreviewImage}"
+                                                           Stretch="Uniform"
+                                                           SnapsToDevicePixels="True" />
+                                                </Grid>
+                                            </Border>
+                                            <DockPanel Grid.Row="1" Margin="2,5,2,0">
+                                                <CheckBox DockPanel.Dock="Right"
+                                                          Margin="8,0,0,0"
+                                                          VerticalAlignment="Center"
+                                                          IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                                          PreviewMouseDown="OnItemCheckPreviewMouseDown" />
+                                                <TextBlock VerticalAlignment="Center"
+                                                           Foreground="{StaticResource ThemeTextPrimaryBrush}"
+                                                           Text="{Binding DisplayName}"
+                                                           TextTrimming="CharacterEllipsis" />
+                                            </DockPanel>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <DockPanel Grid.Row="2">
+            <TextBlock x:Name="StatusText"
+                       Foreground="{StaticResource ThemeTextSecondaryBrush}"
+                       TextWrapping="Wrap" />
+            <TextBlock DockPanel.Dock="Right"
+                       Foreground="{StaticResource ThemeTextSecondaryBrush}"
+                       Text="左键：跟随鼠标预览并插入　右键：查看大图" />
+        </DockPanel>
+    </Grid>
+</Window>

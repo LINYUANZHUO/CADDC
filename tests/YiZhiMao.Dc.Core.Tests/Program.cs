@@ -22,7 +22,8 @@ var tests = new (string Name, Action Test)[]
     ("旧版未修改快捷键迁移到新的无冲突默认值", UnchangedLegacyAliasMigratesToNewDefault),
     ("旧版HJL迁移为不冲突的DCHJL", LegacyHingeAliasMigratesToDchjl),
     ("旧版墙板快捷键迁移为DC前缀", LegacyWainscotAliasesMigrateToDcPrefix),
-    ("插件命令和默认快捷键统一使用DC前缀", BuiltInCommandsAndAliasesUseDcPrefix),
+    ("旧版柜体快捷键迁移为DC前缀", LegacyCabinetAliasesMigrateToDcPrefix),
+    ("插件命令和默认快捷键使用DC前缀且保留已确认FQ", BuiltInCommandsAndAliasesUseDcPrefix),
     ("旧默认快捷键升级为DC前缀并保留用户修改", LegacyCommandAliasesMigrateWithoutOverwritingUserValues),
     ("非法用户配置仍可加载到面板修正", InvalidSavedAliasCanStillBeLoaded),
     ("空命令列表配置可恢复默认值", NullSavedItemsRecoverDefaults),
@@ -36,6 +37,12 @@ var tests = new (string Name, Action Test)[]
     ("批量图片参数支持默认值和等比缩放", ImageBatchOptionsScaleProportionally),
     ("批量图片参数拒绝非法间距和高度", ImageBatchOptionsRejectInvalidValues),
     ("批量图片按实际宽度和间距向右排列", ImageBatchOptionsCalculateNextPosition),
+    ("标准单元柜参数保留三视图与工艺默认值", CabinetOptionsUseConfirmedDefaults),
+    ("标准单元柜俯视图在正视图下方且侧视图在右侧", CabinetViewsUseConfirmedRelativePositions),
+    ("独立柜体俯视图保留确认的默认参数", PlanCabinetOptionsUseConfirmedDefaults),
+    ("独立柜体俯视图按门数联动门板与中竖板", PlanCabinetLayoutTracksDoorCount),
+    ("独立柜体俯视图界面和DCFST/DCMBT2命令入口完整", PlanCabinetSurfaceCommandsAreComplete),
+    ("柜体面板命令刷新与拆单数据入口完整", CabinetSurfaceCommandsAndStatisticsAreComplete),
     ("工具箱参数跨模块持久化并可完整恢复", ToolboxSettingsPersistAcrossModules),
     ("工具箱参数损坏或非法时安全回退默认值", ToolboxSettingsFallbackOnInvalidFiles),
     ("面板与底层命令共享同一持久化运行时", ToolboxRuntimeUsesSharedPersistentSettings),
@@ -59,6 +66,7 @@ var tests = new (string Name, Action Test)[]
     ("背景墙可选保留垂直排缝并生成全部排俯视图", BackgroundWallLayoutSupportsVerticalGapsAndAllPlanRows),
     ("背景墙随机宽度保持最小板宽并生成卡槽与辅助视图", BackgroundWallLayoutBuildsStableRandomSlotsAndViews),
     ("背景墙界面与DCBJQ底层命令入口完整", WainscotBackgroundWallSurfaceContractIsComplete),
+    ("智能标注模块复用既有命令并安全同步标注样式", SmartAnnotationSurfaceAndSafeStyleSyncContractIsComplete),
     ("立面门板参数以柜体内空和四向盖板延伸值为基础", DoorPanelOptionsUseInnerOpeningAndCoverExtensions),
     ("门板布局把四向盖板延伸值应用到最终边界", DoorPanelLayoutAppliesCoverExtensions),
     ("立面与俯视门板统一使用门扇数补偿实际门缝", DoorPanelLayoutsUseUnifiedGapCompensation),
@@ -74,20 +82,44 @@ var tests = new (string Name, Action Test)[]
     ("俯视门板参数独立保存并校验厚度门缝前沿间距和盖值", PlanDoorPanelOptionsAreIndependentAndValidated),
     ("俯视门板固定任意门缝并按前沿间距生成", PlanDoorPanelLayoutUsesCursorSideAndFlip),
     ("俯视门板界面和DCMBF命令入口完整", PlanDoorPanelSurfaceAndCommandAreComplete),
-    ("抽面默认竖向两块固定门缝且遮罩关闭", DrawerFaceOptionsUseConfirmedDefaults),
-    ("抽面按方向均分并应用四向盖值", DrawerFaceLayoutSupportsVerticalAndHorizontalDirections),
-    ("抽面设置、拾取应用拉手和DCMC命令入口完整", DrawerFaceSurfaceAndCommandAreComplete),
+    ("抽面默认两行一列且开启26毫米免拉手缝和遮罩", DrawerFaceOptionsUseConfirmedDefaults),
+    ("抽面按二维行列均分并应用四向盖值", DrawerFaceLayoutSupportsVerticalAndHorizontalDirections),
+    ("免拉手侧视图从缝隙边线或端点识别并生成C型和L型", HandlelessProfileDetectsRealBoundariesAndBuildsProfiles),
+    ("抽面设置、智能识别和DCMC命令入口完整", DrawerFaceSurfaceAndCommandAreComplete),
     ("抽面首次预览刷新且Release构建包含Core", DrawerFacePreviewAndReleaseConfigurationAreComplete),
-    ("抽面开门箭头向下且左右键始终控制数量", DrawerFaceOpeningArrowAndHotkeysFollowDrawingWorkflow),
+    ("抽面开门箭头向下且行列热键各自调整", DrawerFaceOpeningArrowAndHotkeysFollowDrawingWorkflow),
     ("门板线色遮罩与图层图纸模块入口完整", DoorColorMaskAndDrawingLayerSurfaceAreComplete),
     ("图纸修复遍历本地图块并重算墙板填充", DrawingDisplayRepairTraversesAllLocalBlocksAndReevaluatesHatches),
-    ("板件模块包含板件单双线和组件三个页签", BoardModuleSurfaceAndCommandsAreComplete),
+    ("图层图纸参数保留分类映射和智能选择图层", DrawingLayerOptionsPersistMappingsAndSelectionLayers),
+    ("图层图纸面板包含自定义配置实体控制和智能选择", DrawingLayerSurfaceContainsConfigurationAndSelectionTools),
+    ("图层图纸实体控制命令全部使用DC前缀", DrawingLayerEntityControlCommandsUseDcPrefixes),
+    ("图层图纸智能选择按配置图层和对象特征筛选", DrawingLayerSmartSelectionUsesConfiguredLayersAndObjectTraits),
+    ("板件模块包含板件单双线分区和组件四个页签", BoardModuleSurfaceAndCommandsAreComplete),
+    ("板件标识默认比例为1并支持下置文字和玻璃三角标记", BoardTagUsesNormalizedScaleAndLowerText),
+    ("收口与见光板按边缘和鼠标方向生成", BoardPlacementUsesEdgeAnchorsAndCursorDirection),
+    ("收口截面支持L、T、I三种结构和四向旋转", BoardTrimSectionsSupportProfilesAndRotation),
+    ("收口起点识别左右单线和双线且不依赖墙距", TrimStartDetectorRecognizesLocalLines),
+    ("空间中分板按内空中心和鼠标方向自动对齐", CenterBoardAlignsToDetectedOpening),
+    ("空间中分识别双线板件时采用靠近内空的边线", CenterBoardOpeningUsesInnerEdgesOfDoubleLines),
+    ("位移板按鼠标四方向保持板边净距", OffsetBoardUsesClearSpacingOnFourSides),
+    ("ABA夹心层板三层独立并以后端对齐形成内退", AbaBoardLayersKeepRearEdgesAligned),
+    ("背板按鼠标后沿分别计算俯视缩进和正视延伸", BackboardUsesRearDirectionAndIndependentExtensions),
     ("板件高级操作包含位移夹层均分背板和编辑投影", AdvancedBoardOperationsAreComplete),
     ("板件单双线替换偏移数量精确", BoardLineReplacementOffsetsAreExact),
-    ("均分板件扣除板厚后保持等净空", BoardDivisionAccountsForThickness),
-    ("板件拆分和延剪拒绝无效几何", BoardEditingGuardsRejectInvalidGeometry),
-    ("板件合并只允许兼容属性", BoardMergePropertiesMustMatch),
+    ("单双三线按输入距离预览放线且延伸方向不受画线顺序影响", BoardLineOffsetsAndExtensionsFollowGeometry),
+    ("门板分区辅助线按最大门宽和热键数量等分", DoorPartitionGuidesUseSmartAndAdjustedCounts),
+    ("鞋柜斜层板按柜深智能增角并镜像生成前挡条", ShoeShelfLayoutFitsThinCabinetAndMirrorsFront),
+    ("均分板件支持最大净空、临时格数、余量侧和严格等分", BoardDivisionSupportsSmartAndCountModes),
+    ("分割板件按横竖板长向的两个位置生成三块", BoardSplitUsesTwoPositionsAlongLongAxis),
+    ("板件分割和延剪拒绝无效几何", BoardEditingGuardsRejectInvalidGeometry),
+    ("板件合并只允许完整相邻且兼容属性", BoardMergePropertiesMustMatch),
+    ("板件延伸修剪按点取侧生成正确边界", BoardEditingUsesPickedSide),
+    ("板件一键修剪自动选择点击端内侧最近交线", BoardNearestTrimFindsClickedSideBoundary),
+    ("板件延伸修剪角点按边界方向选边且剪贴板占用可重试", BoardEditingHandlesCornerPickAndClipboardContention),
+    ("板件单击边后就近延伸到外侧有效直线", BoardExtensionFindsNearestValidBoundary),
+    ("层立板投影按参考板方向和深度范围生成", BoardProjectionUsesReferenceOrientationAndDepthRange),
     ("拆单统计菜单包含五类统计入口", StatisticsModuleSurfaceAndCommandsAreComplete),
+    ("拆单统计高级参数与雷神BOM桥接完整", AdvancedStatisticsConfigurationAndBridgeAreComplete),
     ("拆单统计按规格汇总并输出Excel兼容CSV", DrawingStatisticsAggregateAndExport),
     ("一键全屋拆单支持CAD表格与Excel总表", WholeHouseStatisticsSupportsCadTableAndExcel),
     ("图框对齐让框内图形跟随所属图框移动", FrameAlignmentMovesContainedGeometry),
@@ -130,6 +162,9 @@ var tests = new (string Name, Action Test)[]
     ("门板和铰链常用入口由原生命令兜底", NativeAliasesBypassLispLoadOrder),
     ("铰链类型文字默认35并按间距放入门内", HingeTypeLabelsUseConfigurableInsidePlacement),
     ("五金件面板和底层命令入口完整", HardwareSurfaceContractIsComplete),
+    ("超级图库按一级目录分类并匹配同名预览", SuperLibraryCatalogScansCategoriesAndPreviews),
+    ("超级图库分类与删除操作限制在图库根目录", SuperLibraryCatalogProtectsRootBoundary),
+    ("超级图库位于批量打印下方并提供预览插入入口", SuperLibrarySurfaceAndCommandsAreComplete),
     ("Modules资源会打包并由插件直接读取", ModuleResourcesAreBundledAndReadDirectly),
     ("Bundle构建前清理全部旧Contents", BundleBuildCleansAllPreviousContents),
     ("AutoCAD 2017至2027安装清单按精确版本分流", AutoCadVersionManifestUsesExactLanes),
@@ -470,6 +505,64 @@ static void LegacyWainscotAliasesMigrateToDcPrefix()
     }
 }
 
+static void LegacyCabinetAliasesMigrateToDcPrefix()
+{
+    var root = Path.Combine(Path.GetTempPath(), $"YiZhiMaoDcTests-{Guid.NewGuid():N}");
+    Directory.CreateDirectory(root);
+
+    try
+    {
+        var path = Path.Combine(root, "ShortcutConfig.json");
+        File.WriteAllText(path, """
+            {
+              "SchemaVersion": 9,
+              "ShortcutItems": [
+                {
+                  "Category": "柜体",
+                  "Description": "一键生成单元柜",
+                  "CoreCommand": "DC_CMD_CABINET_STANDARD",
+                  "DefaultAlias": "DG",
+                  "CustomAlias": "DG",
+                  "DisableDefault": false
+                },
+                {
+                  "Category": "柜体",
+                  "Description": "全局刷新柜体/板件",
+                  "CoreCommand": "DC_CMD_CABINET_REFRESH",
+                  "DefaultAlias": "XX",
+                  "CustomAlias": "XX",
+                  "DisableDefault": false
+                },
+                {
+                  "Category": "柜体",
+                  "Description": "生成万能柜体",
+                  "CoreCommand": "DC_CMD_CABINET_UNIVERSAL",
+                  "DefaultAlias": "WNG",
+                  "CustomAlias": "WNG",
+                  "DisableDefault": false
+                }
+              ]
+            }
+            """);
+
+        var configuration = new ShortcutConfigurationStore(path).LoadAndMerge([
+            CreateItem("一键生成单元柜", "DC_CMD_CABINET_STANDARD", "DCDG", "DCDG"),
+            CreateItem("全局刷新柜体/板件", "DC_CMD_CABINET_REFRESH", "DCXX", "DCXX"),
+            CreateItem("生成万能柜体", "DC_CMD_CABINET_UNIVERSAL", "DCWNG", "DCWNG")
+        ]);
+
+        Assert(configuration.ShortcutItems.Select(item => item.DefaultAlias)
+                   .SequenceEqual(["DCDG", "DCXX", "DCWNG"]) &&
+               configuration.ShortcutItems.Select(item => item.CustomAlias)
+                   .SequenceEqual(["DCDG", "DCXX", "DCWNG"]),
+            "旧版柜体快捷键没有随默认值迁移到 DC 前缀。" );
+    }
+    finally
+    {
+        DeleteTestDirectory(root);
+    }
+}
+
 static void BuiltInCommandsAndAliasesUseDcPrefix()
 {
     var root = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
@@ -489,8 +582,9 @@ static void BuiltInCommandsAndAliasesUseDcPrefix()
         .Select(match => match.Groups["command"].Value)
         .ToArray();
 
-    Assert(shortcutAliases.Length > 0 && shortcutAliases.All(alias => alias.StartsWith("DC", StringComparison.Ordinal)),
-        "存在未使用 DC 前缀的插件默认快捷键。" );
+    Assert(shortcutAliases.Length > 0 && shortcutAliases.All(alias =>
+            alias.StartsWith("DC", StringComparison.Ordinal) || alias == "FQ"),
+        "存在未使用 DC 前缀且未经确认的插件默认快捷键。" );
     Assert(commandNames.Length > 0 && commandNames.All(command => command.StartsWith("DC", StringComparison.Ordinal)),
         "存在未使用 DC 前缀的插件公开命令。" );
 }
@@ -521,6 +615,16 @@ static void LegacyCommandAliasesMigrateWithoutOverwritingUserValues()
                   "CoreCommand": "DC_CMD_LAYER_MANAGER",
                   "DefaultAlias": "MYLAYER",
                   "CustomAlias": "MYLAYER2"
+                },
+                {
+                  "CoreCommand": "DC_CMD_LINE_TO_DOUBLE",
+                  "DefaultAlias": "DCZ2",
+                  "CustomAlias": "DCZ2"
+                },
+                {
+                  "CoreCommand": "DC_CMD_LINE_TO_TRIPLE",
+                  "DefaultAlias": "DCZ3",
+                  "CustomAlias": "MYTRIPLE"
                 }
               ]
             }
@@ -530,18 +634,25 @@ static void LegacyCommandAliasesMigrateWithoutOverwritingUserValues()
         var configuration = store.LoadAndMerge([
             CreateItem("检查插件运行状态", "DC_CMD_STATUS", "DCJC", "DCJC"),
             CreateItem("批量插入图片", "DC_CMD_IMAGE_BATCH", "DCOLE", "DCOLE"),
-            CreateItem("快速图层管理器", "DC_CMD_LAYER_MANAGER", "DCTC", "DCTC")
+            CreateItem("快速图层管理器", "DC_CMD_LAYER_MANAGER", "DCTC", "DCTC"),
+            CreateItem("单线变双", "DC_CMD_LINE_TO_DOUBLE", "DC22", "DC22"),
+            CreateItem("单线变三", "DC_CMD_LINE_TO_TRIPLE", "DC33", "DC33")
         ]);
 
         var status = configuration.ShortcutItems.Single(item => item.CoreCommand == "DC_CMD_STATUS");
         var image = configuration.ShortcutItems.Single(item => item.CoreCommand == "DC_CMD_IMAGE_BATCH");
         var layer = configuration.ShortcutItems.Single(item => item.CoreCommand == "DC_CMD_LAYER_MANAGER");
+        var lineToDouble = configuration.ShortcutItems.Single(item => item.CoreCommand == "DC_CMD_LINE_TO_DOUBLE");
+        var lineToTriple = configuration.ShortcutItems.Single(item => item.CoreCommand == "DC_CMD_LINE_TO_TRIPLE");
         Assert(status.DefaultAlias == "DCJC" && status.CustomAlias == "DCJC",
             "未修改的 JC 默认值没有迁移为 DCJC。" );
         Assert(image.DefaultAlias == "DCOLE" && image.CustomAlias == "MYIMAGE",
             "OLE 默认值未迁移，或用户自定义快捷键被覆盖。" );
         Assert(layer.DefaultAlias == "MYLAYER" && layer.CustomAlias == "MYLAYER2",
             "用户编辑过的默认和自定义快捷键没有保留。" );
+        Assert(lineToDouble.DefaultAlias == "DC22" && lineToDouble.CustomAlias == "DC22" &&
+               lineToTriple.DefaultAlias == "DC33" && lineToTriple.CustomAlias == "MYTRIPLE",
+            "单双线旧快捷命令没有迁移为 DC22/DC33，或用户自定义快捷键被覆盖。" );
     }
     finally
     {
@@ -773,6 +884,366 @@ static void ImageBatchOptionsCalculateNextPosition()
         "零宽度图片未被拒绝。");
 }
 
+static void CabinetOptionsUseConfirmedDefaults()
+{
+    var options = CabinetOptions.Default;
+    var topRailAuxiliaryDepth = typeof(CabinetOptions)
+        .GetProperty("TopRailAuxiliaryDepth")?
+        .GetValue(options);
+
+    Assert(options.GenerateElevation && options.GeneratePlan && options.GenerateSide &&
+           options.PlanViewSpacing == 400 && options.SideViewSpacing == 400 &&
+           options.Width == 900 && options.Height == 2100 && options.Depth == 580 &&
+           options.Thickness == 18 && options.BackboardThickness == 18 &&
+           options.BackboardTopExtension == 0 && options.BackboardBottomExtension == 0 &&
+           options.TopRailHeight == 50 && topRailAuxiliaryDepth is 70d &&
+           options.FrontToeKickHeight == 80 &&
+           options.RearToeKickHeight == 80 && options.RearToeKickRearInset == 20 &&
+           options.TryValidate(out _),
+        "标准单元柜默认尺寸、三视图开关或工艺参数与确认界面不一致。" );
+
+    Assert(!(options with { GenerateElevation = false, GeneratePlan = false, GenerateSide = false })
+               .TryValidate(out _),
+        "标准单元柜错误地允许关闭全部视图。" );
+    Assert(!(options with { TopFrontInset = 400, TopRearInset = 300 }).TryValidate(out _),
+        "标准单元柜错误地接受了超过柜深的顶板缩进。" );
+
+    var root = Path.Combine(Path.GetTempPath(), $"dc-cabinet-default-migration-{Guid.NewGuid():N}");
+    Directory.CreateDirectory(root);
+    try
+    {
+        var path = Path.Combine(root, "ToolboxSettings.json");
+        File.WriteAllText(path, """
+            {
+              "Version": 1,
+              "Cabinet": {
+                "Width": 2400,
+                "Height": 1000,
+                "Depth": 620,
+                "Thickness": 18.5,
+                "PlanViewSpacing": 350
+              }
+            }
+            """);
+        var migrated = new ToolboxSettingsStore(path).Load();
+        Assert(migrated.Version == 5 && migrated.Cabinet.Width == 900 &&
+               migrated.Cabinet.Height == 2100 && migrated.Cabinet.Depth == 580 &&
+               migrated.Cabinet.Thickness == 18 &&
+               migrated.Cabinet.PlanViewSpacing == 350,
+            "旧版默认柜体尺寸没有迁移，或迁移时覆盖了用户调整的其他参数。" );
+        File.WriteAllText(path, """
+            {
+              "Version": 2,
+              "Cabinet": {
+                "Width": 900,
+                "Height": 2100,
+                "Depth": 600,
+                "Thickness": 18.5,
+                "PlanViewSpacing": 350
+              }
+            }
+            """);
+        migrated = new ToolboxSettingsStore(path).Load();
+        Assert(migrated.Version == 5 && migrated.Cabinet.Depth == 580 &&
+               migrated.Cabinet.Thickness == 18 && migrated.Cabinet.PlanViewSpacing == 350,
+            "Version 2 cabinet defaults were not migrated without disturbing other values.");
+        File.WriteAllText(path, """
+            {
+              "Version": 3,
+              "Cabinet": {
+                "Width": 900,
+                "Height": 2100,
+                "Depth": 580,
+                "Thickness": 18,
+                "BackboardTopExtension": 18,
+                "BackboardBottomExtension": 18,
+                "PlanViewSpacing": 350
+              }
+            }
+            """);
+        migrated = new ToolboxSettingsStore(path).Load();
+        Assert(migrated.Version == 5 && migrated.Cabinet.BackboardTopExtension == 0 &&
+               migrated.Cabinet.BackboardBottomExtension == 0 &&
+               migrated.Cabinet.PlanViewSpacing == 350,
+            "Version 3 backboard extension defaults were not migrated without disturbing other values.");
+    }
+    finally
+    {
+        DeleteTestDirectory(root);
+    }
+}
+
+static void CabinetViewsUseConfirmedRelativePositions()
+{
+    var options = CabinetOptions.Default;
+    var layout = CabinetLayoutCalculator.Calculate(options);
+
+    Assert(layout.Parts.Count == 9 && layout.Shapes.Count == 18 &&
+           layout.PrimaryView == CabinetViewKind.Elevation,
+        "标准单元柜没有保留八类板件，或三视图仍在重复投影不可见板件。" );
+    Assert(Math.Abs(layout.ElevationBounds.Bottom - layout.PlanBounds.Top - 400) < 0.000001,
+        "俯视图没有按净距 400 放在正视图下方。" );
+    Assert(Math.Abs(layout.SideBounds.Left - layout.ElevationBounds.Right - 400) < 0.000001,
+        "侧视图没有按净距 400 放在正视图右侧。" );
+    Assert(Math.Abs(layout.PlanBounds.Left - layout.ElevationBounds.Left) < 0.000001 &&
+           Math.Abs(layout.SideBounds.Bottom - layout.ElevationBounds.Bottom) < 0.000001,
+        "俯视图未与正视图左对齐，或侧视图未与正视图下沿对齐。" );
+
+    var bottom = layout.Parts.Single(part => part.Kind == CabinetPartKind.Bottom);
+    Assert(bottom.Box.MinY == 80 && bottom.Box.MaxY == 98 &&
+           bottom.CutWidth == 864 && bottom.CutHeight == 580 && bottom.CutThickness == 18,
+        "底板没有定位在踢脚线之上，或拆单净尺寸计算错误。" );
+
+    var backboard = layout.Parts.Single(part => part.Kind == CabinetPartKind.Backboard);
+    Assert(backboard.Box.MinX == 18 && backboard.Box.MaxX == 882 &&
+           backboard.Box.MinY == 98 && backboard.Box.MaxY == 2032 &&
+           backboard.CutWidth == 864 && backboard.CutHeight == 1934,
+        "Backboard must be based on the inner opening before its extensions are applied.");
+
+    var topRail = layout.Parts.Single(part => part.Kind == CabinetPartKind.TopRail);
+    Assert(topRail.Box.MinX == 0 && topRail.Box.MaxX == 900 &&
+           topRail.Box.MinY == 2050 && topRail.Box.MaxY == 2100 &&
+           topRail.Box.MinZ == 0 && topRail.Box.MaxZ == 18 &&
+           topRail.CutWidth == 900 && topRail.CutHeight == 50 && topRail.CutThickness == 18,
+        "Top rail must sit above the top board while remaining within the total cabinet height.");
+
+    var topRailAuxiliary = layout.Parts.Single(part => part.Name == "顶线辅助板");
+    Assert(topRailAuxiliary.Box.MinX == 0 && topRailAuxiliary.Box.MaxX == 900 &&
+           topRailAuxiliary.Box.MinY == 2050 && topRailAuxiliary.Box.MaxY == 2068 &&
+           topRailAuxiliary.Box.MinZ == 18 && topRailAuxiliary.Box.MaxZ == 88 &&
+           topRailAuxiliary.CutWidth == 900 && topRailAuxiliary.CutHeight == 70 &&
+           topRailAuxiliary.CutThickness == 18,
+        "Top-rail auxiliary board must start behind the face and extend rearward as an L section.");
+
+    var top = layout.Parts.Single(part => part.Kind == CabinetPartKind.Top);
+    var leftSide = layout.Parts.Single(part => part.Kind == CabinetPartKind.LeftSide);
+    Assert(top.Box.MinY == 2032 && top.Box.MaxY == 2050 &&
+           leftSide.Box.MaxY == 2050 && leftSide.CutWidth == 2050,
+        "Cabinet body height must exclude the 50 mm top rail from the confirmed total height.");
+
+    var elevationShapes = layout.Shapes.Where(shape => shape.View == CabinetViewKind.Elevation).ToArray();
+    Assert(elevationShapes.All(shape => !shape.Hidden) &&
+           elevationShapes.All(shape => shape.Part is not CabinetPartKind.Backboard and not CabinetPartKind.RearToeKick),
+        "正视图仍显示背板、后踢脚或大型虚线外框。" );
+
+    var elevationTop = elevationShapes.Single(shape => shape.Part == CabinetPartKind.Top);
+    var elevationTopRail = elevationShapes.Single(shape => shape.Part == CabinetPartKind.TopRail);
+    Assert(elevationTopRail.Bounds.Bottom == elevationTop.Bounds.Top &&
+           elevationTopRail.Bounds.Top == layout.ElevationBounds.Top,
+        "Front-view top rail must be directly above the top board within the total height.");
+
+    var planShapes = layout.Shapes.Where(shape => shape.View == CabinetViewKind.Plan).ToArray();
+    var planHidden = planShapes.Where(shape => shape.Hidden).ToArray();
+    Assert(planHidden is [{ Part: CabinetPartKind.Backboard }] &&
+           Math.Abs(planHidden[0].Bounds.Top - layout.PlanBounds.Top) < 0.000001 &&
+           planShapes.All(shape => shape.Part is not CabinetPartKind.Bottom and
+                                             not CabinetPartKind.FrontToeKick and
+                                             not CabinetPartKind.RearToeKick),
+        "俯视图没有把唯一的背板虚线放在上方，或仍含底板/踢脚重复矩形。" );
+
+    var sideShapes = layout.Shapes.Where(shape => shape.View == CabinetViewKind.Side).ToArray();
+    var sideBackboard = sideShapes.Single(shape => shape.Part == CabinetPartKind.Backboard);
+    var sideTop = sideShapes.Single(shape => shape.Part == CabinetPartKind.Top);
+    var sideBottom = sideShapes.Single(shape => shape.Part == CabinetPartKind.Bottom);
+    var sideTopRail = sideShapes.Single(shape => shape.Part == CabinetPartKind.TopRail);
+    var sideTopRailAuxiliary = sideShapes.Single(shape => shape.Part == topRailAuxiliary.Kind);
+    Assert(sideBackboard.Hidden &&
+           Math.Abs(sideBackboard.Bounds.Left - layout.SideBounds.Left) < 0.000001 &&
+           sideBackboard.Bounds.Bottom == sideBottom.Bounds.Top &&
+           sideBackboard.Bounds.Top == sideTop.Bounds.Bottom &&
+           Math.Abs(layout.SideBounds.Bottom - layout.ElevationBounds.Bottom) < 0.000001 &&
+           Math.Abs(layout.SideBounds.Top - layout.ElevationBounds.Top) < 0.000001 &&
+           sideShapes.All(shape => shape.Part != CabinetPartKind.RightSide) &&
+           sideShapes.Where(shape => shape.Hidden)
+               .All(shape => shape.Part is CabinetPartKind.Backboard or CabinetPartKind.RearToeKick),
+        "侧视图没有把后方背板放在左侧，或仍投影重叠侧板形成大型虚线框。" );
+
+    Assert(sideTopRailAuxiliary.Bounds.Right == sideTopRail.Bounds.Left &&
+           sideTopRailAuxiliary.Bounds.Bottom == sideTopRail.Bounds.Bottom &&
+           sideTopRailAuxiliary.Bounds.Height == 18,
+        "Side-view top-rail auxiliary board must touch the rear face without overlapping it.");
+
+    var planBackboard = planShapes.Single(shape => shape.Part == CabinetPartKind.Backboard);
+    Assert(planBackboard.Bounds.Left >= layout.PlanBounds.Left &&
+           planBackboard.Bounds.Right <= layout.PlanBounds.Right,
+        "Plan backboard must not project beyond the left and right side panels.");
+
+    var planAndSide = CabinetLayoutCalculator.Calculate(options with { GenerateElevation = false });
+    Assert(planAndSide.PlanBounds.Left == 0 && planAndSide.PlanBounds.Bottom == 0 &&
+           Math.Abs(planAndSide.SideBounds.Left - planAndSide.PlanBounds.Right - 400) < 0.000001,
+        "关闭正视图后，俯视图没有成为放置基准，或侧视图仍相对不可见正视图定位。" );
+    var sideOnly = CabinetLayoutCalculator.Calculate(options with
+    {
+        GenerateElevation = false,
+        GeneratePlan = false
+    });
+    Assert(sideOnly.SideBounds.Left == 0 && sideOnly.SideBounds.Bottom == 0,
+        "只生成侧视图时仍然保留了不可见视图的空白偏移。" );
+}
+
+static void PlanCabinetOptionsUseConfirmedDefaults()
+{
+    var options = PlanCabinetOptions.Default;
+
+    Assert(options.Length == 1800 && options.Depth == 550 && options.Thickness == 18 &&
+           options.GenerateDoors && options.DoorThickness == 18 && options.DoorGap == 0 &&
+           options.DoorFrontClearance == 2 && options.DoorCount == 2 &&
+           options.DoorCalculationMode == DoorPanelCalculationMode.GapRoundedDoorDistributed &&
+           options.GenerateMiddlePanels && !options.MiddlePanelSameDepthAsSide &&
+           options.MiddlePanelMode == PlanCabinetMiddlePanelMode.AlignToDoorGaps &&
+           options.TopFrontInset == 0 && options.TopRearInset == 0 &&
+           !options.BackboardRearCover && options.BackboardThickness == 8 &&
+           options.BackboardInset == 12 && options.BackboardLeftGroove == 5 &&
+           options.BackboardRightGroove == 5 && options.TryValidate(out _),
+        "独立柜体俯视图默认尺寸、门板、中竖板或背板参数与确认界面不一致。" );
+
+    Assert(!(options with { Length = 30 }).TryValidate(out _),
+        "独立柜体俯视图错误地接受了小于两块侧板厚度的柜长。" );
+    Assert(!(options with { TopFrontInset = 300, TopRearInset = 300 }).TryValidate(out _),
+        "独立柜体俯视图错误地接受了超过柜深的顶板缩进。" );
+    Assert(!(options with { BackboardInset = 550 }).TryValidate(out _),
+        "独立柜体俯视图错误地接受了无法放入柜深的背板。" );
+}
+
+static void PlanCabinetLayoutTracksDoorCount()
+{
+    var options = PlanCabinetOptions.Default;
+    var layout = PlanCabinetLayoutCalculator.Calculate(options);
+    var doors = layout.Shapes.Where(shape => shape.Kind == PlanCabinetPartKind.Door).ToArray();
+    var middlePanels = layout.Shapes.Where(shape => shape.Kind == PlanCabinetPartKind.MiddlePanel).ToArray();
+    var backboard = layout.Shapes.Single(shape => shape.Kind == PlanCabinetPartKind.Backboard);
+
+    Assert(layout.Shapes.Count == 7 && doors.Length == 2 && middlePanels.Length == 1 &&
+           layout.ActualDoorGap == 0,
+        "默认俯视图没有生成两扇门、一块中竖板及完整柜体结构。" );
+    Assert(doors[0].Bounds.Left == 0 && doors[0].Bounds.Right == 900 &&
+           doors[1].Bounds.Left == 900 && doors[1].Bounds.Right == 1800 &&
+           doors.All(door => door.Bounds.Bottom == -20 && door.Bounds.Top == -2),
+        "门板没有位于柜体前方，或门板左右边界未覆盖确认的柜长。" );
+    var twoMillimeterGap = PlanCabinetLayoutCalculator.Calculate(options with { DoorGap = 2 });
+    var gapDoors = twoMillimeterGap.Shapes
+        .Where(shape => shape.Kind == PlanCabinetPartKind.Door)
+        .ToArray();
+    var gapMiddle = twoMillimeterGap.Shapes
+        .Single(shape => shape.Kind == PlanCabinetPartKind.MiddlePanel);
+    Assert(twoMillimeterGap.ActualDoorGap == 2 &&
+           gapDoors[0].Bounds.Left == 2 && gapDoors[0].Bounds.Right == 899 &&
+           gapDoors[1].Bounds.Left == 901 && gapDoors[1].Bounds.Right == 1798 &&
+           gapDoors.All(door => door.CutWidth == 897) &&
+           (gapMiddle.Bounds.Left + gapMiddle.Bounds.Right) / 2 == 900,
+        "柜体俯视图门缝必须同时扣除左边缝、中间缝和右边缝。" );
+
+    Assert(Math.Abs((middlePanels[0].Bounds.Left + middlePanels[0].Bounds.Right) / 2 - 900) < 0.000001 &&
+           middlePanels[0].Bounds.Bottom == 0 && middlePanels[0].Bounds.Top == 550,
+        "中竖板没有按门缝中线定位，或默认深度未跟随顶板范围。" );
+    Assert(backboard.Hidden && backboard.Bounds.Left == 13 && backboard.Bounds.Right == 1787 &&
+           backboard.Bounds.Bottom == 530 && backboard.Bounds.Top == 538,
+        "槽装背板没有按12后缩、8厚度及左右5插槽生成虚线矩形。" );
+
+    var fourDoorLayout = PlanCabinetLayoutCalculator.Calculate(options with { DoorCount = 4 });
+    Assert(fourDoorLayout.Shapes.Count(shape => shape.Kind == PlanCabinetPartKind.Door) == 4 &&
+           fourDoorLayout.Shapes.Count(shape => shape.Kind == PlanCabinetPartKind.MiddlePanel) == 3,
+        "门数调整后，门板与中竖板数量没有同步联动。" );
+
+    var distributed = PlanCabinetLayoutCalculator.Calculate(options with
+    {
+        DoorCount = 3,
+        DoorLeftExtension = 30,
+        DoorRightExtension = 10,
+        MiddlePanelMode = PlanCabinetMiddlePanelMode.Distributed
+    });
+    var distributedMiddles = distributed.Shapes
+        .Where(shape => shape.Kind == PlanCabinetPartKind.MiddlePanel)
+        .ToArray();
+    Assert(distributedMiddles.Length == 2 &&
+           Math.Abs((distributedMiddles[0].Bounds.Left + distributedMiddles[0].Bounds.Right) / 2 - 606) < 0.000001 &&
+           Math.Abs((distributedMiddles[1].Bounds.Left + distributedMiddles[1].Bounds.Right) / 2 - 1194) < 0.000001,
+        "均分柜体模式不应受门板左右延伸影响。" );
+}
+
+static void PlanCabinetSurfaceCommandsAreComplete()
+{
+    var root = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
+    var xaml = File.ReadAllText(Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "Views", "ShortcutPanelView.xaml"));
+    var panel = File.ReadAllText(Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "Views", "ShortcutPanelView.xaml.cs"));
+    var commands = File.ReadAllText(Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "PlanCabinetCommands.cs"));
+    var application = File.ReadAllText(Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "PluginApplication.cs"));
+
+    Assert(xaml.Contains("Header=\"俯视图\"", StringComparison.Ordinal) &&
+           xaml.Contains("x:Name=\"PlanCabinetLengthBox\"", StringComparison.Ordinal) &&
+           xaml.Contains("x:Name=\"PlanCabinetDoorModeCombo\"", StringComparison.Ordinal) &&
+           xaml.Contains("x:Name=\"PlanCabinetMiddleModeCombo\"", StringComparison.Ordinal) &&
+           xaml.Contains("Content=\"生成俯视图 (DCFST)\"", StringComparison.Ordinal) &&
+           xaml.Contains("Content=\"俯视图门板替换 (DCMBT2)\"", StringComparison.Ordinal),
+        "柜体俯视图参数页或两个操作按钮不完整。" );
+    Assert(panel.Contains("TryReadPlanCabinetOptions", StringComparison.Ordinal) &&
+           panel.Contains("PlanCabinetRuntimeSettings.Save", StringComparison.Ordinal) &&
+           panel.Contains("DC_CMD_PLAN_CABINET_GENERATE", StringComparison.Ordinal) &&
+           panel.Contains("DC_CMD_PLAN_CABINET_REPLACE_DOORS", StringComparison.Ordinal),
+        "柜体俯视图面板没有统一读取、保存或调用两个底层命令。" );
+    Assert(commands.Contains("DC_CMD_PLAN_CABINET_GENERATE", StringComparison.Ordinal) &&
+           commands.Contains("DC_CMD_PLAN_CABINET_REPLACE_DOORS", StringComparison.Ordinal) &&
+           commands.Contains("\"DCFST\"", StringComparison.Ordinal) &&
+           commands.Contains("\"DCMBT2\"", StringComparison.Ordinal) &&
+           commands.Contains("PlanCabinetLayoutCalculator.Calculate", StringComparison.Ordinal) &&
+           commands.Contains("PlanCabinetPartKind.Door", StringComparison.Ordinal),
+        "DCFST/DCMBT2命令、布局计算或只替换门板的入口不完整。" );
+    Assert(!commands.Contains("UserInputControls.GovernedByOrthoMode", StringComparison.Ordinal),
+        "Plan cabinet placement must follow both mouse axes instead of inheriting ORTHO mode.");
+    Assert(application.Contains(
+            "CommandClass(typeof(YiZhiMao.Dc.Plugin.PlanCabinetCommands))",
+            StringComparison.Ordinal),
+        "柜体俯视图命令类未注册到插件。" );
+}
+
+static void CabinetSurfaceCommandsAndStatisticsAreComplete()
+{
+    var root = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
+    var xaml = File.ReadAllText(Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "Views", "ShortcutPanelView.xaml"));
+    var panel = File.ReadAllText(Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "Views", "ShortcutPanelView.xaml.cs"));
+    var commands = File.ReadAllText(Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "CabinetCommands.cs"));
+    var application = File.ReadAllText(Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "PluginApplication.cs"));
+    var statistics = File.ReadAllText(Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "StatisticsCommands.cs"));
+
+    Assert(xaml.IndexOf("x:Name=\"CabinetModuleButton\"", StringComparison.Ordinal) <
+           xaml.IndexOf("x:Name=\"BoardModuleButton\"", StringComparison.Ordinal) &&
+           xaml.Contains("x:Name=\"CabinetModuleView\"", StringComparison.Ordinal) &&
+           xaml.Contains("Header=\"标准单元柜\"", StringComparison.Ordinal) &&
+           xaml.Contains("x:Name=\"CabinetGenerateElevationCheck\"", StringComparison.Ordinal) &&
+           xaml.Contains("x:Name=\"CabinetGeneratePlanCheck\"", StringComparison.Ordinal) &&
+           xaml.Contains("x:Name=\"CabinetGenerateSideCheck\"", StringComparison.Ordinal) &&
+           xaml.Contains("x:Name=\"CabinetTopRailAuxiliaryDepthBox\"", StringComparison.Ordinal) &&
+           xaml.Contains("Content=\"一键生成单元柜 (DCDG)\"", StringComparison.Ordinal) &&
+           xaml.Contains("Content=\"全局刷新柜体/板件 (DCXX)\"", StringComparison.Ordinal) &&
+           xaml.Contains("Content=\"生成万能柜体 (DCWNG)\"", StringComparison.Ordinal),
+        "柜体导航、标准单元柜参数或四个操作按钮不完整。" );
+    Assert(panel.Contains("TryReadCabinetOptions", StringComparison.Ordinal) &&
+           panel.Contains("CabinetRuntimeSettings.Save", StringComparison.Ordinal) &&
+           panel.Contains("CabinetOptions.Default", StringComparison.Ordinal),
+        "柜体面板没有统一读取、保存或重置参数。" );
+    Assert(commands.Contains("DC_CMD_CABINET_STANDARD", StringComparison.Ordinal) &&
+           commands.Contains("DC_CMD_CABINET_REFRESH", StringComparison.Ordinal) &&
+           commands.Contains("DC_CMD_CABINET_UNIVERSAL", StringComparison.Ordinal) &&
+           commands.Contains("YIZHIMAO_DC_CABINET_OPTIONS", StringComparison.Ordinal) &&
+           commands.Contains("BoardCommands.SetBoardProperty", StringComparison.Ordinal) &&
+           commands.Contains("CabinetLayoutCalculator.Calculate", StringComparison.Ordinal),
+        "DCDG、DCXX、DCWNG 或柜体刷新/拆单元数据入口不完整。" );
+    var horizontalMode = commands.IndexOf(
+        "HorizontalMode = TextHorizontalMode.TextCenter",
+        StringComparison.Ordinal);
+    var verticalMode = commands.IndexOf(
+        "VerticalMode = TextVerticalMode.TextVerticalMid",
+        StringComparison.Ordinal);
+    var alignmentPoint = commands.IndexOf("AlignmentPoint = labelPoint", StringComparison.Ordinal);
+    Assert(horizontalMode >= 0 && verticalMode >= 0 &&
+           alignmentPoint > horizontalMode && alignmentPoint > verticalMode,
+        "柜体说明文字在设置居中模式前写入 AlignmentPoint，会触发 AutoCAD eNotApplicable。" );
+    Assert(application.Contains("CommandClass(typeof(YiZhiMao.Dc.Plugin.CabinetCommands))", StringComparison.Ordinal) &&
+           statistics.Contains("HasExplicitSize", StringComparison.Ordinal) &&
+           statistics.Contains("柜体辅助图", StringComparison.Ordinal),
+        "柜体命令未注册，或辅助视图仍可能重复计入拆单。" );
+}
+
 static void ToolboxSettingsPersistAcrossModules()
 {
     var root = Path.Combine(Path.GetTempPath(), $"dc-toolbox-{Guid.NewGuid():N}");
@@ -793,9 +1264,84 @@ static void ToolboxSettingsPersistAcrossModules()
             GenerateAllPlanRows = true,
             Rows = [new BackgroundWallRowOptions(3, 650), new BackgroundWallRowOptions(4, 720)]
         };
-        settings.Board = settings.Board with { Thickness = 20, DivideCount = 4, DivideThickness = 20 };
+        settings.Board = settings.Board with
+        {
+            Thickness = 20,
+            DisplaceDistance = 135,
+            DivideCount = 4,
+            DivideThickness = 20,
+            DivideDepth = 120,
+            DivideMaximumClearSpan = 450,
+            DivideSmartMode = false,
+            DivideRemainderAtEnd = false,
+            DoorPartitionTopExtension = 2800,
+            DoorPartitionBottomExtension = 350,
+            DoorPartitionMaximumWidth = 500,
+            DoorPartitionDefaultCount = 7,
+            DoorPartitionSmartMode = false,
+            ShoeShelfDepth = 280,
+            ShoeShelfSmartAngle = false,
+            ShoeShelfAngleDegrees = 25,
+            ShoeShelfTargetSpacing = 210,
+            ShoeShelfTopReserve = 15,
+            ShoeShelfBottomReserve = 30,
+            ShoeShelfFrontClearance = 25,
+            ShoeShelfRearClearance = 5,
+            ShoeShelfStopperHeight = 22,
+            ShoeShelfGenerateStopper = false,
+            PropertyType = "见光板",
+            TrimFaceWidth = 55,
+            TrimAuxiliaryDepth = 75,
+            SideTrimSectionType = "T",
+            TopTrimSectionType = "I",
+            PlacementView = "平面"
+        };
         settings.DrawingLayer = settings.DrawingLayer with { LinetypeScale = 50, WallHatchScale = 2 };
+        settings.SmartAnnotation = settings.SmartAnnotation with
+        {
+            TemplateName = "雷神标注样式.dwg",
+            InnerOffset = 180,
+            FilterThickness = 20,
+            FilterText = false,
+            FilterBlocks = true
+        };
         settings.ImageBatch = settings.ImageBatch with { Gap = 80, PixelHeight = 1200 };
+        settings.Cabinet = settings.Cabinet with
+        {
+            Width = 2200,
+            Thickness = 20,
+            GenerateSide = false,
+            PlanViewSpacing = 350
+        };
+        settings.PlanCabinet = settings.PlanCabinet with
+        {
+            Length = 2000,
+            DoorCount = 4,
+            DoorGap = 3,
+            BackboardRearCover = true
+        };
+        settings.WholeHouseStatistics = settings.WholeHouseStatistics with
+        {
+            IncludeLightStrips = false,
+            TableScaleFactor = 10,
+            MaxRowsPerPage = 24
+        };
+        settings.DoorStatistics = settings.DoorStatistics with { Thickness = 20, MaxRowsPerPage = 26 };
+        settings.FrameDoorStatistics = settings.FrameDoorStatistics with
+        {
+            GlassCoreCount = 1,
+            CenterMiddleFrame = false,
+            LowerFramePosition = 650
+        };
+        settings.CabinetBom = settings.CabinetBom with { IncludeCabinetSummary = false, TableScaleFactor = 9 };
+        settings.PanelNesting = settings.PanelNesting with
+        {
+            UseWoodGrain = false,
+            UseSolidColor = true,
+            Use48Sheet = false,
+            Use49Sheet = true,
+            IncludeFlatDoors = false
+        };
         settings.DefaultSaveFileFormat = DrawingSaveFileFormat.AutoCad2010;
 
         store.Save(settings);
@@ -810,11 +1356,48 @@ static void ToolboxSettingsPersistAcrossModules()
         Assert(loaded.Grille.StripGap == 26 && loaded.PerforatedPanel.HoleDiameter == 12 &&
                loaded.BackgroundWall.Rows.Count == 2 && loaded.BackgroundWall.GenerateAllPlanRows,
             "墙板参数没有从统一配置恢复。" );
-        Assert(loaded.Board.Thickness == 20 && loaded.Board.DivideCount == 4 &&
-               loaded.DrawingLayer.LinetypeScale == 50 && loaded.ImageBatch.Gap == 80,
-            "板件、图层或批量图片参数没有从统一配置恢复。" );
+        Assert(loaded.Board.Thickness == 20 && loaded.Board.DisplaceDistance == 135 && loaded.Board.DivideCount == 4 &&
+               loaded.Board.DivideDepth == 120 && loaded.Board.DivideMaximumClearSpan == 450 &&
+               !loaded.Board.DivideSmartMode && !loaded.Board.DivideRemainderAtEnd &&
+               loaded.Board.DoorPartitionTopExtension == 2800 &&
+               loaded.Board.DoorPartitionBottomExtension == 350 &&
+               loaded.Board.DoorPartitionMaximumWidth == 500 &&
+               loaded.Board.DoorPartitionDefaultCount == 7 &&
+               !loaded.Board.DoorPartitionSmartMode &&
+               loaded.Board.ShoeShelfDepth == 280 && !loaded.Board.ShoeShelfSmartAngle &&
+               loaded.Board.ShoeShelfAngleDegrees == 25 && loaded.Board.ShoeShelfTargetSpacing == 210 &&
+               loaded.Board.ShoeShelfTopReserve == 15 && loaded.Board.ShoeShelfBottomReserve == 30 &&
+               loaded.Board.ShoeShelfFrontClearance == 25 && loaded.Board.ShoeShelfRearClearance == 5 &&
+               loaded.Board.ShoeShelfStopperHeight == 22 && !loaded.Board.ShoeShelfGenerateStopper &&
+               loaded.Board.PropertyType == "见光板" &&
+               loaded.Board.TrimFaceWidth == 55 && loaded.Board.TrimAuxiliaryDepth == 75 &&
+               loaded.Board.SideTrimSectionType == "T" && loaded.Board.TopTrimSectionType == "I" &&
+               loaded.Board.PlacementView == "平面" &&
+               loaded.DrawingLayer.LinetypeScale == 50 && loaded.ImageBatch.Gap == 80 &&
+               loaded.SmartAnnotation.TemplateName == "雷神标注样式.dwg" &&
+               loaded.SmartAnnotation.InnerOffset == 180 && loaded.SmartAnnotation.FilterThickness == 20 &&
+               !loaded.SmartAnnotation.FilterText && loaded.SmartAnnotation.FilterBlocks,
+            "板件、图层、智能标注或批量图片参数没有从统一配置恢复。" );
         Assert(loaded.DefaultSaveFileFormat == DrawingSaveFileFormat.AutoCad2010,
             "默认保存版本没有从统一配置恢复。" );
+        Assert(loaded.Cabinet.Width == 2200 && loaded.Cabinet.Thickness == 20 &&
+               !loaded.Cabinet.GenerateSide && loaded.Cabinet.PlanViewSpacing == 350,
+            "标准单元柜参数没有从统一配置恢复。" );
+        Assert(loaded.PlanCabinet.Length == 2000 && loaded.PlanCabinet.DoorCount == 4 &&
+               loaded.PlanCabinet.DoorGap == 3 && loaded.PlanCabinet.BackboardRearCover,
+            "独立柜体俯视图参数没有从统一配置恢复。" );
+        Assert(!loaded.WholeHouseStatistics.IncludeLightStrips &&
+               loaded.WholeHouseStatistics.TableScaleFactor == 10 &&
+               loaded.WholeHouseStatistics.MaxRowsPerPage == 24,
+            "全屋拆单项目配置或表格参数没有从统一配置恢复。" );
+        Assert(loaded.DoorStatistics.Thickness == 20 && loaded.DoorStatistics.MaxRowsPerPage == 26 &&
+               loaded.FrameDoorStatistics.GlassCoreCount == 1 &&
+               !loaded.FrameDoorStatistics.CenterMiddleFrame &&
+               loaded.FrameDoorStatistics.LowerFramePosition == 650 &&
+               !loaded.CabinetBom.IncludeCabinetSummary && loaded.CabinetBom.TableScaleFactor == 9 &&
+               loaded.PanelNesting.UseSolidColor && loaded.PanelNesting.Use49Sheet &&
+               !loaded.PanelNesting.IncludeFlatDoors,
+            "门板、边框门、柜体或板件高级拆单参数没有从统一配置恢复。" );
         Assert(!File.Exists(path + ".tmp"), "原子保存后遗留了临时配置文件。" );
     }
     finally
@@ -834,6 +1417,38 @@ static void ToolboxSettingsFallbackOnInvalidFiles()
         File.WriteAllText(path, "{ invalid json");
         Assert(store.Load().Board == BoardToolOptions.Default,
             "损坏 JSON 没有回退工具箱默认参数。" );
+
+        var invalidSideT = ToolboxSettings.CreateDefault();
+        invalidSideT.Board = invalidSideT.Board with
+        {
+            Thickness = 18,
+            TrimFaceWidth = 17,
+            SideTrimSectionType = "T"
+        };
+        AssertThrows<InvalidOperationException>(
+            invalidSideT.Validate,
+            "Toolbox settings should reject a side T profile narrower than its thickness.");
+
+        var invalidTopT = ToolboxSettings.CreateDefault();
+        invalidTopT.Board = invalidTopT.Board with
+        {
+            Thickness = 18,
+            TrimFaceWidth = 17,
+            TopTrimSectionType = "T"
+        };
+        AssertThrows<InvalidOperationException>(
+            invalidTopT.Validate,
+            "Toolbox settings should reject a top T profile narrower than its thickness.");
+
+        var narrowNonT = ToolboxSettings.CreateDefault();
+        narrowNonT.Board = narrowNonT.Board with
+        {
+            Thickness = 18,
+            TrimFaceWidth = 17,
+            SideTrimSectionType = "L",
+            TopTrimSectionType = "I"
+        };
+        narrowNonT.Validate();
 
         File.WriteAllText(path, "{\"Board\":{\"Thickness\":-1}}");
         Assert(store.Load().Board == BoardToolOptions.Default,
@@ -875,8 +1490,8 @@ static void ToolboxPreferencesPersistAndKeepOneModule()
     var smartInputMethodDefaults = SmartInputMethodOptions.Default;
     Assert(defaults.AutoExpandSidebar &&
            defaults.EnabledModuleCount == ToolboxFeatureModuleCatalog.All.Count &&
-           ToolboxFeatureModuleCatalog.All.Count == 12,
-        "偏好设置默认值没有自动展开全部十二个功能模块。" );
+           ToolboxFeatureModuleCatalog.All.Count == 15,
+        "偏好设置默认值没有自动展开全部十五个功能模块。" );
     Assert(smartInputMethodDefaults.Enabled &&
            smartInputMethodDefaults.KeepCadCommandsEnglish &&
            smartInputMethodDefaults.AutoChineseForText &&
@@ -888,7 +1503,7 @@ static void ToolboxPreferencesPersistAndKeepOneModule()
         "工具箱首次使用不应默认开启 SHX 自动同步。" );
     Assert(ToolboxSettings.CreateDefault().AutoReplaceMissingShx,
         "工具箱首次使用应默认开启缺失文字 SHX 自动替换。" );
-    Assert(ToolboxFeatureModuleCatalog.All.Select(item => item.Module).Distinct().Count() == 12,
+    Assert(ToolboxFeatureModuleCatalog.All.Select(item => item.Module).Distinct().Count() == 15,
         "偏好设置模块目录存在缺项或重复项。" );
 
     var root = Path.Combine(Path.GetTempPath(), $"dc-preferences-{Guid.NewGuid():N}");
@@ -900,6 +1515,7 @@ static void ToolboxPreferencesPersistAndKeepOneModule()
         var settings = ToolboxSettings.CreateDefault();
         settings.Preferences = settings.Preferences with { AutoExpandSidebar = false };
         settings.Preferences = settings.Preferences.WithModuleEnabled(ToolboxFeatureModule.Boards, false);
+        settings.Preferences = settings.Preferences.WithModuleEnabled(ToolboxFeatureModule.SuperLibrary, false);
         settings.SmartInputMethod = settings.SmartInputMethod with { AutoChineseForText = false };
         settings.SyncReferencedShxOnSave = true;
         settings.AutoReplaceMissingShx = false;
@@ -909,6 +1525,7 @@ static void ToolboxPreferencesPersistAndKeepOneModule()
         var loaded = store.Load();
         Assert(!loaded.Preferences.AutoExpandSidebar &&
                !loaded.Preferences.IsEnabled(ToolboxFeatureModule.Boards) &&
+               !loaded.Preferences.IsEnabled(ToolboxFeatureModule.SuperLibrary) &&
                loaded.Preferences.IsEnabled(ToolboxFeatureModule.DoorPanels) &&
                !loaded.SmartInputMethod.AutoChineseForText &&
                loaded.SmartInputMethod.Enabled &&
@@ -932,7 +1549,8 @@ static void ToolboxPreferencesPersistAndKeepOneModule()
 
         File.WriteAllText(path, "{}");
         var compatibleDefaults = store.Load();
-        Assert(compatibleDefaults.Preferences.EnabledModuleCount == 12 &&
+        Assert(compatibleDefaults.Preferences.EnabledModuleCount == 15 &&
+               compatibleDefaults.Preferences.IsEnabled(ToolboxFeatureModule.SuperLibrary) &&
                compatibleDefaults.SmartInputMethod == SmartInputMethodOptions.Default &&
                compatibleDefaults.DefaultSaveFileFormat == DrawingSaveFileFormat.AutoCad2007 &&
                !compatibleDefaults.SyncReferencedShxOnSave &&
@@ -1635,6 +2253,49 @@ static void WainscotBackgroundWallSurfaceContractIsComplete()
         "DCBJQ底层命令、快捷键登记或背景墙落图不完整。");
 }
 
+static void SmartAnnotationSurfaceAndSafeStyleSyncContractIsComplete()
+{
+    var root = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
+    var xaml = File.ReadAllText(Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "Views", "ShortcutPanelView.xaml"));
+    var panel = File.ReadAllText(Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "Views", "ShortcutPanelView.xaml.cs"));
+    var commandsPath = Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "SmartAnnotationCommands.cs");
+    var syncPath = Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "DimensionStyleSyncService.cs");
+    var bridgePath = Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "LeishenDimensionConfigBridge.cs");
+
+    Assert(File.Exists(commandsPath) && File.Exists(syncPath) && File.Exists(bridgePath),
+        "智能标注命令或安全样式同步服务尚未建立。");
+    var commands = File.ReadAllText(commandsPath);
+    var sync = File.ReadAllText(syncPath);
+    var bridge = File.ReadAllText(bridgePath);
+    Assert(xaml.Contains("x:Name=\"SmartAnnotationModuleButton\"", StringComparison.Ordinal) &&
+           xaml.Contains("Text=\"智能标注\"", StringComparison.Ordinal) &&
+           xaml.Contains("x:Name=\"SmartAnnotationModuleView\"", StringComparison.Ordinal) &&
+           xaml.Contains("Content=\"柜体标注 (DCBC)\"", StringComparison.Ordinal) &&
+           xaml.Contains("Content=\"门板标注 (DCBM)\"", StringComparison.Ordinal) &&
+           xaml.Contains("Content=\"单边标注 (DCBD)\"", StringComparison.Ordinal) &&
+           xaml.Contains("Content=\"清除所有标注 (DCBQ)\"", StringComparison.Ordinal),
+        "智能标注导航、参数区或主要命令按钮不完整。");
+    Assert(panel.Contains("LoadSmartAnnotationModule();", StringComparison.Ordinal) &&
+           panel.Contains("SmartAnnotationRuntimeSettings.Save", StringComparison.Ordinal) &&
+           panel.Contains("DC_CMD_DIM_CABINET", StringComparison.Ordinal) &&
+           panel.Contains("DC_CMD_DIM_DELETE_ALL", StringComparison.Ordinal),
+        "智能标注面板没有读取保存参数或路由底层命令。");
+    Assert(commands.Contains("LS_CMD_DIM_CABINET_ALL", StringComparison.Ordinal) &&
+           commands.Contains("LS_CMD_DIM_SMART_SINGLE", StringComparison.Ordinal) &&
+           commands.Contains("LS_CMD_DIM_DELETE_ONLY", StringComparison.Ordinal) &&
+           commands.Contains("DimensionStyleSyncService.TrySynchronize", StringComparison.Ordinal),
+        "智能标注没有复用既有雷神命令或没有在执行前统一同步样式。");
+    Assert(sync.Contains("targetDatabase.DimStyleTableId", StringComparison.Ordinal) &&
+           sync.Contains("sourceDatabase.WblockCloneObjects", StringComparison.Ordinal) &&
+           sync.Contains("DuplicateRecordCloning.Replace", StringComparison.Ordinal) &&
+           !sync.Contains("targetDatabase.CurrentSpaceId", StringComparison.Ordinal),
+        "标注样式没有克隆到目标标注样式表，仍可能触发 eInvalidInput。");
+    Assert(bridge.Contains("root[\"UseTemplateStyle\"] = false", StringComparison.Ordinal) &&
+           bridge.Contains("IsIncludeGenericGraphics", StringComparison.Ordinal) &&
+           bridge.Contains("Compatibility.MoveFileReplacingExisting", StringComparison.Ordinal),
+        "外部标注命令仍可能重复同步模板，或参数桥接没有原子保存。");
+}
+
 static void HardwareLibraryCreatesFoldersAndPairsPreviews()
 {
     var root = Path.Combine(Path.GetTempPath(), $"YiZhiMaoDcHardware-{Guid.NewGuid():N}");
@@ -1932,7 +2593,9 @@ static void DoorPanelSurfaceContractIsComplete()
              {
                  "DoorPanelCalculationModeCombo",
                  "DoorPanelTopExtensionBox", "DoorPanelBottomExtensionBox",
-                 "DoorPanelLeftExtensionBox", "DoorPanelRightExtensionBox"
+                 "DoorPanelLeftExtensionBox", "DoorPanelRightExtensionBox",
+                 "DoorPanelHandlelessProfileModeCombo", "DoorPanelHandlelessGapBox",
+                 "DoorPanelHandlelessProfileSizeBox"
              })
     {
         Assert(panel.Contains($"x:Name=\"{controlName}\"", StringComparison.Ordinal),
@@ -1950,7 +2613,10 @@ static void DoorPanelSurfaceContractIsComplete()
         "铰链设置没有移动到门板抽面模块。" );
     Assert(panelCode.Contains("DoorPanelOptions.TryCreate", StringComparison.Ordinal) &&
            panelCode.Contains("DoorPanelRuntimeSettings.Current", StringComparison.Ordinal) &&
-           panelCode.Contains("DC_CMD_ELEVATION_DOOR", StringComparison.Ordinal),
+           panelCode.Contains("DC_CMD_ELEVATION_DOOR", StringComparison.Ordinal) &&
+           panelCode.Contains("TryReadDoorHandlelessProfileOptions", StringComparison.Ordinal) &&
+           panelCode.Contains("DC_CMD_DRAWER_HANDLELESS_PROFILE", StringComparison.Ordinal) &&
+           panel.Contains("Click=\"OnGenerateDoorHandlelessProfileClick\"", StringComparison.Ordinal),
         "门板参数尚未接入验证、运行时设置和绘图命令。" );
     Assert(commands.Contains("DoorPanelLayoutCalculator.Calculate", StringComparison.Ordinal) &&
            commands.Contains("TopExtension", StringComparison.Ordinal) &&
@@ -2188,63 +2854,197 @@ static void PlanDoorPanelSurfaceAndCommandAreComplete()
 static void DrawerFaceOptionsUseConfirmedDefaults()
 {
     var defaults = DrawerFaceOptions.Default;
-    Assert(defaults.Orientation == DrawerFaceOrientation.Vertical && defaults.Count == 2 &&
-           defaults.Gap == 3 && !defaults.GenerateMask && !defaults.GenerateHandle,
-        "抽面必须默认竖向两块、3mm固定缝，并默认关闭背景遮罩和拉手。" );
-    Assert(DrawerFaceOptions.TryCreate(
-            DrawerFaceOrientation.Horizontal,
-            "3", "3.2", "10", "20", "30", "40", true, true,
+    Assert(defaults.RowCount == 2 && defaults.ColumnCount == 1 &&
+           defaults.Gap == 2 && defaults.Handleless && defaults.HandlelessGap == 26 &&
+           defaults.HandlelessProfileMode == HandlelessProfileMode.Automatic &&
+           defaults.HandlelessProfileSize == 50 &&
+           defaults.GenerateOpeningLines && defaults.GenerateMask && !defaults.GenerateHandle,
+        "抽面必须默认两行一列、2mm普通缝、26mm免拉手上下缝、50mm侧视图挡板，并开启向下开门线和背景遮罩。" );
+    Assert(DrawerFaceOptions.TryCreateGrid(
+            "3", "2", "2.5", "28", "10", "20", "30", "40", true, true, true,
             out var parsed,
             out var error) &&
-           parsed.Orientation == DrawerFaceOrientation.Horizontal && parsed.Count == 3 && parsed.Gap == 3.2 &&
+           parsed.RowCount == 3 && parsed.ColumnCount == 2 && parsed.Gap == 2.5 &&
+           parsed.Handleless && parsed.HandlelessGap == 28 && parsed.GenerateOpeningLines &&
            parsed.TopExtension == 10 && parsed.BottomExtension == 20 &&
            parsed.LeftExtension == 30 && parsed.RightExtension == 40 &&
-           parsed.GenerateMask && parsed.GenerateHandle,
+           parsed.GenerateMask && !parsed.GenerateHandle,
         $"有效抽面参数未通过验证：{error}" );
-    Assert(!DrawerFaceOptions.TryCreate(
-            DrawerFaceOrientation.Vertical,
-            "0", "3", "0", "0", "0", "0", false, false,
-            out _, out var countError) && countError.Contains("数量", StringComparison.Ordinal),
-        "抽面没有拒绝小于1的数量。" );
+    Assert(!DrawerFaceOptions.TryCreateGrid(
+            "0", "1", "2", "26", "0", "0", "0", "0", true, true, true,
+            out _, out var rowError) && rowError.Contains("行数", StringComparison.Ordinal),
+        "抽面没有拒绝小于1的行数。" );
+    Assert(!DrawerFaceOptions.TryCreateGrid(
+            "2", "0", "2", "26", "0", "0", "0", "0", true, true, true,
+            out _, out var columnError) && columnError.Contains("列数", StringComparison.Ordinal),
+        "抽面没有拒绝小于1的列数。" );
+
+    var legacyPath = Path.Combine(Path.GetTempPath(), $"drawer-face-legacy-{Guid.NewGuid():N}.json");
+    try
+    {
+        File.WriteAllText(
+            legacyPath,
+            "{\"Version\":1,\"DrawerFace\":{\"Orientation\":1,\"Count\":3,\"Gap\":4,\"TopExtension\":0," +
+            "\"BottomExtension\":0,\"LeftExtension\":0,\"RightExtension\":0,\"GenerateMask\":false,\"GenerateHandle\":true}}");
+        var migrated = new ToolboxSettingsStore(legacyPath).Load().DrawerFace;
+        Assert(migrated.RowCount == 1 && migrated.ColumnCount == 3 && migrated.Gap == 2 &&
+               migrated.Handleless && migrated.HandlelessGap == 26 && migrated.GenerateOpeningLines &&
+               migrated.GenerateMask && !migrated.GenerateHandle,
+            "旧版单方向抽面设置没有迁移为二维行列、2mm普通缝、26mm免拉手缝和默认遮罩。" );
+    }
+    finally
+    {
+        File.Delete(legacyPath);
+    }
 }
 
 static void DrawerFaceLayoutSupportsVerticalAndHorizontalDirections()
 {
-    var vertical = DrawerFaceLayoutCalculator.Calculate(
+    var grid = DrawerFaceLayoutCalculator.Calculate(
         new DrawerFacePoint(100, 200),
         new DrawerFacePoint(900, 1200),
         DrawerFaceOptions.Default with
         {
+            RowCount = 2,
+            ColumnCount = 2,
             TopExtension = 20,
             BottomExtension = 10,
             LeftExtension = 5,
             RightExtension = 15
         });
-    Assert(vertical.Faces.Count == 2 && Math.Abs(vertical.ActualGap - 10d / 3) < 0.000001 &&
-           vertical.FaceWidth == 820 && Math.Abs(vertical.FaceHeight - 513.3333333333334) < 0.000001,
-        "竖向抽面没有按统一门扇数补偿门缝从下到上均分。" );
-    Assert(Math.Abs(vertical.Faces[0].X - 95) < 0.000001 &&
-           Math.Abs(vertical.Faces[0].Y - 190) < 0.000001 &&
-           Math.Abs(vertical.Faces[1].Y - 706.6666666666667) < 0.000001,
-        "竖向抽面的四向盖值、顺序或位置不正确。" );
-    Assert(Math.Abs(vertical.HandleCenters[0].Y - 446.6666666666667) < 0.000001 &&
-           Math.Abs(vertical.HandleCenters[1].Y - 963.3333333333334) < 0.000001,
-        "竖向抽面的拉手中心没有落在各抽面中心。" );
+    Assert(grid.Faces.Count == 4 && grid.RowCount == 2 && grid.ColumnCount == 2 &&
+           grid.ActualHorizontalGap == 2 && grid.ActualVerticalGap == 26 &&
+           grid.FaceWidth == 409 && grid.FaceHeight == 502,
+        "二维抽面没有按2mm左右缝和26mm免拉手上下缝精确均分。" );
+    Assert(grid.Faces[0] == new DrawerFaceRectangle(95, 190, 409, 502) &&
+           grid.Faces[1] == new DrawerFaceRectangle(506, 190, 409, 502) &&
+           grid.Faces[2] == new DrawerFaceRectangle(95, 718, 409, 502) &&
+           grid.Faces[3].Right == 915 && grid.Faces[3].Top == 1220,
+        "二维抽面的四向盖值、行列顺序或最终收口不正确。" );
 
-    var horizontal = DrawerFaceLayoutCalculator.Calculate(
+    var ordinaryGap = DrawerFaceLayoutCalculator.Calculate(
         new DrawerFacePoint(0, 0),
         new DrawerFacePoint(1000, 600),
         DrawerFaceOptions.Default with
         {
-            Orientation = DrawerFaceOrientation.Horizontal,
-            Count = 3,
-            Gap = 4
+            RowCount = 2,
+            ColumnCount = 3,
+            Gap = 4,
+            Handleless = false
         });
-    Assert(horizontal.Faces.Count == 3 && horizontal.ActualGap == 4.5 &&
-           horizontal.FaceWidth == 330.3333333333333 && horizontal.FaceHeight == 600,
-        "横向抽面没有按统一门扇数补偿门缝从左到右均分。" );
-    Assert(Math.Abs(horizontal.Faces[2].Right - 1000) < 0.000001,
-        "横向抽面的最后一块没有精确收口到右边界。" );
+    Assert(ordinaryGap.Faces.Count == 6 && ordinaryGap.ActualHorizontalGap == 4 &&
+           ordinaryGap.ActualVerticalGap == 4 &&
+           Math.Abs(ordinaryGap.Faces[2].Right - 1000) < 0.000001 &&
+           Math.Abs(ordinaryGap.Faces[5].Top - 600) < 0.000001,
+        "关闭免拉手后没有在横向和竖向都使用普通抽面缝，或最终边界未精确收口。" );
+}
+
+static void HandlelessProfileDetectsRealBoundariesAndBuildsProfiles()
+{
+    AxisAlignedSegment[] middleSegments =
+    [
+        new(100, 113, 118, 113),
+        new(118, 87, 100, 87),
+        new(118, 113, 118, 300),
+        new(118, -100, 118, 87)
+    ];
+    Assert(HandlelessProfileCalculator.TryDetect(
+            new BoardPlacementPoint(100, 113),
+            middleSegments,
+            HandlelessProfileMode.Automatic,
+            18,
+            50,
+            26,
+            out var middleAnchor),
+        "点击中拉手门板边线端点后没有识别26mm真实缝隙。" );
+    Assert(middleAnchor.Type == HandlelessProfileMode.Middle &&
+           middleAnchor.UpperBoundaryY == 113 && middleAnchor.LowerBoundaryY == 87,
+        "中拉手没有采用上下门板真实边界。" );
+
+    var middleRight = HandlelessProfileCalculator.Calculate(
+        middleAnchor,
+        HandlelessProfileFrontSide.Right,
+        18,
+        50);
+    Assert(middleRight.Boards.Count == 3 && middleRight.DoorOverlap == 12,
+        "50挡板和26免拉手缝没有自动反算12mm搭接或生成C型三块板。" );
+    Assert(middleRight.Boards[0] == new HandlelessProfileRectangle(50, 125, 50, 18) &&
+           middleRight.Boards[1] == new HandlelessProfileRectangle(50, 75, 18, 50) &&
+           middleRight.Boards[2] == new HandlelessProfileRectangle(50, 57, 50, 18),
+        "右侧柜前的中拉手C型位置不正确。" );
+
+    var middleLeft = HandlelessProfileCalculator.Calculate(
+        middleAnchor,
+        HandlelessProfileFrontSide.Left,
+        18,
+        50);
+    Assert(middleLeft.Boards[0].X == 118 && middleLeft.Boards[1].X == 150,
+        "左侧柜前没有把C型免拉手镜像到门板内侧。" );
+
+    AxisAlignedSegment[] topSegments =
+    [
+        new(0, 126, 118, 126),
+        new(100, 100, 118, 100),
+        new(118, 100, 118, -200)
+    ];
+    Assert(HandlelessProfileCalculator.TryDetect(
+            new BoardPlacementPoint(109, 120),
+            topSegments,
+            HandlelessProfileMode.Automatic,
+            18,
+            50,
+            26,
+            out var topAnchor),
+        "点击顶部柜板和门板之间后没有识别上拉手。" );
+    Assert(topAnchor.Type == HandlelessProfileMode.Top &&
+           topAnchor.UpperBoundaryY == 126 && topAnchor.LowerBoundaryY == 100,
+        "上拉手没有采用顶部柜板与门板真实边界。" );
+
+    var top = HandlelessProfileCalculator.Calculate(
+        topAnchor,
+        HandlelessProfileFrontSide.Right,
+        18,
+        50);
+    Assert(top.Boards.Count == 2 && top.DoorOverlap == 24 &&
+           top.Boards[0] == new HandlelessProfileRectangle(50, 76, 18, 50) &&
+           top.Boards[1] == new HandlelessProfileRectangle(50, 58, 50, 18),
+        "上拉手没有从顶板内侧边生成L型两块50挡板。" );
+
+    AxisAlignedSegment[] doubleLineTopSegments =
+    [
+        new(0, 144, 118, 144),
+        new(0, 126, 118, 126),
+        new(100, 100, 118, 100)
+    ];
+    Assert(HandlelessProfileCalculator.TryDetect(
+            new BoardPlacementPoint(109, 113),
+            doubleLineTopSegments,
+            HandlelessProfileMode.Automatic,
+            18,
+            50,
+            26,
+            out var doubleLineTopAnchor),
+        "双线顶板下方没有识别到上拉手。" );
+    Assert(doubleLineTopAnchor.Type == HandlelessProfileMode.Top &&
+           doubleLineTopAnchor.UpperBoundaryY == 126,
+        "双线顶板错误地采用了外侧边，50竖挡板会与18厚顶板重叠。" );
+    var doubleLineTop = HandlelessProfileCalculator.Calculate(
+        doubleLineTopAnchor,
+        HandlelessProfileFrontSide.Right,
+        18,
+        50);
+    Assert(doubleLineTop.Boards[0].Top == 126,
+        "上拉手L型竖挡板越过顶板内侧边并占用了顶板本体。" );
+
+    Assert(!HandlelessProfileCalculator.TryDetect(
+            new BoardPlacementPoint(500, 500),
+            middleSegments,
+            HandlelessProfileMode.Automatic,
+            18,
+            50,
+            26,
+            out _),
+        "远离缝隙的点击不应误识别免拉手侧视图。" );
 }
 
 static void DrawerFaceSurfaceAndCommandAreComplete()
@@ -2258,30 +3058,47 @@ static void DrawerFaceSurfaceAndCommandAreComplete()
     var runtime = File.ReadAllText(Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "DoorPanelRuntimeSettings.cs"));
 
     Assert(panel.Contains("<TabItem Header=\"抽面设置\">", StringComparison.Ordinal) &&
-           panel.Contains("x:Name=\"DrawerFaceVerticalRadio\"", StringComparison.Ordinal) &&
+           panel.Contains("x:Name=\"DrawerFaceRowCountBox\"", StringComparison.Ordinal) &&
+           panel.Contains("x:Name=\"DrawerFaceColumnCountBox\"", StringComparison.Ordinal) &&
            panel.Contains("x:Name=\"DrawerFaceGapBox\"", StringComparison.Ordinal) &&
+           panel.Contains("x:Name=\"DrawerFaceHandlelessCheck\"", StringComparison.Ordinal) &&
+           panel.Contains("x:Name=\"DrawerFaceHandlelessGapBox\"", StringComparison.Ordinal) &&
+           panel.Contains("x:Name=\"DrawerFaceHandlelessProfileModeCombo\"", StringComparison.Ordinal) &&
+           panel.Contains("x:Name=\"DrawerFaceHandlelessProfileSizeBox\"", StringComparison.Ordinal) &&
+           panel.Contains("生成免拉手侧视图 (DCMLS)", StringComparison.Ordinal) &&
+           panel.Contains("x:Name=\"DrawerFaceGenerateOpeningLinesCheck\"", StringComparison.Ordinal) &&
            panel.Contains("x:Name=\"DrawerFaceGenerateMaskCheck\"", StringComparison.Ordinal) &&
-           panel.Contains("拾取拉手 (DCSDH)", StringComparison.Ordinal) &&
-           panel.Contains("应用/替换拉手 (DCLAS)", StringComparison.Ordinal) &&
-           panel.Contains("x:Name=\"DrawerFaceCalculationModeCombo\"", StringComparison.Ordinal) &&
            panel.Contains("x:Name=\"DrawerFaceActualSizeText\"", StringComparison.Ordinal) &&
-           panel.Contains("生成抽面 (DCMC)", StringComparison.Ordinal),
-        "门板抽面模块缺少抽面方向、计算模式、遮罩、拾取应用拉手、实际尺寸或生成入口。" );
-    Assert(panelCode.Contains("DrawerFaceOptions.TryCreate", StringComparison.Ordinal) &&
-           panelCode.Contains("DC_CMD_HANDLE_PICK", StringComparison.Ordinal) &&
-           panelCode.Contains("DC_CMD_HANDLE_APPLY", StringComparison.Ordinal) &&
-           panelCode.Contains("DC_CMD_DRAWER_FACE", StringComparison.Ordinal),
-        "抽面面板没有读取独立参数、多拉手素材库或调用底层命令。" );
+           panel.Contains("生成抽面 (DCMC)", StringComparison.Ordinal) &&
+           !panel.Contains("x:Name=\"DrawerFaceCalculationModeCombo\"", StringComparison.Ordinal) &&
+           !panel.Contains("拾取拉手 (DCSDH)", StringComparison.Ordinal),
+        "门板抽面模块缺少行列数、免拉手、开门线、遮罩、实际尺寸或生成入口，或仍残留无关拉手设置。" );
+    Assert(panelCode.Contains("DrawerFaceOptions.TryCreateGrid", StringComparison.Ordinal) &&
+           panelCode.Contains("DC_CMD_DRAWER_FACE", StringComparison.Ordinal) &&
+           panelCode.Contains("DC_CMD_DRAWER_HANDLELESS_PROFILE", StringComparison.Ordinal),
+        "抽面面板没有读取二维独立参数或调用抽面、免拉手侧视图底层命令。" );
     Assert(commands.Contains("[CommandMethod(\"DC_CMD_DRAWER_FACE\"", StringComparison.Ordinal) &&
            commands.Contains("[ShortcutCommand(\"门板抽面\", \"生成抽面\", \"DCMC\")]", StringComparison.Ordinal) &&
            commands.Contains("[CommandMethod(\"DCMC\"", StringComparison.Ordinal) &&
+           commands.Contains("BoardCommands.TryGetBoardSpaceBounds", StringComparison.Ordinal) &&
+           commands.Contains("VirtualKeyW", StringComparison.Ordinal) &&
+           commands.Contains("VirtualKeyS", StringComparison.Ordinal) &&
+           commands.Contains("VirtualKeyA", StringComparison.Ordinal) &&
+           commands.Contains("VirtualKeyD", StringComparison.Ordinal) &&
            commands.Contains("VirtualKeyUp", StringComparison.Ordinal) &&
            commands.Contains("VirtualKeyDown", StringComparison.Ordinal) &&
            commands.Contains("VirtualKeyLeft", StringComparison.Ordinal) &&
            commands.Contains("VirtualKeyRight", StringComparison.Ordinal) &&
            commands.Contains("VirtualKeyAdd", StringComparison.Ordinal) &&
            commands.Contains("Wipeout", StringComparison.Ordinal),
-        "DCMC缺少原生命令、方向键/加减热键或遮罩落图。" );
+        "DCMC缺少智能识别、二维行列热键或遮罩落图。" );
+    Assert(commands.Contains("[CommandMethod(\"DC_CMD_DRAWER_HANDLELESS_PROFILE\"", StringComparison.Ordinal) &&
+           commands.Contains("[ShortcutCommand(\"门板抽面\", \"生成免拉手侧视图\", \"DCMLS\")]", StringComparison.Ordinal) &&
+           commands.Contains("[CommandMethod(\"DCMLS\"", StringComparison.Ordinal) &&
+           commands.Contains("HandlelessProfileCalculator.TryDetect", StringComparison.Ordinal) &&
+           commands.Contains("CadAxisAlignedSegmentReader.CollectCurrentSpace", StringComparison.Ordinal) &&
+           commands.Contains("TryGetManualHandlelessAnchor", StringComparison.Ordinal),
+        "DCMLS缺少自动识别、左右预览或手动定位兜底。" );
     Assert(runtime.Contains("class DrawerFaceRuntimeSettings", StringComparison.Ordinal) &&
            application.Contains("CommandClass(typeof(YiZhiMao.Dc.Plugin.DrawerFaceCommands))", StringComparison.Ordinal),
         "抽面运行参数或命令类没有注册到插件。" );
@@ -2323,9 +3140,13 @@ static void DrawerFaceOpeningArrowAndHotkeysFollowDrawingWorkflow()
     Assert(commands.Contains("DrawerFaceLayoutCalculator.CalculateOpeningArrow(face)", StringComparison.Ordinal) &&
            commands.Contains("private const string OpeningLayerName = \"DC_开门线\"", StringComparison.Ordinal),
         "抽面正式写入流程没有落图向下开门箭头。" );
-    Assert(commands.Contains("VirtualKeyRight => 1", StringComparison.Ordinal) &&
-           commands.Contains("VirtualKeyLeft => -1", StringComparison.Ordinal),
-        "左右方向键没有在两种排列方向下固定控制抽面数量。" );
+    Assert(commands.Contains("VirtualKeyW or VirtualKeyUp => 1", StringComparison.Ordinal) &&
+           commands.Contains("VirtualKeyS or VirtualKeyDown => -1", StringComparison.Ordinal) &&
+           commands.Contains("VirtualKeyD or VirtualKeyRight => 1", StringComparison.Ordinal) &&
+           commands.Contains("VirtualKeyA or VirtualKeyLeft => -1", StringComparison.Ordinal) &&
+           commands.Contains("jig.AdjustRows(rowDelta)", StringComparison.Ordinal) &&
+           commands.Contains("jig.AdjustColumns(columnDelta)", StringComparison.Ordinal),
+        "W/S、上/下、加减键没有控制行数，或A/D、左/右键没有控制列数。" );
 }
 
 static void DoorColorMaskAndDrawingLayerSurfaceAreComplete()
@@ -2366,18 +3187,146 @@ static void DrawingDisplayRepairTraversesAllLocalBlocksAndReevaluatesHatches()
         "TXF 仍只扫描当前空间，或修改比例后没有重新计算填充。" );
 }
 
+static void DrawingLayerOptionsPersistMappingsAndSelectionLayers()
+{
+    var defaults = DrawingLayerToolOptions.Default;
+    Assert(defaults.CategoryLayers[DrawingLayerCategories.ActivityShelf] == "0-柜体结构" &&
+           defaults.CategoryLayers[DrawingLayerCategories.VisiblePanel] == "0-柜体虚线" &&
+           defaults.CategoryLayers[DrawingLayerCategories.DoorPanel] == "0-门板图层" &&
+           defaults.DoorSelectionLayer == "0-门板图层" &&
+           defaults.CabinetSelectionLayer == "0-柜体结构" &&
+           defaults.CustomSelectionLayerOne == "0-五金" &&
+           defaults.CustomSelectionLayerTwo == "0-文字",
+        "图层分类映射或四组智能选择默认图层不正确。" );
+    var isolatedDefault = ToolboxSettings.CreateDefault();
+    isolatedDefault.DrawingLayer.CategoryLayers[DrawingLayerCategories.ActivityShelf] = "A-临时";
+    Assert(ToolboxSettings.CreateDefault().DrawingLayer.CategoryLayers[DrawingLayerCategories.ActivityShelf] == "0-柜体结构",
+        "不同工具箱默认实例仍共享可变图层映射。" );
+
+    var directory = Path.Combine(Path.GetTempPath(), "YiZhiMaoDcTests", Guid.NewGuid().ToString("N"));
+    var path = Path.Combine(directory, "ToolboxSettings.json");
+    try
+    {
+        var settings = ToolboxSettings.CreateDefault();
+        settings.DrawingLayer = defaults with
+        {
+            CategoryLayers = new Dictionary<string, string>(defaults.CategoryLayers, StringComparer.Ordinal)
+            {
+                ["自定义层板"] = "A-层板"
+            },
+            DoorSelectionLayer = "A-门板",
+            CustomSelectionLayerOne = "A-五金"
+        };
+        new ToolboxSettingsStore(path).Save(settings);
+
+        var loaded = new ToolboxSettingsStore(path).Load();
+        Assert(loaded.DrawingLayer.CategoryLayers["自定义层板"] == "A-层板" &&
+               loaded.DrawingLayer.DoorSelectionLayer == "A-门板" &&
+               loaded.DrawingLayer.CustomSelectionLayerOne == "A-五金",
+            "自定义图层映射或智能选择图层没有持久化。" );
+
+        var clone = loaded.Clone();
+        clone.DrawingLayer.CategoryLayers["自定义层板"] = "B-层板";
+        Assert(loaded.DrawingLayer.CategoryLayers["自定义层板"] == "A-层板",
+            "工具箱克隆仍共享图层映射字典，会污染运行时设置。" );
+    }
+    finally
+    {
+        if (Directory.Exists(directory))
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+}
+
+static void DrawingLayerSurfaceContainsConfigurationAndSelectionTools()
+{
+    var root = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
+    var panel = File.ReadAllText(Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "Views", "ShortcutPanelView.xaml"));
+    var codeBehind = File.ReadAllText(Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "Views", "ShortcutPanelView.xaml.cs"));
+
+    Assert(panel.Contains("Header=\"自定义图层配置\"", StringComparison.Ordinal) &&
+           panel.Contains("x:Name=\"DrawingLayerMappingRowsPanel\"", StringComparison.Ordinal) &&
+           panel.Contains("OnLoadDrawingLayerNamesClick", StringComparison.Ordinal) &&
+           panel.Contains("OnSaveDrawingLayerConfigurationClick", StringComparison.Ordinal) &&
+           panel.Contains("Header=\"快捷图层与图形工具\"", StringComparison.Ordinal) &&
+           panel.Contains("Header=\"智能选择工具\"", StringComparison.Ordinal),
+        "图层图纸面板缺少自定义配置、实体控制或智能选择分组。" );
+    Assert(codeBehind.Contains("BuildDrawingLayerMappingRows", StringComparison.Ordinal) &&
+           codeBehind.Contains("ReadDrawingLayerConfiguration", StringComparison.Ordinal) &&
+           codeBehind.Contains("DrawingLayerRuntimeSettings.Save", StringComparison.Ordinal),
+        "图层配置界面没有加载、读取并保存统一运行时参数。" );
+}
+
+static void DrawingLayerEntityControlCommandsUseDcPrefixes()
+{
+    var root = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
+    var commands = File.ReadAllText(Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "DrawingLayerCommands.cs"));
+    foreach (var command in new[]
+             {
+                 "DC_CMD_LAYER_MAKE_CURRENT", "DC_CMD_ENTITY_HIDE", "DC_CMD_ENTITY_UNHIDE_LAST",
+                 "DC_CMD_ENTITY_SHOW_ALL", "DC_CMD_ENTITY_LOCK_LAYERS", "DC_CMD_ENTITY_UNLOCK_LAYERS",
+                 "DC_CMD_ENTITY_UNLOCK_ALL_LAYERS"
+             })
+    {
+        Assert(commands.Contains(command, StringComparison.Ordinal), $"缺少实体控制底层命令 {command}。" );
+    }
+
+    foreach (var alias in new[] { "DCT1", "DCH1", "DCH2", "DCH3", "DCS1", "DCS2", "DCS3" })
+    {
+        Assert(commands.Contains($"\"{alias}\"", StringComparison.Ordinal), $"实体控制快捷键 {alias} 未使用 DC 前缀。" );
+    }
+
+    Assert(commands.Contains("writable.Visible = visible", StringComparison.Ordinal) &&
+           commands.Contains("writable.Visible = true", StringComparison.Ordinal) &&
+           commands.Contains("OpenMode.ForWrite, false, true", StringComparison.Ordinal) &&
+           commands.Contains("layer.IsLocked = locked", StringComparison.Ordinal),
+        "隐藏/显示或图层锁定没有落到 AutoCAD 实体和图层状态。" );
+}
+
+static void DrawingLayerSmartSelectionUsesConfiguredLayersAndObjectTraits()
+{
+    var root = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
+    var commands = File.ReadAllText(Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "DrawingLayerCommands.cs"));
+    foreach (var command in new[]
+             {
+                 "DC_CMD_SELECT_DOOR_LAYER", "DC_CMD_SELECT_CABINET_LAYER", "DC_CMD_SELECT_CUSTOM_LAYER_ONE",
+                 "DC_CMD_SELECT_CUSTOM_LAYER_TWO", "DC_CMD_SELECT_ALL_ANNOTATIONS", "DC_CMD_SELECT_SIMILAR_IN_RANGE"
+             })
+    {
+        Assert(commands.Contains(command, StringComparison.Ordinal), $"缺少智能选择底层命令 {command}。" );
+    }
+
+    Assert(commands.Contains("DrawingLayerRuntimeSettings.DoorSelectionLayer", StringComparison.Ordinal) &&
+           commands.Contains("GetXDataForApplication(BoardCommands.BoardPropertyAppName)", StringComparison.Ordinal) &&
+           commands.Contains("DrawingLayerRuntimeSettings.Current.CategoryLayers.Values", StringComparison.Ordinal) &&
+           commands.Contains("new SelectionFilter", StringComparison.Ordinal) &&
+           commands.Contains("DxfCode.LayerName", StringComparison.Ordinal) &&
+           commands.Contains("SetImpliedSelection", StringComparison.Ordinal) &&
+           commands.Contains("GetRXClass()", StringComparison.Ordinal) &&
+           commands.Contains("string.Equals(candidate.Layer, reference.Layer", StringComparison.Ordinal),
+        "智能选择没有使用持久化图层过滤，或类似对象没有按类型和图层匹配。" );
+}
+
 static void BoardModuleSurfaceAndCommandsAreComplete()
 {
     var root = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
     var panel = File.ReadAllText(Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "Views", "ShortcutPanelView.xaml"));
     var commands = File.ReadAllText(Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "BoardCommands.cs"));
+    var radialMenu = File.ReadAllText(Path.Combine(root, "src", "YiZhiMao.Dc.Core", "RadialMenuOptions.cs"));
     var application = File.ReadAllText(Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "PluginApplication.cs"));
 
     Assert(panel.Contains("x:Name=\"BoardModuleView\"", StringComparison.Ordinal) &&
            panel.Contains("Header=\"板件\"", StringComparison.Ordinal) &&
            panel.Contains("Header=\"单双线\"", StringComparison.Ordinal) &&
+           panel.Contains("Header=\"分区\"", StringComparison.Ordinal) &&
            panel.Contains("Header=\"组件\"", StringComparison.Ordinal),
-        "板件主模块或三个已确认页签不完整。" );
+        "板件主模块或四个已确认页签不完整。" );
+    var lineTab = panel.IndexOf("Header=\"单双线\"", StringComparison.Ordinal);
+    var partitionTab = panel.IndexOf("Header=\"分区\"", StringComparison.Ordinal);
+    var componentTab = panel.IndexOf("Header=\"组件\"", StringComparison.Ordinal);
+    Assert(lineTab >= 0 && partitionTab > lineTab && componentTab > partitionTab,
+        "分区页签没有放在单双线与组件之间。" );
     Assert(commands.Contains("DC_CMD_BOARD_DRAW", StringComparison.Ordinal) &&
            commands.Contains("DC_CMD_BOARD_CENTER", StringComparison.Ordinal) &&
            commands.Contains("DC_CMD_LINE_SINGLE", StringComparison.Ordinal) &&
@@ -2385,14 +3334,683 @@ static void BoardModuleSurfaceAndCommandsAreComplete()
            commands.Contains("DC_CMD_LINE_TRIPLE", StringComparison.Ordinal) &&
            commands.Contains("DC_CMD_LINE_TO_DOUBLE", StringComparison.Ordinal) &&
            commands.Contains("DC_CMD_LINE_TO_TRIPLE", StringComparison.Ordinal) &&
-           commands.Contains("DC_CMD_WINE_RACK_CROSS", StringComparison.Ordinal) &&
-           commands.Contains("DC_CMD_WINE_RACK_DIAGONAL", StringComparison.Ordinal),
+           commands.Contains("DC_CMD_DOOR_PARTITION_GUIDE", StringComparison.Ordinal) &&
+           commands.Contains("DC_CMD_SHOE_SHELVES", StringComparison.Ordinal),
         "板件、单双线或组件底层命令入口不完整。" );
+    Assert(panel.Contains("x:Name=\"ShoeShelfDepthBox\"", StringComparison.Ordinal) &&
+           panel.Contains("x:Name=\"ShoeShelfSmartAngleRadio\"", StringComparison.Ordinal) &&
+           panel.Contains("x:Name=\"ShoeShelfGenerateStopperCheck\"", StringComparison.Ordinal) &&
+           panel.Contains("生成鞋柜斜层板 (DCXB)", StringComparison.Ordinal) &&
+           !panel.Contains("WineRack", StringComparison.Ordinal) &&
+           !panel.Contains("十字酒架", StringComparison.Ordinal) &&
+           !panel.Contains("45°斜酒架", StringComparison.Ordinal) &&
+           !commands.Contains("[ShortcutCommand(\"板件\", \"生成十字酒架\"", StringComparison.Ordinal) &&
+           !commands.Contains("[ShortcutCommand(\"板件\", \"生成斜酒架\"", StringComparison.Ordinal) &&
+           BoardToolOptions.Default.ShoeShelfDepth == 260 &&
+           BoardToolOptions.Default.ShoeShelfSmartAngle &&
+           BoardToolOptions.Default.ShoeShelfAngleDegrees == 20 &&
+           BoardToolOptions.Default.ShoeShelfTargetSpacing == 200 &&
+           BoardToolOptions.Default.ShoeShelfFrontClearance == 20 &&
+           BoardToolOptions.Default.ShoeShelfStopperHeight == 20 &&
+           BoardToolOptions.Default.ShoeShelfGenerateStopper,
+        "组件页没有完整替换为带默认前挡条的智能鞋柜斜层板。" );
+    var shoeCommandStart = commands.IndexOf("[CommandMethod(\"DC_CMD_SHOE_SHELVES\"", StringComparison.Ordinal);
+    var shoeCommandEnd = commands.IndexOf("[CommandMethod(\"DC_CMD_WINE_RACK_CROSS\"", StringComparison.Ordinal);
+    var shoeCommand = commands[shoeCommandStart..shoeCommandEnd];
+    Assert(shoeCommand.IndexOf("ShoeShelfLayoutCalculator.ResolvePreview", StringComparison.Ordinal) >= 0 &&
+           shoeCommand.IndexOf("ShoeShelfLayoutCalculator.ResolvePreview", StringComparison.Ordinal) <
+           shoeCommand.IndexOf("document.Editor.Drag(jig)", StringComparison.Ordinal) &&
+           shoeCommand.Contains("catch (Exception exception)", StringComparison.Ordinal),
+        "鞋柜斜层板没有在启动CAD拖拽前完成有效布局预检，或拖拽异常未被安全处理。" );
     Assert(commands.Contains("BoardGeometryCalculator.GetParallelLineOffsets", StringComparison.Ordinal) &&
+           commands.Contains("BoardPlacementCalculator.CalculateOffsetLines", StringComparison.Ordinal) &&
+           commands.Contains("TryGetBoardSpaceBounds(document", StringComparison.Ordinal) &&
+           commands.Contains("LineOffsetPreviewJig", StringComparison.Ordinal) &&
+           commands.Contains("Editor.GetDouble", StringComparison.Ordinal) &&
+           commands.Contains("Editor.Drag(jig)", StringComparison.Ordinal) &&
            commands.Contains("line.Erase();", StringComparison.Ordinal),
-        "单线变双/三没有按计算结果替换原始单线。" );
+        "单双三线偏移缺少临时距离输入和鼠标预览，或单线转换没有替换原线。" );
+    Assert(panel.Contains("x:Name=\"BoardConvertLineThicknessBox\"", StringComparison.Ordinal) &&
+           panel.Contains("x:Name=\"BoardConvertDoubleModeCombo\"", StringComparison.Ordinal) &&
+           panel.Contains("x:Name=\"BoardConvertTripleModeCombo\"", StringComparison.Ordinal) &&
+           BoardToolOptions.Default.ConvertLineThickness == 18 &&
+           !BoardToolOptions.Default.ConvertDoubleAsRectangle &&
+           !BoardToolOptions.Default.ConvertTripleAsRectangle,
+        "单线变双/三缺少独立的18mm板厚和生成线/矩形模式。" );
+    Assert(panel.Contains("单线变双 (DC22)", StringComparison.Ordinal) &&
+           panel.Contains("单线变三 (DC33)", StringComparison.Ordinal) &&
+           commands.Contains("\"DC22\"", StringComparison.Ordinal) &&
+           commands.Contains("\"DC33\"", StringComparison.Ordinal) &&
+           radialMenu.Contains("\"DC22\"", StringComparison.Ordinal) &&
+           radialMenu.Contains("\"DC33\"", StringComparison.Ordinal) &&
+           !panel.Contains("DCZ2", StringComparison.Ordinal) &&
+           !panel.Contains("DCZ3", StringComparison.Ordinal),
+        "单线变双/三没有统一使用 DC22、DC33 快捷命令。" );
+    Assert(panel.Contains("x:Name=\"DoorPartitionTopExtensionBox\"", StringComparison.Ordinal) &&
+           panel.Contains("x:Name=\"DoorPartitionBottomExtensionBox\"", StringComparison.Ordinal) &&
+           panel.Contains("x:Name=\"DoorPartitionMaximumWidthBox\"", StringComparison.Ordinal) &&
+           panel.Contains("x:Name=\"DoorPartitionDefaultCountBox\"", StringComparison.Ordinal) &&
+           panel.Contains("点选两点分区 (FQ)", StringComparison.Ordinal) &&
+           commands.Contains("DoorPartitionPreviewJig", StringComparison.Ordinal) &&
+           commands.Contains("DoorPartitionHotkeyScope", StringComparison.Ordinal) &&
+           commands.Contains("Editor.GetInteger", StringComparison.Ordinal) &&
+           commands.Contains("VirtualKeyW", StringComparison.Ordinal) &&
+           commands.Contains("VirtualKeyS", StringComparison.Ordinal) &&
+           commands.Contains("VirtualKeyOemPlus", StringComparison.Ordinal) &&
+           commands.Contains("VirtualKeyOemMinus", StringComparison.Ordinal) &&
+           commands.Contains("\"FQ\"", StringComparison.Ordinal) &&
+           BoardToolOptions.Default.DoorPartitionTopExtension == 2700 &&
+           BoardToolOptions.Default.DoorPartitionBottomExtension == 300 &&
+           BoardToolOptions.Default.DoorPartitionMaximumWidth == 450 &&
+           BoardToolOptions.Default.DoorPartitionDefaultCount == 8 &&
+           BoardToolOptions.Default.DoorPartitionSmartMode,
+        "门板分区辅助参数、FQ命令或W/S与+/-数量调整入口不完整。" );
+    Assert(commands.Contains("DoorOpeningDetector.TryDetect", StringComparison.Ordinal) &&
+           commands.Contains("CadAxisAlignedSegmentReader.CollectCurrentSpace", StringComparison.Ordinal) &&
+           commands.Contains("CenterBoardPreviewJig", StringComparison.Ordinal) &&
+           commands.Contains("CenterBoardHotkeyScope", StringComparison.Ordinal) &&
+           commands.Contains("TryGetRectangle", StringComparison.Ordinal),
+        "空间中分板没有完成单点内空识别、方向预览或手动框选兜底。");
     Assert(application.Contains("CommandClass(typeof(YiZhiMao.Dc.Plugin.BoardCommands))", StringComparison.Ordinal),
         "板件命令类没有注册到插件。" );
+}
+
+static void BoardTagUsesNormalizedScaleAndLowerText()
+{
+    var root = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
+    var panel = File.ReadAllText(Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "Views", "ShortcutPanelView.xaml"));
+    var commands = File.ReadAllText(Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "BoardCommands.cs"));
+    var settings = File.ReadAllText(Path.Combine(root, "src", "YiZhiMao.Dc.Core", "ToolboxSettings.cs"));
+
+    Assert(BoardToolOptions.Default.TagScale == 1 &&
+           panel.Contains("x:Name=\"BoardTagScaleBox\"", StringComparison.Ordinal) &&
+           panel.Contains("Style=\"{StaticResource DoorPanelCompactInputStyle}\" Text=\"1\"", StringComparison.Ordinal),
+        "板件标识比例的新建默认值不是1。" );
+    Assert(commands.Contains("var radius = BoardRuntimeSettings.Thickness * scale;", StringComparison.Ordinal) &&
+           commands.Contains("var textGap = radius / 3;", StringComparison.Ordinal) &&
+           commands.Contains("HorizontalMode = TextHorizontalMode.TextCenter", StringComparison.Ordinal) &&
+           commands.Contains("VerticalMode = TextVerticalMode.TextTop", StringComparison.Ordinal) &&
+           commands.Contains("markerBottomY - textGap", StringComparison.Ordinal),
+        "板件标识图形没有按板厚归一，或标识文字与图形的间距不足。" );
+    Assert(panel.Contains("<ComboBoxItem Content=\"玻璃层板带文字\" />", StringComparison.Ordinal) &&
+           commands.Contains("Compatibility.Contains(BoardRuntimeSettings.TagType, \"玻璃层板\"", StringComparison.Ordinal) &&
+           commands.Contains("new Polyline(3)", StringComparison.Ordinal) &&
+           commands.Contains("Closed = true", StringComparison.Ordinal),
+        "板件模块没有提供玻璃层板选项，或玻璃层板没有生成闭合三角形标识。" );
+    string[] orderedTagTypes =
+    [
+        "<ComboBoxItem Content=\"固定板件\" />",
+        "<ComboBoxItem Content=\"活动层板\" />",
+        "<ComboBoxItem Content=\"玻璃层板\" />",
+        "<ComboBoxItem Content=\"活动层板带文字\" />",
+        "<ComboBoxItem Content=\"玻璃层板带文字\" />"
+    ];
+    var tagTypeIndexes = orderedTagTypes.Select(value => panel.IndexOf(value, StringComparison.Ordinal)).ToArray();
+    Assert(tagTypeIndexes.All(index => index >= 0) &&
+           tagTypeIndexes.SequenceEqual(tagTypeIndexes.OrderBy(index => index)),
+        "板件标识类型没有按固定、活动、玻璃、带文字类型排列。" );
+    Assert(BoardToolOptions.Default.PropertyType == "普通板件" &&
+           panel.Contains("x:Name=\"BoardPropertyNormalRadio\"", StringComparison.Ordinal) &&
+           panel.Contains("x:Name=\"BoardPropertySideRadio\"", StringComparison.Ordinal) &&
+           panel.Contains("x:Name=\"BoardPropertyTopRadio\"", StringComparison.Ordinal) &&
+           panel.Contains("x:Name=\"BoardPropertyVisibleRadio\"", StringComparison.Ordinal),
+        "常规板件绘制没有提供四种板件属性类型，或默认值不是普通板件。" );
+    Assert(settings.Contains("PropertyType", StringComparison.Ordinal) &&
+           commands.Contains("BoardPropertyAppName", StringComparison.Ordinal) &&
+           commands.Contains("polyline.XData = xdata", StringComparison.Ordinal),
+        "板件属性类型没有持久化到设置并写入新板件对象 XData。" );
+    var horizontalModeIndex = commands.IndexOf("HorizontalMode = TextHorizontalMode.TextCenter", StringComparison.Ordinal);
+    var alignmentPointIndex = commands.IndexOf("text.AlignmentPoint = textAnchor;", StringComparison.Ordinal);
+    Assert(horizontalModeIndex >= 0 && alignmentPointIndex > horizontalModeIndex,
+        "DBText must enter centered alignment mode before setting AlignmentPoint, otherwise AutoCAD throws eNotApplicable.");
+}
+
+static void BoardPlacementUsesEdgeAnchorsAndCursorDirection()
+{
+    var root = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
+    var panel = File.ReadAllText(Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "Views", "ShortcutPanelView.xaml"));
+    var commands = File.ReadAllText(Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "BoardCommands.cs"));
+    var segmentReader = File.ReadAllText(Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "CadAxisAlignedSegmentReader.cs"));
+    Assert(BoardToolOptions.Default.TrimFaceWidth == 50 &&
+           BoardToolOptions.Default.TrimAuxiliaryDepth == 70 &&
+           BoardToolOptions.Default.SideTrimSectionType == "L" &&
+           BoardToolOptions.Default.TopTrimSectionType == "L" &&
+           BoardToolOptions.Default.PlacementView == "立面",
+        "收口板默认尺寸、L型截面或默认视图不正确。" );
+    Assert(panel.Contains("x:Name=\"BoardTrimFaceWidthBox\"", StringComparison.Ordinal) &&
+           panel.Contains("x:Name=\"BoardTrimAuxiliaryDepthBox\"", StringComparison.Ordinal) &&
+           panel.Contains("x:Name=\"BoardSideTrimSectionTypeCombo\"", StringComparison.Ordinal) &&
+           panel.Contains("x:Name=\"BoardTopTrimSectionTypeCombo\"", StringComparison.Ordinal) &&
+           commands.Contains("CalculatePlanSideTrim", StringComparison.Ordinal) &&
+           commands.Contains("CalculatePlanTopTrim", StringComparison.Ordinal) &&
+           commands.Contains("DrawPlanTrimSection(document, \"侧收口\", BoardRuntimeSettings.SideTrimSectionType, false)", StringComparison.Ordinal) &&
+           commands.Contains("DrawPlanTrimSection(document, \"顶收口\", BoardRuntimeSettings.TopTrimSectionType, true)", StringComparison.Ordinal) &&
+           commands.Contains("CalculatePlanVisiblePanel", StringComparison.Ordinal) &&
+           commands.Contains("TryPromptPlacementView", StringComparison.Ordinal) &&
+           commands.Contains("TryPromptTopTrimView", StringComparison.Ordinal) &&
+           commands.Contains("TrimStartDetector.TryDetect", StringComparison.Ordinal) &&
+           commands.Contains("TrimSectionHotkeyScope", StringComparison.Ordinal) &&
+           commands.Contains("BoardPlacementPreviewJig", StringComparison.Ordinal) &&
+           commands.Contains("DirectionDeadZone", StringComparison.Ordinal) &&
+           !commands.Contains("DrawDetectedTrimSection", StringComparison.Ordinal) &&
+           segmentReader.Contains("entity is Line", StringComparison.Ordinal) &&
+           segmentReader.Contains("entity is not Polyline", StringComparison.Ordinal) &&
+           segmentReader.Contains("entity is BlockReference reference", StringComparison.Ordinal) &&
+           segmentReader.Contains("reference.BlockTransform", StringComparison.Ordinal) &&
+           segmentReader.Contains("activeBlockRecords.Add", StringComparison.Ordinal) &&
+           segmentReader.Contains("activeBlockRecords.Remove", StringComparison.Ordinal) &&
+           segmentReader.Contains("!entity.Visible", StringComparison.Ordinal) &&
+           segmentReader.Contains("!layer.IsOff && !layer.IsFrozen", StringComparison.Ordinal),
+        "收口参数、设置宽度、L/T/I切换、平立面入口或CAD线段适配不完整。" );
+
+    var right = BoardPlacementCalculator.CalculateEdgeBoard(
+        new BoardPlacementPoint(0, 0),
+        new BoardPlacementPoint(0, 100),
+        new BoardPlacementPoint(20, 50),
+        50);
+    AssertPolygon(right.Polygons[0],
+        (0, 0), (0, 100), (50, 100), (50, 0));
+
+    var left = BoardPlacementCalculator.CalculateEdgeBoard(
+        new BoardPlacementPoint(0, 0),
+        new BoardPlacementPoint(0, 100),
+        new BoardPlacementPoint(-20, 50),
+        50);
+    AssertPolygon(left.Polygons[0],
+        (0, 0), (0, 100), (-50, 100), (-50, 0));
+
+    var sideTrim = BoardPlacementCalculator.CalculatePlanSideTrim(
+        new BoardPlacementPoint(0, 0),
+        new BoardPlacementPoint(100, 100),
+        50,
+        70,
+        18);
+    Assert(sideTrim.Polygons.Count == 2, "侧收口平面没有同时生成正面板和辅助板。" );
+    AssertPolygon(sideTrim.Polygons[0],
+        (0, 0), (50, 0), (50, 18), (0, 18));
+    AssertPolygon(sideTrim.Polygons[1],
+        (0, 18), (0, 88), (18, 88), (18, 18));
+
+    var upperLeftTrim = BoardPlacementCalculator.CalculatePlanSideTrim(
+        new BoardPlacementPoint(0, 0),
+        new BoardPlacementPoint(-100, 20),
+        50,
+        70,
+        18);
+    AssertPolygon(upperLeftTrim.Polygons[0],
+        (0, 0), (-50, 0), (-50, 18), (0, 18));
+    AssertPolygon(upperLeftTrim.Polygons[1],
+        (0, 18), (0, 88), (-18, 88), (-18, 18));
+
+    var lowerRightTrim = BoardPlacementCalculator.CalculatePlanSideTrim(
+        new BoardPlacementPoint(0, 0),
+        new BoardPlacementPoint(100, -20),
+        50,
+        70,
+        18);
+    AssertPolygon(lowerRightTrim.Polygons[0],
+        (0, 0), (50, 0), (50, -18), (0, -18));
+    AssertPolygon(lowerRightTrim.Polygons[1],
+        (0, -18), (0, -88), (18, -88), (18, -18));
+
+    var lowerLeftTrim = BoardPlacementCalculator.CalculatePlanSideTrim(
+        new BoardPlacementPoint(0, 0),
+        new BoardPlacementPoint(-100, -20),
+        50,
+        70,
+        18);
+    AssertPolygon(lowerLeftTrim.Polygons[0],
+        (0, 0), (-50, 0), (-50, -18), (0, -18));
+    AssertPolygon(lowerLeftTrim.Polygons[1],
+        (0, -18), (0, -88), (-18, -88), (-18, -18));
+
+    var topUpperLeft = BoardPlacementCalculator.CalculatePlanTopTrim(
+        new BoardPlacementPoint(0, 0),
+        new BoardPlacementPoint(-100, 100),
+        50,
+        70,
+        18);
+    AssertPolygon(topUpperLeft.Polygons[0],
+        (0, 0), (0, 50), (-18, 50), (-18, 0));
+    AssertPolygon(topUpperLeft.Polygons[1],
+        (-18, 0), (-88, 0), (-88, 18), (-18, 18));
+
+    var topUpperRight = BoardPlacementCalculator.CalculatePlanTopTrim(
+        new BoardPlacementPoint(0, 0),
+        new BoardPlacementPoint(100, 100),
+        50,
+        70,
+        18);
+    AssertPolygon(topUpperRight.Polygons[0],
+        (0, 0), (0, 50), (18, 50), (18, 0));
+    AssertPolygon(topUpperRight.Polygons[1],
+        (18, 0), (88, 0), (88, 18), (18, 18));
+
+    var topLowerLeft = BoardPlacementCalculator.CalculatePlanTopTrim(
+        new BoardPlacementPoint(0, 0),
+        new BoardPlacementPoint(-100, -100),
+        50,
+        70,
+        18);
+    AssertPolygon(topLowerLeft.Polygons[0],
+        (0, 0), (0, -50), (-18, -50), (-18, 0));
+    AssertPolygon(topLowerLeft.Polygons[1],
+        (-18, 0), (-88, 0), (-88, -18), (-18, -18));
+
+    var topLowerRight = BoardPlacementCalculator.CalculatePlanTopTrim(
+        new BoardPlacementPoint(0, 0),
+        new BoardPlacementPoint(100, -100),
+        50,
+        70,
+        18);
+    AssertPolygon(topLowerRight.Polygons[0],
+        (0, 0), (0, -50), (18, -50), (18, 0));
+    AssertPolygon(topLowerRight.Polygons[1],
+        (18, 0), (88, 0), (88, -18), (18, -18));
+
+    Assert(!commands.Contains("candidate.FaceWidth", StringComparison.Ordinal) &&
+           !commands.Contains("自动净距", StringComparison.Ordinal),
+        "收口尺寸仍在使用柜体到墙的实际净距，而不是设置中的默认参数。" );
+
+    var visiblePanel = BoardPlacementCalculator.CalculatePlanVisiblePanel(
+        new BoardPlacementPoint(0, 0),
+        new BoardPlacementPoint(20, 0),
+        new BoardPlacementPoint(0, 100),
+        500,
+        18);
+    AssertPolygon(visiblePanel.Polygons[0],
+        (0, 0), (18, 0), (18, 500), (0, 500));
+}
+
+static void BoardTrimSectionsSupportProfilesAndRotation()
+{
+    var anchor = new BoardPlacementPoint(0, 0);
+    var lSection = BoardPlacementCalculator.CalculateTrimSection(
+        anchor,
+        BoardPlacementDirection.East,
+        BoardPlacementDirection.South,
+        50,
+        70,
+        18,
+        BoardTrimSectionType.L);
+    Assert(lSection.Polygons.Count == 2, "L型收口应生成正面板和端部辅助板。");
+    AssertPolygon(lSection.Polygons[0],
+        (0, 0), (50, 0), (50, -18), (0, -18));
+    AssertPolygon(lSection.Polygons[1],
+        (0, -18), (0, -88), (18, -88), (18, -18));
+    AssertPolygonsDoNotOverlap(lSection.Polygons[0], lSection.Polygons[1]);
+
+    var tSection = BoardPlacementCalculator.CalculateTrimSection(
+        anchor,
+        BoardPlacementDirection.East,
+        BoardPlacementDirection.South,
+        50,
+        70,
+        18,
+        BoardTrimSectionType.T);
+    Assert(tSection.Polygons.Count == 2, "T型收口应生成正面板和居中辅助板。");
+    AssertPolygon(tSection.Polygons[1],
+        (16, -18), (16, -88), (34, -88), (34, -18));
+    AssertPolygonsDoNotOverlap(tSection.Polygons[0], tSection.Polygons[1]);
+
+    ArgumentOutOfRangeException? narrowTException = null;
+    try
+    {
+        BoardPlacementCalculator.CalculateTrimSection(
+            anchor,
+            BoardPlacementDirection.East,
+            BoardPlacementDirection.South,
+            17,
+            70,
+            18,
+            BoardTrimSectionType.T);
+    }
+    catch (ArgumentOutOfRangeException exception)
+    {
+        narrowTException = exception;
+    }
+
+    Assert(narrowTException is not null &&
+           narrowTException.ParamName == "faceWidth" &&
+           narrowTException.Message.Contains("T型收口正面宽度不能小于板厚", StringComparison.Ordinal),
+        "A T profile narrower than its thickness should report a clear face-width error.");
+
+    var iSection = BoardPlacementCalculator.CalculateTrimSection(
+        anchor,
+        BoardPlacementDirection.East,
+        BoardPlacementDirection.South,
+        50,
+        70,
+        18,
+        BoardTrimSectionType.I);
+    Assert(iSection.Polygons.Count == 1, "I型收口只能生成正面板。");
+    AssertPolygon(iSection.Polygons[0],
+        (0, 0), (50, 0), (50, -18), (0, -18));
+
+    var rotatedTSections = new[]
+    {
+        BoardPlacementCalculator.CalculatePlanSideTrim(anchor, new BoardPlacementPoint(100, 100), 50, 70, 18, BoardTrimSectionType.T),
+        BoardPlacementCalculator.CalculatePlanSideTrim(anchor, new BoardPlacementPoint(100, -100), 50, 70, 18, BoardTrimSectionType.T),
+        BoardPlacementCalculator.CalculatePlanSideTrim(anchor, new BoardPlacementPoint(-100, -100), 50, 70, 18, BoardTrimSectionType.T),
+        BoardPlacementCalculator.CalculatePlanSideTrim(anchor, new BoardPlacementPoint(-100, 100), 50, 70, 18, BoardTrimSectionType.T)
+    };
+    AssertPolygon(rotatedTSections[0].Polygons[1],
+        (16, 18), (16, 88), (34, 88), (34, 18));
+    AssertPolygon(rotatedTSections[1].Polygons[1],
+        (16, -18), (16, -88), (34, -88), (34, -18));
+    AssertPolygon(rotatedTSections[2].Polygons[1],
+        (-16, -18), (-16, -88), (-34, -88), (-34, -18));
+    AssertPolygon(rotatedTSections[3].Polygons[1],
+        (-16, 18), (-16, 88), (-34, 88), (-34, 18));
+    foreach (var layout in rotatedTSections)
+    {
+        AssertPolygonsDoNotOverlap(layout.Polygons[0], layout.Polygons[1]);
+    }
+}
+
+static void TrimStartDetectorRecognizesLocalLines()
+{
+    AxisAlignedSegment[] leftSingle =
+    [
+        new(-100, 0, 0, 0)
+    ];
+    Assert(TrimStartDetector.TryDetect(
+               new BoardPlacementPoint(0, 0),
+               leftSingle,
+               18,
+               out var single),
+        "起点左侧单线没有被识别。");
+    AssertPoint(single.Anchor, 0, 0);
+    Assert(single.LineSide == TrimStartLineSide.Left &&
+           single.LineKind == TrimStartLineKind.Single,
+        "起点左侧单线的方向或类型不正确。");
+
+    AxisAlignedSegment[] leftDouble =
+    [
+        new(-100, 0, 0, 0),
+        new(-100, -18, 0, -18),
+        new(150, -100, 150, 100)
+    ];
+    Assert(TrimStartDetector.TryDetect(
+               new BoardPlacementPoint(0, 0),
+               leftDouble,
+               18,
+               out var leftPair),
+        "起点左侧双线没有被识别。");
+    AssertPoint(leftPair.Anchor, 0, 0);
+    Assert(leftPair.LineSide == TrimStartLineSide.Left &&
+           leftPair.LineKind == TrimStartLineKind.Double,
+        "起点左侧双线的方向或类型不正确。");
+
+    AxisAlignedSegment[] rightDouble =
+    [
+        new(0, 0, 100, 0),
+        new(0, 18, 100, 18)
+    ];
+    Assert(TrimStartDetector.TryDetect(
+               new BoardPlacementPoint(0, 0),
+               rightDouble,
+               18,
+               out var rightPair),
+        "起点右侧双线没有被识别。");
+    AssertPoint(rightPair.Anchor, 0, 0);
+    Assert(rightPair.LineSide == TrimStartLineSide.Right &&
+           rightPair.LineKind == TrimStartLineKind.Double,
+        "起点右侧双线的方向或类型不正确。");
+
+    Assert(!TrimStartDetector.TryDetect(
+            new BoardPlacementPoint(0, 0),
+            [new AxisAlignedSegment(20, 0, 100, 0)],
+            18,
+            out _),
+        "没有连接到起点的线不应参与收口定位。");
+}
+
+static void AssertPoint(BoardPlacementPoint point, double expectedX, double expectedY)
+{
+    Assert(Math.Abs(point.X - expectedX) < 0.000001 &&
+           Math.Abs(point.Y - expectedY) < 0.000001,
+        "识别出的定位角点不正确。");
+}
+
+static void AssertPolygonsDoNotOverlap(BoardPlacementPolygon first, BoardPlacementPolygon second)
+{
+    var firstMinX = first.Points.Min(point => point.X);
+    var firstMaxX = first.Points.Max(point => point.X);
+    var firstMinY = first.Points.Min(point => point.Y);
+    var firstMaxY = first.Points.Max(point => point.Y);
+    var secondMinX = second.Points.Min(point => point.X);
+    var secondMaxX = second.Points.Max(point => point.X);
+    var secondMinY = second.Points.Min(point => point.Y);
+    var secondMaxY = second.Points.Max(point => point.Y);
+    var overlapWidth = Math.Min(firstMaxX, secondMaxX) - Math.Max(firstMinX, secondMinX);
+    var overlapHeight = Math.Min(firstMaxY, secondMaxY) - Math.Max(firstMinY, secondMinY);
+    Assert(overlapWidth <= 0.000001 || overlapHeight <= 0.000001,
+        "正面板与辅助板发生了面积重叠。");
+}
+
+static void AssertPolygon(BoardPlacementPolygon polygon, params (double X, double Y)[] expected)
+{
+    Assert(polygon.Points.Count == expected.Length, "板件轮廓顶点数量不正确。" );
+    for (var index = 0; index < expected.Length; index++)
+    {
+        Assert(Math.Abs(polygon.Points[index].X - expected[index].X) < 0.000001 &&
+               Math.Abs(polygon.Points[index].Y - expected[index].Y) < 0.000001,
+            $"板件轮廓第 {index + 1} 个顶点不正确。" );
+    }
+}
+
+static void CenterBoardAlignsToDetectedOpening()
+{
+    var bounds = new BoardSpaceBounds(100, 900, 200, 800);
+
+    var horizontal = BoardPlacementCalculator.CalculateCenterBoard(
+        bounds,
+        new BoardPlacementPoint(800, 520),
+        18);
+    AssertPolygon(horizontal.Polygons.Single(),
+        (100, 491), (900, 491), (900, 509), (100, 509));
+
+    var vertical = BoardPlacementCalculator.CalculateCenterBoard(
+        bounds,
+        new BoardPlacementPoint(520, 750),
+        18);
+    AssertPolygon(vertical.Polygons.Single(),
+        (491, 200), (509, 200), (509, 800), (491, 800));
+
+    var forcedVertical = BoardPlacementCalculator.CalculateCenterBoard(
+        bounds,
+        new BoardPlacementPoint(800, 520),
+        18,
+        BoardCenterOrientation.Vertical);
+    AssertPolygon(forcedVertical.Polygons.Single(),
+        (491, 200), (509, 200), (509, 800), (491, 800));
+}
+
+static void CenterBoardOpeningUsesInnerEdgesOfDoubleLines()
+{
+    DoorOpeningSegment[] segments =
+    [
+        new(0, 0, 0, 718),
+        new(18, 0, 18, 718),
+        new(600, 0, 600, 718),
+        new(618, 0, 618, 718),
+        new(0, 0, 618, 0),
+        new(0, 18, 618, 18),
+        new(0, 700, 618, 700),
+        new(0, 718, 618, 718)
+    ];
+
+    Assert(DoorOpeningDetector.TryDetect(300, 350, segments, out var bounds),
+        "双线围成的柜体内空没有被识别。");
+    Assert(bounds == new DoorPanelBounds(18, 600, 18, 700),
+        $"中分板没有采用双线靠内空一侧的边界：{bounds}。");
+}
+
+static void OffsetBoardUsesClearSpacingOnFourSides()
+{
+    var bounds = new BoardSpaceBounds(0, 1000, 0, 800);
+
+    var bottom = BoardPlacementCalculator.CalculateOffsetBoard(
+        bounds,
+        new BoardPlacementPoint(500, -100),
+        100,
+        18);
+    Assert(bottom.Side == BoardOffsetSide.Bottom, "鼠标向下没有选择下侧净距。");
+    AssertPolygon(bottom.Layout.Polygons.Single(),
+        (0, 100), (1000, 100), (1000, 118), (0, 118));
+
+    var top = BoardPlacementCalculator.CalculateOffsetBoard(
+        bounds,
+        new BoardPlacementPoint(500, 900),
+        100,
+        18);
+    Assert(top.Side == BoardOffsetSide.Top, "鼠标向上没有选择上侧净距。");
+    AssertPolygon(top.Layout.Polygons.Single(),
+        (0, 682), (1000, 682), (1000, 700), (0, 700));
+
+    var left = BoardPlacementCalculator.CalculateOffsetBoard(
+        bounds,
+        new BoardPlacementPoint(-100, 400),
+        100,
+        18);
+    Assert(left.Side == BoardOffsetSide.Left, "鼠标向左没有选择左侧净距。");
+    AssertPolygon(left.Layout.Polygons.Single(),
+        (100, 0), (118, 0), (118, 800), (100, 800));
+
+    var right = BoardPlacementCalculator.CalculateOffsetBoard(
+        bounds,
+        new BoardPlacementPoint(1100, 400),
+        100,
+        18);
+    Assert(right.Side == BoardOffsetSide.Right, "鼠标向右没有选择右侧净距。");
+    AssertPolygon(right.Layout.Polygons.Single(),
+        (882, 0), (900, 0), (900, 800), (882, 800));
+
+    AssertThrows<ArgumentOutOfRangeException>(
+        () => BoardPlacementCalculator.CalculateOffsetBoard(
+            bounds,
+            new BoardPlacementPoint(500, -100),
+            790,
+            18),
+        "位移净距与板厚超出内空时没有被拒绝。");
+}
+
+static void AbaBoardLayersKeepRearEdgesAligned()
+{
+    var layout = AbaBoardLayoutCalculator.Calculate(
+        18, 500,
+        9, 491,
+        18, 500);
+
+    Assert(layout.TotalThickness == 45 && layout.MaximumDepth == 500,
+        "ABA夹心层板总厚或最大深度计算错误。");
+    Assert(layout.Layers.Select(layer => layer.CenterOffset).SequenceEqual([13.5, 0, -13.5]),
+        "第一、二、三层没有按绘制方向左侧到右侧排列。");
+    Assert(layout.Layers.Select(layer => layer.FrontOffset).SequenceEqual([0d, 9d, 0d]),
+        "第二层没有按三层深度差内退9毫米。");
+    Assert(layout.Layers.All(layer => layer.BackOffset == 500),
+        "三层夹心板的后端没有保持对齐。");
+
+    var flush = AbaBoardLayoutCalculator.Calculate(9, 500, 18, 500, 9, 500);
+    Assert(flush.Layers.All(layer => layer.FrontOffset == 0 && layer.BackOffset == 500),
+        "默认零内退时三层没有前后齐平。");
+    AssertThrows<ArgumentOutOfRangeException>(
+        () => AbaBoardLayoutCalculator.Calculate(18, 500, 9, 0, 18, 500),
+        "ABA夹心层板错误地接受了零深度。");
+
+    var bounds = new BoardSpaceBounds(0, 1000, 0, 800);
+    var bottom = AbaBoardLayoutCalculator.CalculateSpacePlacement(
+        bounds, new BoardPlacementPoint(500, -100), 100, layout.TotalThickness);
+    Assert(bottom.Side == BoardOffsetSide.Bottom, "ABA鼠标向下没有选择下侧空间内退。" );
+    AssertPoint(bottom.Start, 1000, 122.5);
+    AssertPoint(bottom.End, 0, 122.5);
+
+    var top = AbaBoardLayoutCalculator.CalculateSpacePlacement(
+        bounds, new BoardPlacementPoint(500, 900), 100, layout.TotalThickness);
+    Assert(top.Side == BoardOffsetSide.Top, "ABA鼠标向上没有选择上侧空间内退。" );
+    AssertPoint(top.Start, 0, 677.5);
+    AssertPoint(top.End, 1000, 677.5);
+
+    var left = AbaBoardLayoutCalculator.CalculateSpacePlacement(
+        bounds, new BoardPlacementPoint(-100, 400), 100, layout.TotalThickness);
+    Assert(left.Side == BoardOffsetSide.Left, "ABA鼠标向左没有选择左侧空间内退。" );
+    AssertPoint(left.Start, 122.5, 0);
+    AssertPoint(left.End, 122.5, 800);
+
+    var right = AbaBoardLayoutCalculator.CalculateSpacePlacement(
+        bounds, new BoardPlacementPoint(1100, 400), 100, layout.TotalThickness);
+    Assert(right.Side == BoardOffsetSide.Right, "ABA鼠标向右没有选择右侧空间内退。" );
+    AssertPoint(right.Start, 877.5, 800);
+    AssertPoint(right.End, 877.5, 0);
+
+    AssertThrows<ArgumentOutOfRangeException>(
+        () => AbaBoardLayoutCalculator.CalculateSpacePlacement(
+            bounds, new BoardPlacementPoint(500, -100), 780, layout.TotalThickness),
+        "ABA空间内退与总厚超出内空时没有被拒绝。");
+}
+
+static void BackboardUsesRearDirectionAndIndependentExtensions()
+{
+    var bounds = new BoardSpaceBounds(0, 1000, 0, 800);
+    var options = new BackboardLayoutOptions(
+        Thickness: 8,
+        Inset: 12,
+        LeftExtension: 5,
+        RightExtension: 6,
+        TopExtension: 7,
+        BottomExtension: 8);
+
+    var top = BackboardLayoutCalculator.Calculate(
+        bounds,
+        new BoardPlacementPoint(500, 1000),
+        options);
+    Assert(top.RearSide == BoardOffsetSide.Top, "鼠标向上没有把上沿识别为背板后沿。" );
+    AssertPolygon(top.PlanPolygon,
+        (-5, 780), (1006, 780), (1006, 788), (-5, 788));
+    AssertPolygon(top.ElevationPolygon,
+        (-5, -8), (1006, -8), (1006, 807), (-5, 807));
+
+    var bottom = BackboardLayoutCalculator.Calculate(
+        bounds,
+        new BoardPlacementPoint(500, -100),
+        options);
+    Assert(bottom.RearSide == BoardOffsetSide.Bottom, "鼠标向下没有把下沿识别为背板后沿。" );
+    AssertPolygon(bottom.PlanPolygon,
+        (-5, 12), (1006, 12), (1006, 20), (-5, 20));
+
+    var left = BackboardLayoutCalculator.Calculate(
+        bounds,
+        new BoardPlacementPoint(-100, 400),
+        options);
+    Assert(left.RearSide == BoardOffsetSide.Left, "鼠标向左没有把左沿识别为背板后沿。" );
+    AssertPolygon(left.PlanPolygon,
+        (12, -8), (20, -8), (20, 807), (12, 807));
+
+    var right = BackboardLayoutCalculator.Calculate(
+        bounds,
+        new BoardPlacementPoint(1100, 400),
+        options);
+    Assert(right.RearSide == BoardOffsetSide.Right, "鼠标向右没有把右沿识别为背板后沿。" );
+    AssertPolygon(right.PlanPolygon,
+        (980, -8), (988, -8), (988, 807), (980, 807));
+
+    AssertThrows<ArgumentOutOfRangeException>(
+        () => BackboardLayoutCalculator.Calculate(
+            bounds,
+            new BoardPlacementPoint(500, 1000),
+            options with { Inset = 795 }),
+        "背板缩进与厚度超过当前方向内空时没有被拒绝。" );
+
+    var invalidModes = ToolboxSettings.CreateDefault();
+    invalidModes.Board = invalidModes.Board with
+    {
+        BackboardGeneratePlan = true,
+        BackboardGenerateElevation = true
+    };
+    AssertThrows<InvalidOperationException>(
+        invalidModes.Validate,
+        "背板俯视图和正视图没有被限制为严格二选一。" );
 }
 
 static void AdvancedBoardOperationsAreComplete()
@@ -2400,6 +4018,7 @@ static void AdvancedBoardOperationsAreComplete()
     var root = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
     var panel = File.ReadAllText(Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "Views", "ShortcutPanelView.xaml"));
     var commands = File.ReadAllText(Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "AdvancedBoardCommands.cs"));
+    var statistics = File.ReadAllText(Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "StatisticsCommands.cs"));
     var application = File.ReadAllText(Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "PluginApplication.cs"));
 
     string[] commandNames =
@@ -2410,21 +4029,114 @@ static void AdvancedBoardOperationsAreComplete()
     ];
     Assert(commandNames.All(name => commands.Contains(name, StringComparison.Ordinal)),
         "板件高级操作底层命令不完整。");
-    Assert(commands.Contains("BoardGeometryCalculator.GetDividerCenters", StringComparison.Ordinal) &&
-           commands.Contains("BoardGeometryCalculator.IsInteriorSplitCoordinate", StringComparison.Ordinal) &&
-           commands.Contains("BoardGeometryCalculator.CanEditLineToIntersection", StringComparison.Ordinal) &&
+    Assert(commands.Contains("BoardDivisionCalculator.CalculatePlacement", StringComparison.Ordinal) &&
+           commands.Contains("BoardGeometryCalculator.CalculateSplitLayoutFromTwoPoints", StringComparison.Ordinal) &&
+           commands.Contains("UseBasePoint = true", StringComparison.Ordinal) &&
+           commands.Contains("TryGetSplitPoints", StringComparison.Ordinal) &&
+           commands.Contains("foreach (var partBounds in layout.Parts)", StringComparison.Ordinal) &&
+           commands.Contains("SplitBoardCore(document);", StringComparison.Ordinal) &&
+           commands.Contains("分割操作未完成", StringComparison.Ordinal) &&
+           !commands.Contains("SplitBoardPreviewJig", StringComparison.Ordinal) &&
+           !commands.Contains("请选择分割方向 [竖向(V)/横向(H)]", StringComparison.Ordinal) &&
+           commands.Contains("BoardGeometryCalculator.CalculateNearestRectangleExtension", StringComparison.Ordinal) &&
+           commands.Contains("BoardGeometryCalculator.CalculateNearestLineTrim", StringComparison.Ordinal) &&
+           commands.Contains("BoardGeometryCalculator.CalculateNearestRectangleTrim", StringComparison.Ordinal) &&
+           commands.Contains("CadAxisAlignedSegmentReader.CollectCurrentSpace", StringComparison.Ordinal) &&
+           !commands.Contains("请选择边界直线", StringComparison.Ordinal) &&
            commands.Contains("BoardGeometryCalculator.HaveCompatibleMergeProperties", StringComparison.Ordinal) &&
-           commands.Contains("target.SetPropertiesFrom(source);", StringComparison.Ordinal),
+           commands.Contains("target.SetPropertiesFrom(source);", StringComparison.Ordinal) &&
+           commands.Contains("target.XData = xdata;", StringComparison.Ordinal),
         "板件高级命令没有接入已验证的几何保护或属性保留。" );
+    Assert(BoardToolOptions.Default.DisplaceDistance == 100 &&
+           panel.Contains("x:Name=\"BoardDisplaceDistanceBox\"", StringComparison.Ordinal) &&
+           panel.Contains("Text=\"内退距离 (mm)\"", StringComparison.Ordinal) &&
+           panel.Contains("Foreground=\"White\" Content=\"位移板 (DCYC)\"", StringComparison.Ordinal) &&
+           commands.Contains("TryGetBoardSpaceBounds", StringComparison.Ordinal) &&
+           commands.Contains("PromptDoubleOptions", StringComparison.Ordinal) &&
+           commands.Contains("CalculateOffsetBoard", StringComparison.Ordinal) &&
+           commands.Contains("DisplaceBoardPreviewJig", StringComparison.Ordinal),
+        "位移板没有使用主操作颜色，或未接入全局内退、单点内空识别、数值输入和四方向预览。" );
+    Assert(BoardToolOptions.Default.EffectiveAbaFirstThickness == 18 &&
+           BoardToolOptions.Default.EffectiveAbaSecondThickness == 9 &&
+           BoardToolOptions.Default.EffectiveAbaThirdThickness == 18 &&
+           BoardToolOptions.Default.EffectiveAbaFirstDepth == 500 &&
+           BoardToolOptions.Default.EffectiveAbaSecondDepth == 500 &&
+           BoardToolOptions.Default.EffectiveAbaThirdDepth == 500 &&
+           BoardToolOptions.Default.AbaPlacementInset == 0 &&
+           panel.Contains("Header=\"ABA夹心层板\"", StringComparison.Ordinal) &&
+           panel.Contains("x:Name=\"AbaFirstThicknessBox\"", StringComparison.Ordinal) &&
+           panel.Contains("x:Name=\"AbaSecondDepthBox\"", StringComparison.Ordinal) &&
+           !panel.Contains("x:Name=\"AbaPlacementInsetBox\"", StringComparison.Ordinal) &&
+           !panel.Contains("x:Name=\"AbaOverallInsetBox\"", StringComparison.Ordinal) &&
+           commands.Contains("AbaBoardLayoutCalculator.Calculate", StringComparison.Ordinal) &&
+           commands.Contains("TryGetBoardSpaceBounds", StringComparison.Ordinal) &&
+           commands.Contains("请输入ABA夹心层板到所选内空边的空间内退", StringComparison.Ordinal) &&
+           !commands.Contains("整体深度内退", StringComparison.Ordinal) &&
+           !commands.Contains("depthInsetResult", StringComparison.Ordinal) &&
+           commands.Contains("AbaBoardLayoutCalculator.CalculateSpacePlacement", StringComparison.Ordinal) &&
+           commands.Contains("AbaBoardPreviewJig", StringComparison.Ordinal) &&
+           commands.Contains("\"夹心层板\"", StringComparison.Ordinal),
+        "ABA夹心层板仍包含整体深度内退，或没有接入识别后空间内退、鼠标四方向预览、三层独立深度和板件归类。" );
+    Assert(BoardToolOptions.Default.DivideDepth == 100 &&
+           BoardToolOptions.Default.DivideMaximumClearSpan == 430 &&
+           BoardToolOptions.Default.DivideSmartMode &&
+           BoardToolOptions.Default.DivideRemainderAtEnd &&
+           panel.Contains("x:Name=\"BoardDivideDepthBox\"", StringComparison.Ordinal) &&
+           panel.Contains("x:Name=\"BoardDivideMaximumClearBox\"", StringComparison.Ordinal) &&
+           panel.Contains("x:Name=\"BoardDivideSmartRadio\"", StringComparison.Ordinal) &&
+           panel.Contains("x:Name=\"BoardDivideCountRadio\"", StringComparison.Ordinal) &&
+           panel.Contains("x:Name=\"BoardDivideRemainderCheck\"", StringComparison.Ordinal) &&
+           !panel.Contains("x:Name=\"BoardDivideCountBox\"", StringComparison.Ordinal) &&
+           !panel.Contains("x:Name=\"BoardDivideThicknessBox\"", StringComparison.Ordinal) &&
+           commands.Contains("PromptIntegerOptions", StringComparison.Ordinal) &&
+           commands.Contains("BoardRuntimeSettings.Thickness", StringComparison.Ordinal) &&
+           commands.Contains("DivideBoardPreviewJig", StringComparison.Ordinal) &&
+           !commands.Contains("AdvancedBoardRuntimeSettings.DivideThickness", StringComparison.Ordinal),
+        "均分板件没有完整接入智能/按格数模式、全局板厚、独立深度、余量侧或鼠标预览。" );
+    Assert(BoardToolOptions.Default.BackboardThickness == 9 &&
+           BoardToolOptions.Default.BackboardGeneratePlan &&
+           !BoardToolOptions.Default.BackboardGenerateElevation &&
+           !BoardToolOptions.Default.BackboardHideElevationLayer &&
+           panel.Contains("x:Name=\"BackboardGeneratePlanRadio\"", StringComparison.Ordinal) &&
+           panel.Contains("x:Name=\"BackboardGenerateElevationRadio\"", StringComparison.Ordinal) &&
+           panel.Contains("GroupName=\"BackboardViewMode\"", StringComparison.Ordinal) &&
+           !panel.Contains("x:Name=\"BackboardGeneratePlanCheck\"", StringComparison.Ordinal) &&
+           !panel.Contains("x:Name=\"BackboardGenerateElevationCheck\"", StringComparison.Ordinal) &&
+           panel.Contains("x:Name=\"BackboardHideElevationCheck\"", StringComparison.Ordinal) &&
+           panel.Contains("Content=\"点击内空生成背板 (DCBB)\"", StringComparison.Ordinal) &&
+           commands.Contains("BackboardLayoutCalculator.Calculate", StringComparison.Ordinal) &&
+           commands.Contains("TryGetBoardSpaceBounds", StringComparison.Ordinal) &&
+           commands.Contains("BackboardPreviewJig", StringComparison.Ordinal) &&
+           commands.Contains("TryEnsureDashedLinetype", StringComparison.Ordinal) &&
+           commands.Contains("ColorMethod.ByAci, 8", StringComparison.Ordinal) &&
+           commands.Contains("\"DASHED\"", StringComparison.Ordinal) &&
+           commands.Contains("\"背板\",", StringComparison.Ordinal) &&
+           commands.Contains("\"正视图背板\"", StringComparison.Ordinal) &&
+           statistics.Contains("背板-俯视辅助图", StringComparison.Ordinal) &&
+           statistics.Contains("or \"背板\"", StringComparison.Ordinal) &&
+           statistics.Contains("ExpandWithHiddenBackboards", StringComparison.Ordinal) &&
+           statistics.Contains("!layer.IsOff", StringComparison.Ordinal) &&
+           statistics.Contains("IntersectsInPlan", StringComparison.Ordinal),
+        "背板没有完整接入单点识别、鼠标后沿、俯视无属性、正视拆单或隐藏图层开关。" );
     Assert(panel.Contains("位移板", StringComparison.Ordinal) &&
-           panel.Contains("ABA夹层", StringComparison.Ordinal) &&
+           panel.Contains("生成夹心层板", StringComparison.Ordinal) &&
            panel.Contains("均分板件", StringComparison.Ordinal) &&
            panel.Contains("背板生成", StringComparison.Ordinal) &&
-           panel.Contains("拆分板件", StringComparison.Ordinal) &&
+           panel.Contains("分割板件", StringComparison.Ordinal) &&
+           !panel.Contains("拆分板件", StringComparison.Ordinal) &&
            panel.Contains("合并板件", StringComparison.Ordinal) &&
-           panel.Contains("延伸线/矩形", StringComparison.Ordinal) &&
+           panel.Contains("延伸矩形 (DCEXX)", StringComparison.Ordinal) &&
+           !panel.Contains("就近延伸矩形", StringComparison.Ordinal) &&
            panel.Contains("修剪线/矩形", StringComparison.Ordinal) &&
-           panel.Contains("层板投影", StringComparison.Ordinal),
+           panel.Contains("生成层板侧视/立板俯视", StringComparison.Ordinal) &&
+           commands.Contains("BoardGeometryCalculator.TryMergeBounds", StringComparison.Ordinal) &&
+           commands.Contains("HaveMatchingXData", StringComparison.Ordinal) &&
+           commands.Contains("BoardGeometryCalculator.CalculateNearestLineTrim", StringComparison.Ordinal) &&
+           commands.Contains("BoardGeometryCalculator.CalculateNearestRectangleTrim", StringComparison.Ordinal) &&
+           commands.Contains("BoardGeometryCalculator.CalculateProjection", StringComparison.Ordinal) &&
+           commands.Contains("BoardProjectionPreviewJig", StringComparison.Ordinal) &&
+           commands.Contains("ApplyProjectionStyle", StringComparison.Ordinal) &&
+           !commands.Contains("CloneSelection(document.Database, selection.Value", StringComparison.Ordinal),
         "板件高级操作界面入口不完整。");
     Assert(application.Contains("CommandClass(typeof(YiZhiMao.Dc.Plugin.AdvancedBoardCommands))", StringComparison.Ordinal),
         "板件高级命令类没有注册到插件。");
@@ -2434,22 +4146,269 @@ static void BoardLineReplacementOffsetsAreExact()
 {
     Assert(BoardGeometryCalculator.GetParallelLineOffsets(2, 18).SequenceEqual([-9d, 9d]),
         "单线变双没有生成左右各半板厚的两条替换线。" );
-    Assert(BoardGeometryCalculator.GetParallelLineOffsets(3, 18).SequenceEqual([-9d, 0d, 9d]),
+    Assert(BoardGeometryCalculator.GetParallelLineOffsets(3, 18).SequenceEqual([-18d, 0d, 18d]),
         "单线变三没有生成左右边线和中心线。" );
     AssertThrows<ArgumentOutOfRangeException>(
         () => BoardGeometryCalculator.GetParallelLineOffsets(1, 18),
         "替换偏移错误地接受了非双线/三线数量。" );
 }
 
-static void BoardDivisionAccountsForThickness()
+static void BoardLineOffsetsAndExtensionsFollowGeometry()
 {
-    var centers = BoardGeometryCalculator.GetDividerCenters(1000, 3, 18);
-    Assert(centers.Count == 2 &&
-           Math.Abs(centers[0] - 330.3333333333333) < 0.000001 &&
-           Math.Abs(centers[1] - 669.6666666666667) < 0.000001,
-        "均分板件没有在扣除两块板厚后保持三个净空相等。" );
+    var bounds = new BoardSpaceBounds(0, 1000, 0, 800);
+    var bottom = BoardPlacementCalculator.CalculateOffsetLines(
+        bounds,
+        new BoardPlacementPoint(500, -100),
+        100,
+        18,
+        3);
+    Assert(bottom.Side == BoardOffsetSide.Bottom &&
+           bottom.Orientation == BoardCenterOrientation.Horizontal &&
+           bottom.Coordinates.SequenceEqual([100d, 118d, 136d]),
+        "三线没有从鼠标所指下边按净距、中心和板厚生成。" );
+
+    var top = BoardPlacementCalculator.CalculateOffsetLines(
+        bounds,
+        new BoardPlacementPoint(500, 900),
+        100,
+        18,
+        1);
+    Assert(top.Side == BoardOffsetSide.Top && top.Coordinates.SequenceEqual([700d]),
+        "单线没有从鼠标所指上边按输入距离生成。" );
+
+    var right = BoardPlacementCalculator.CalculateOffsetLines(
+        bounds,
+        new BoardPlacementPoint(1100, 400),
+        100,
+        18,
+        2);
+    Assert(right.Side == BoardOffsetSide.Right &&
+           right.Orientation == BoardCenterOrientation.Vertical &&
+           right.Coordinates.SequenceEqual([882d, 900d]),
+        "双线没有从鼠标所指右边按净距和板厚向内生成。" );
+
+    var vertical = BoardGeometryCalculator.ExtendLineByDrawingAxes(
+        new BoardPlacementPoint(0, 0),
+        new BoardPlacementPoint(0, 100),
+        5,
+        7);
+    AssertPoint(vertical.Start, 0, -7);
+    AssertPoint(vertical.End, 0, 105);
+
+    var reversedVertical = BoardGeometryCalculator.ExtendLineByDrawingAxes(
+        new BoardPlacementPoint(0, 100),
+        new BoardPlacementPoint(0, 0),
+        5,
+        7);
+    AssertPoint(reversedVertical.Start, 0, 105);
+    AssertPoint(reversedVertical.End, 0, -7);
+
+    var horizontal = BoardGeometryCalculator.ExtendLineByDrawingAxes(
+        new BoardPlacementPoint(100, 0),
+        new BoardPlacementPoint(0, 0),
+        5,
+        7);
+    AssertPoint(horizontal.Start, 107, 0);
+    AssertPoint(horizontal.End, -5, 0);
+}
+
+static void DoorPartitionGuidesUseSmartAndAdjustedCounts()
+{
+    var smart = BoardDivisionCalculator.CalculateDoorGuideLayout(
+        3600,
+        smartMode: true,
+        maximumDoorWidth: 450,
+        defaultDoorCount: 8);
+    Assert(smart.DoorCount == 8 &&
+           smart.BoundaryOffsets.SequenceEqual([0d, 450d, 900d, 1350d, 1800d, 2250d, 2700d, 3150d, 3600d]),
+        "智能分区没有按最大门宽生成包含两端的门板边界线。" );
+
+    var increased = BoardDivisionCalculator.CalculateDoorGuideLayout(
+        3600,
+        smartMode: true,
+        maximumDoorWidth: 450,
+        defaultDoorCount: 8,
+        countAdjustment: 1);
+    Assert(increased.DoorCount == 9 && increased.BoundaryOffsets.Count == 10 &&
+           Math.Abs(increased.BoundaryOffsets[1] - 400) < 0.000001 &&
+           Math.Abs(increased.BoundaryOffsets[^1] - 3600) < 0.000001,
+        "W/+增加门扇数后没有重新严格等分。" );
+
+    var fixedCount = BoardDivisionCalculator.CalculateDoorGuideLayout(
+        3200,
+        smartMode: false,
+        maximumDoorWidth: 450,
+        defaultDoorCount: 8,
+        countAdjustment: -1);
+    Assert(fixedCount.DoorCount == 7 && fixedCount.BoundaryOffsets.Count == 8 &&
+           Math.Abs(fixedCount.BoundaryOffsets[^1] - 3200) < 0.000001,
+        "按格数分使用S/-减少门扇数后没有保留起终点边界。" );
+}
+
+static void ShoeShelfLayoutFitsThinCabinetAndMirrorsFront()
+{
+    var options = new ShoeShelfLayoutOptions(
+        18,
+        260,
+        true,
+        20,
+        200,
+        0,
+        0,
+        20,
+        0,
+        20,
+        true,
+        0);
+    var thinBounds = new BoardSpaceBounds(0, 200, 0, 1050);
+    var right = ShoeShelfLayoutCalculator.Calculate(
+        thinBounds,
+        new BoardPlacementPoint(300, 525),
+        options);
+
+    Assert(right.FrontSide == ShoeCabinetFrontSide.Right && right.AngleDegrees > 45,
+        "200mm超薄柜没有自动提高斜层板角度，或鼠标向右没有识别为右前方。" );
+    Assert(right.Layers.Count >= 4 && right.Layers.All(layer => layer.Stopper is not null),
+        "鞋柜斜层板没有按目标层距生成多层，或默认前挡条缺失。" );
+    var firstShelf = right.Layers[0].Shelf;
+    var firstStopper = right.Layers[0].Stopper!;
+    var shelfLength = Math.Sqrt(
+        Math.Pow(firstShelf.End.X - firstShelf.Start.X, 2) +
+        Math.Pow(firstShelf.End.Y - firstShelf.Start.Y, 2));
+    var shelfDirection = new BoardPlacementPoint(
+        (firstShelf.End.X - firstShelf.Start.X) / shelfLength,
+        (firstShelf.End.Y - firstShelf.Start.Y) / shelfLength);
+    var shelfNormal = new BoardPlacementPoint(-shelfDirection.Y, shelfDirection.X);
+    var shelfTopFront = firstShelf.Polygon.Points[1];
+    var shelfBottomFront = firstShelf.Polygon.Points[2];
+    var expectedStopperBackTop = new BoardPlacementPoint(
+        shelfTopFront.X + shelfNormal.X * options.StopperHeight,
+        shelfTopFront.Y + shelfNormal.Y * options.StopperHeight);
+    var stopperLength = PointDistance(firstStopper.Start, firstStopper.End);
+    Assert(PointDistance(firstStopper.Polygon.Points[0], shelfBottomFront) < 0.000001 &&
+           PointDistance(firstStopper.Polygon.Points[1], expectedStopperBackTop) < 0.000001 &&
+           Math.Abs(stopperLength - (options.Thickness + options.StopperHeight)) < 0.000001,
+        "层板前端没有贴在挡条背面，或挡条总长没有包含板厚与外露高度。" );
+    Assert(right.Layers.SelectMany(layer => layer.Shelf.Polygon.Points)
+               .Concat(right.Layers.SelectMany(layer => layer.Stopper!.Polygon.Points))
+               .All(point => point.X >= thinBounds.Left - 0.000001 &&
+                             point.X <= thinBounds.Right + 0.000001 &&
+                             point.Y >= thinBounds.Bottom - 0.000001 &&
+                             point.Y <= thinBounds.Top + 0.000001),
+        "智能增角后仍有层板或挡条超出识别内空。" );
+
+    var standard = ShoeShelfLayoutCalculator.Calculate(
+        new BoardSpaceBounds(0, 300, 0, 1050),
+        new BoardPlacementPoint(400, 525),
+        options);
+    Assert(Math.Abs(standard.AngleDegrees - 20) < 0.000001,
+        "标准柜深可以容纳20度层板时不应自动改变角度。" );
+
+    var left = ShoeShelfLayoutCalculator.Calculate(
+        thinBounds,
+        new BoardPlacementPoint(-100, 525),
+        options);
+    Assert(left.FrontSide == ShoeCabinetFrontSide.Left && left.Layers.Count == right.Layers.Count,
+        "鼠标向左没有镜像为左前方，或镜像后层数改变。" );
+    Assert(Math.Abs(left.Layers[0].Shelf.Start.X - (thinBounds.Right - right.Layers[0].Shelf.Start.X)) < 0.000001 &&
+           Math.Abs(left.Layers[0].Shelf.End.X - (thinBounds.Right - right.Layers[0].Shelf.End.X)) < 0.000001,
+        "左右柜门方向没有围绕内空中心镜像。" );
+
+    var increased = ShoeShelfLayoutCalculator.Calculate(
+        thinBounds,
+        new BoardPlacementPoint(300, 525),
+        options with { CountAdjustment = 1 });
+    Assert(increased.Layers.Count == right.Layers.Count + 1,
+        "W/S或+/-对应的临时层数调整没有增加一层。" );
+
+    var withoutStopper = ShoeShelfLayoutCalculator.Calculate(
+        thinBounds,
+        new BoardPlacementPoint(300, 525),
+        options with { GenerateStopper = false });
+    Assert(withoutStopper.Layers.All(layer => layer.Stopper is null),
+        "关闭前挡条后仍然生成了挡条。" );
+
+    AssertThrows<InvalidOperationException>(
+        () => ShoeShelfLayoutCalculator.Calculate(
+            thinBounds,
+            new BoardPlacementPoint(300, 525),
+            options with { SmartAngle = false }),
+        "手动20度无法放入200mm超薄柜时应明确拒绝。" );
+
+    var fixedAngleFallback = ShoeShelfLayoutCalculator.ResolvePreview(
+        new BoardSpaceBounds(0, 260, 0, 1000),
+        new BoardPlacementPoint(300, 500),
+        options with { SmartAngle = false });
+    Assert(fixedAngleFallback.UsedSmartFallback &&
+           fixedAngleFallback.EffectiveOptions.SmartAngle &&
+           fixedAngleFallback.Layout.Layers.Count > 0 &&
+           fixedAngleFallback.Layout.AngleDegrees > options.PreferredAngleDegrees,
+        "260mm内空中固定20度放不下时，没有在预览前安全回退到智能增角。" );
+
+    static double PointDistance(BoardPlacementPoint first, BoardPlacementPoint second) =>
+        Math.Sqrt(Math.Pow(first.X - second.X, 2) + Math.Pow(first.Y - second.Y, 2));
+}
+
+static void BoardDivisionSupportsSmartAndCountModes()
+{
+    var bounds = new BoardSpaceBounds(0, 1000, 0, 800);
+    var smart = new BoardDivisionOptions(
+        BoardDivisionMode.SmartMaximumClearSpan,
+        18,
+        LeaveRemainderAtEnd: true,
+        MaximumClearSpan: 430);
+    var right = BoardDivisionCalculator.CalculatePlacement(
+        bounds,
+        new BoardPlacementPoint(1200, 400),
+        smart);
+    Assert(right.IsVertical && right.RemainderSide == BoardOffsetSide.Right,
+        "鼠标向右没有生成竖板或把余量留在右侧。" );
+    Assert(right.Layout.CompartmentCount == 3 &&
+           right.Layout.ClearSpans.SequenceEqual([321d, 321d, 322d]) &&
+           right.DividerCoordinates.SequenceEqual([330d, 669d]),
+        "最大净空430没有把1000内空智能分成321/321/322。" );
+
+    var left = BoardDivisionCalculator.CalculatePlacement(
+        bounds,
+        new BoardPlacementPoint(-200, 400),
+        smart);
+    Assert(left.RemainderSide == BoardOffsetSide.Left &&
+           left.DividerCoordinates.SequenceEqual([670d, 331d]),
+        "鼠标向左没有镜像板位并把余量留在左侧。" );
+
+    var up = BoardDivisionCalculator.CalculatePlacement(
+        bounds,
+        new BoardPlacementPoint(500, 1000),
+        smart);
+    Assert(!up.IsVertical && up.RemainderSide == BoardOffsetSide.Top &&
+           up.Layout.ClearSpans.SequenceEqual([391d, 391d]) &&
+           up.DividerCoordinates.SequenceEqual([400d]),
+        "鼠标向上没有生成横板并把余量留在上侧。" );
+
+    var byCount = new BoardDivisionOptions(
+        BoardDivisionMode.CompartmentCount,
+        18,
+        LeaveRemainderAtEnd: true,
+        CompartmentCount: 3);
+    var manual = BoardDivisionCalculator.CalculateLayout(1000, byCount);
+    Assert(manual.ClearSpans.SequenceEqual([321d, 321d, 322d]),
+        "按3格分没有把1毫米取整余量留在最后一格。" );
+
+    var strict = BoardDivisionCalculator.CalculateLayout(
+        1000,
+        byCount with { LeaveRemainderAtEnd = false });
+    Assert(strict.ClearSpans.All(value => Math.Abs(value - 321.3333333333333) < 0.000001) &&
+           Math.Abs(strict.DividerOffsets[0] - 330.3333333333333) < 0.000001 &&
+           Math.Abs(strict.DividerOffsets[1] - 669.6666666666667) < 0.000001,
+        "关闭余量留最后后没有保持严格等分。" );
+
+    var small = BoardDivisionCalculator.CalculateLayout(400, smart);
+    Assert(small.CompartmentCount == 1 && small.DividerOffsets.Count == 0,
+        "智能分格在内空不超过430时不应添加板件。" );
     AssertThrows<ArgumentOutOfRangeException>(
-        () => BoardGeometryCalculator.GetDividerCenters(30, 3, 18),
+        () => BoardDivisionCalculator.CalculateLayout(
+            30,
+            byCount with { CompartmentCount = 3 }),
         "均分板件没有拒绝板厚总和超过范围的输入。" );
 }
 
@@ -2459,24 +4418,285 @@ static void BoardEditingGuardsRejectInvalidGeometry()
            !BoardGeometryCalculator.IsInteriorSplitCoordinate(0, 100, -10) &&
            !BoardGeometryCalculator.IsInteriorSplitCoordinate(0, 100, 100),
         "拆分位置没有严格限制在板件内部。" );
-    Assert(BoardGeometryCalculator.CanEditLineToIntersection(-0.5, pickedNearStart: true, isExtend: true) &&
-           BoardGeometryCalculator.CanEditLineToIntersection(1.5, pickedNearStart: false, isExtend: true) &&
-           !BoardGeometryCalculator.CanEditLineToIntersection(0.5, pickedNearStart: true, isExtend: true),
-        "延伸线没有限制为所选端点外侧的交点。" );
-    Assert(BoardGeometryCalculator.CanEditLineToIntersection(0.5, pickedNearStart: true, isExtend: false) &&
-           !BoardGeometryCalculator.CanEditLineToIntersection(-0.5, pickedNearStart: true, isExtend: false) &&
-           !BoardGeometryCalculator.CanEditLineToIntersection(1.5, pickedNearStart: false, isExtend: false),
-        "修剪线没有限制为原线段内部的交点。" );
+    AssertThrows<InvalidOperationException>(
+        () => BoardGeometryCalculator.CalculateLineTrim(-0.5, 0.25),
+        "修剪线错误地接受了原线段外部的交点。" );
+    AssertThrows<InvalidOperationException>(
+        () => BoardGeometryCalculator.CalculateLineTrim(0.5, 0.5),
+        "修剪线错误地接受了交点本身作为待删除段。" );
+}
+
+static void BoardSplitUsesTwoPositionsAlongLongAxis()
+{
+    var horizontalBoard = BoardGeometryCalculator.CalculateSplitLayoutFromTwoPoints(
+        new BoardSpaceBounds(0, 1000, 0, 100),
+        new BoardPlacementPoint(300, 0),
+        new BoardPlacementPoint(700, 100));
+    Assert(horizontalBoard.Orientation == BoardSplitOrientation.Vertical &&
+           horizontalBoard.Coordinates.SequenceEqual([300d, 700d]) &&
+           horizontalBoard.Parts.SequenceEqual(
+           [
+               new BoardSpaceBounds(0, 300, 0, 100),
+               new BoardSpaceBounds(300, 700, 0, 100),
+               new BoardSpaceBounds(700, 1000, 0, 100)
+           ]),
+        "横向板件没有按两个X位置分成左、中、右三个独立矩形布局。" );
+
+    var verticalBoard = BoardGeometryCalculator.CalculateSplitLayoutFromTwoPoints(
+        new BoardSpaceBounds(0, 100, 0, 1000),
+        new BoardPlacementPoint(0, 750),
+        new BoardPlacementPoint(100, 250));
+    Assert(verticalBoard.Orientation == BoardSplitOrientation.Horizontal &&
+           verticalBoard.Coordinates.SequenceEqual([250d, 750d]) &&
+           verticalBoard.Parts.SequenceEqual(
+           [
+               new BoardSpaceBounds(0, 100, 0, 250),
+               new BoardSpaceBounds(0, 100, 250, 750),
+               new BoardSpaceBounds(0, 100, 750, 1000)
+           ]),
+        "竖向板件没有自动排序两个Y位置并分成下、中、上三个独立矩形布局。" );
+
+    var samePosition = BoardGeometryCalculator.CalculateSplitLayoutFromTwoPoints(
+        new BoardSpaceBounds(0, 1000, 0, 100),
+        new BoardPlacementPoint(500, 0),
+        new BoardPlacementPoint(500, 100));
+    Assert(samePosition.Coordinates.SequenceEqual([500d]) &&
+           samePosition.Parts.SequenceEqual(
+           [
+               new BoardSpaceBounds(0, 500, 0, 100),
+               new BoardSpaceBounds(500, 1000, 0, 100)
+           ]),
+        "同一分割位置没有按一条切割线生成两个独立矩形布局。" );
+
+    AssertThrows<ArgumentOutOfRangeException>(
+        () => BoardGeometryCalculator.CalculateSplitLayoutFromTwoPoints(
+            new BoardSpaceBounds(0, 1000, 0, 100),
+            new BoardPlacementPoint(-10, 200),
+            new BoardPlacementPoint(700, 100)),
+        "分割错误地接受了矩形范围外的点。" );
 }
 
 static void BoardMergePropertiesMustMatch()
 {
+    Assert(BoardGeometryCalculator.TryMergeBounds(
+               new BoardSpaceBounds(0, 100, 0, 50),
+               new BoardSpaceBounds(100, 200, 0, 50),
+               out var horizontal) &&
+           horizontal == new BoardSpaceBounds(0, 200, 0, 50),
+        "左右完整相邻的板件没有合并为正确外框。" );
+    Assert(BoardGeometryCalculator.TryMergeBounds(
+               new BoardSpaceBounds(0, 100, 0, 50),
+               new BoardSpaceBounds(0, 100, 50, 120),
+               out var vertical) &&
+           vertical == new BoardSpaceBounds(0, 100, 0, 120),
+        "上下完整相邻的板件没有合并为正确外框。" );
+    Assert(!BoardGeometryCalculator.TryMergeBounds(
+               new BoardSpaceBounds(0, 100, 0, 50),
+               new BoardSpaceBounds(90, 200, 0, 50),
+               out _) &&
+           !BoardGeometryCalculator.TryMergeBounds(
+               new BoardSpaceBounds(0, 100, 0, 50),
+               new BoardSpaceBounds(110, 200, 0, 50),
+               out _) &&
+           !BoardGeometryCalculator.TryMergeBounds(
+               new BoardSpaceBounds(0, 100, 0, 50),
+               new BoardSpaceBounds(100, 200, 5, 45),
+               out _),
+        "合并错误地接受了重叠、有间隙或边缘未完整对齐的板件。" );
     Assert(BoardGeometryCalculator.HaveCompatibleMergeProperties("0-柜体结构", "0-柜体结构", -500, -500, 0, 0),
         "相同属性的相邻板件被错误拒绝合并。" );
     Assert(!BoardGeometryCalculator.HaveCompatibleMergeProperties("0-柜体结构", "0-背板", -500, -500, 0, 0) &&
            !BoardGeometryCalculator.HaveCompatibleMergeProperties("0-柜体结构", "0-柜体结构", -500, -450, 0, 0) &&
            !BoardGeometryCalculator.HaveCompatibleMergeProperties("0-柜体结构", "0-柜体结构", -500, -500, 0, 18),
         "不同图层、深度或高程的板件仍被允许合并。" );
+}
+
+static void BoardEditingUsesPickedSide()
+{
+    var clickedRightOfEarlyIntersection = BoardGeometryCalculator.CalculateLineTrim(0.2, 0.3);
+    var clickedLeftOfLateIntersection = BoardGeometryCalculator.CalculateLineTrim(0.8, 0.7);
+    Assert(clickedRightOfEarlyIntersection == new BoardLineEditParameters(0, 0.2) &&
+           clickedLeftOfLateIntersection == new BoardLineEditParameters(0.8, 1),
+        "修剪线没有删除实际点取的线段，而是按最近端点删除了相反方向。" );
+    AssertThrows<InvalidOperationException>(
+        () => BoardGeometryCalculator.CalculateLineTrim(0.5, 0.5),
+        "修剪线错误地接受了无法判断删除侧的交点点取。" );
+
+    var bounds = new BoardSpaceBounds(0, 100, 0, 50);
+    Assert(BoardGeometryCalculator.CalculateRectangleEdit(
+               bounds,
+               BoardRectangleSide.Left,
+               -20,
+               isExtend: true) == new BoardSpaceBounds(-20, 100, 0, 50),
+        "矩形左边没有正确延伸到外侧边界。" );
+    Assert(BoardGeometryCalculator.CalculateRectangleEdit(
+               bounds,
+               BoardRectangleSide.Left,
+               20,
+               isExtend: false) == new BoardSpaceBounds(20, 100, 0, 50),
+        "矩形修剪没有删除点取的左侧部分。" );
+    AssertThrows<InvalidOperationException>(
+        () => BoardGeometryCalculator.CalculateRectangleEdit(
+            bounds,
+            BoardRectangleSide.Right,
+            80,
+            isExtend: true),
+        "矩形延伸错误地接受了内部边界。" );
+}
+
+static void BoardNearestTrimFindsClickedSideBoundary()
+{
+    AxisAlignedSegment[] lineBoundaries =
+    [
+        new(60, -10, 60, 10),
+        new(80, -10, 80, 10),
+        new(85, 10, 85, 20),
+        new(95, -10, 95, 10),
+        new(0, 20, 100, 20)
+    ];
+    var trimRight = BoardGeometryCalculator.CalculateNearestLineTrim(
+        new BoardPlacementPoint(0, 0),
+        new BoardPlacementPoint(100, 0),
+        new BoardPlacementPoint(90, 0),
+        lineBoundaries);
+    Assert(trimRight == new BoardLineEditParameters(0, 0.8),
+        "一键修剪没有忽略点击点外侧或不相交的线并选择右端内侧最近交线。" );
+
+    AxisAlignedSegment[] leftBoundaries =
+    [
+        new(20, -10, 20, 10),
+        new(40, -10, 40, 10),
+        new(5, -10, 5, 10)
+    ];
+    var trimLeft = BoardGeometryCalculator.CalculateNearestLineTrim(
+        new BoardPlacementPoint(0, 0),
+        new BoardPlacementPoint(100, 0),
+        new BoardPlacementPoint(10, 0),
+        leftBoundaries);
+    Assert(trimLeft == new BoardLineEditParameters(0.2, 1),
+        "一键修剪没有选择左端点击点内侧最近交线。" );
+
+    var horizontalBounds = new BoardSpaceBounds(0, 100, 0, 20);
+    AxisAlignedSegment[] rectangleBoundaries =
+    [
+        new(60, 0, 60, 20),
+        new(80, 5, 80, 15),
+        new(85, 30, 85, 40),
+        new(95, 0, 95, 20)
+    ];
+    var rectangle = BoardGeometryCalculator.CalculateNearestRectangleTrim(
+        horizontalBounds,
+        new BoardPlacementPoint(90, 20),
+        rectangleBoundaries);
+    Assert(rectangle.Side == BoardRectangleSide.Right &&
+           rectangle.BoundaryCoordinate == 80 &&
+           rectangle.Bounds == new BoardSpaceBounds(0, 80, 0, 20),
+        "矩形一键修剪没有只缩短点击端，或错误改变了板件厚度。" );
+
+    AssertThrows<InvalidOperationException>(
+        () => BoardGeometryCalculator.CalculateNearestLineTrim(
+            new BoardPlacementPoint(0, 0),
+            new BoardPlacementPoint(100, 0),
+            new BoardPlacementPoint(50, 0),
+            lineBoundaries),
+        "一键修剪错误地接受了无法判断端部方向的中心点击。" );
+}
+
+static void BoardEditingHandlesCornerPickAndClipboardContention()
+{
+    var bounds = new BoardSpaceBounds(0, 100, 0, 50);
+    var corner = new BoardPlacementPoint(0, 0);
+    Assert(BoardGeometryCalculator.SelectRectangleEditSide(bounds, corner, verticalBoundary: false) ==
+           BoardRectangleSide.Bottom,
+        "水平边界下点取矩形角点时没有选择下边，仍会被误判为左边。" );
+    Assert(BoardGeometryCalculator.SelectRectangleEditSide(bounds, corner, verticalBoundary: true) ==
+           BoardRectangleSide.Left,
+        "竖直边界下点取矩形角点时没有选择左边。" );
+
+    var root = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
+    var commands = File.ReadAllText(Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "AdvancedBoardCommands.cs"));
+    Assert(commands.Contains("ClipboardBusyErrorCode", StringComparison.Ordinal) &&
+           commands.Contains("catch (ExternalException exception) when (exception.ErrorCode == ClipboardBusyErrorCode)", StringComparison.Ordinal),
+        "延伸/修剪点选没有隔离 0x800401D0 瞬时剪贴板占用异常。" );
+}
+
+static void BoardExtensionFindsNearestValidBoundary()
+{
+    var horizontalBounds = new BoardSpaceBounds(0, 100, 0, 20);
+    AxisAlignedSegment[] segments =
+    [
+        new(120, 30, 120, 50),
+        new(150, 5, 150, 15),
+        new(180, 0, 180, 20),
+        new(-30, 0, -30, 20),
+        new(0, 30, 100, 30),
+        new(0, -40, 100, -40)
+    ];
+
+    var right = BoardGeometryCalculator.CalculateNearestRectangleExtension(
+        horizontalBounds,
+        new BoardPlacementPoint(90, 20),
+        segments);
+    Assert(right.Side == BoardRectangleSide.Right &&
+           right.BoundaryCoordinate == 150 &&
+           right.Bounds == new BoardSpaceBounds(0, 150, 0, 20),
+        "横向板点击靠右的上边后没有只延伸右端长度，或错误改变了厚度。" );
+
+    var left = BoardGeometryCalculator.CalculateNearestRectangleExtension(
+        horizontalBounds,
+        new BoardPlacementPoint(10, 10),
+        segments);
+    Assert(left.Side == BoardRectangleSide.Left &&
+           left.Bounds == new BoardSpaceBounds(-30, 100, 0, 20),
+        "横向板点击靠左位置后没有只延伸左端长度。" );
+
+    var verticalBounds = new BoardSpaceBounds(0, 20, 0, 100);
+    AxisAlignedSegment[] verticalSegments =
+    [
+        new(5, 150, 15, 150),
+        new(0, 180, 20, 180),
+        new(30, 0, 30, 100)
+    ];
+    var top = BoardGeometryCalculator.CalculateNearestRectangleExtension(
+        verticalBounds,
+        new BoardPlacementPoint(20, 90),
+        verticalSegments);
+    Assert(top.Side == BoardRectangleSide.Top &&
+           top.Bounds == new BoardSpaceBounds(0, 20, 0, 150),
+        "竖向板点击靠上位置后没有只延伸上端长度，或错误改变了宽度。" );
+
+    AssertThrows<InvalidOperationException>(
+        () => BoardGeometryCalculator.CalculateNearestRectangleExtension(
+            horizontalBounds,
+            new BoardPlacementPoint(50, 10),
+            segments),
+        "延伸错误地接受了无法判断长边端部方向的中心点。" );
+}
+
+static void BoardProjectionUsesReferenceOrientationAndDepthRange()
+{
+    var shelf = BoardGeometryCalculator.CalculateProjection(
+        new BoardSpaceBounds(100, 1100, 500, 518),
+        new BoardPlacementPoint(1300, 0),
+        new BoardPlacementPoint(1800, 20));
+    Assert(shelf.Kind == BoardProjectionKind.ShelfSideView &&
+           shelf.Bounds == new BoardSpaceBounds(1300, 1800, 500, 518),
+        "横向层板没有保留高度和板厚生成侧视深度投影。" );
+
+    var verticalBoard = BoardGeometryCalculator.CalculateProjection(
+        new BoardSpaceBounds(400, 418, 0, 2000),
+        new BoardPlacementPoint(0, -600),
+        new BoardPlacementPoint(20, -100));
+    Assert(verticalBoard.Kind == BoardProjectionKind.VerticalBoardPlanView &&
+           verticalBoard.Bounds == new BoardSpaceBounds(400, 418, -600, -100),
+        "竖向立板没有保留左右位置和板厚生成俯视深度投影。" );
+
+    AssertThrows<ArgumentOutOfRangeException>(
+        () => BoardGeometryCalculator.CalculateProjection(
+            new BoardSpaceBounds(100, 1100, 500, 518),
+            new BoardPlacementPoint(1300, 0),
+            new BoardPlacementPoint(1300, 500)),
+        "层板投影错误地接受了没有横向深度的两点范围。" );
 }
 
 static void StatisticsModuleSurfaceAndCommandsAreComplete()
@@ -2488,6 +4708,7 @@ static void StatisticsModuleSurfaceAndCommandsAreComplete()
 
     Assert(panel.Contains("x:Name=\"StatisticsModuleView\"", StringComparison.Ordinal) &&
            panel.Contains("Header=\"部件统计\"", StringComparison.Ordinal) &&
+           !panel.Contains("Header=\"全屋拆单\"", StringComparison.Ordinal) &&
            panel.Contains("Header=\"普通门板\"", StringComparison.Ordinal) &&
            panel.Contains("Header=\"边框门板\"", StringComparison.Ordinal) &&
            panel.Contains("Header=\"柜体拆单\"", StringComparison.Ordinal) &&
@@ -2505,6 +4726,62 @@ static void StatisticsModuleSurfaceAndCommandsAreComplete()
         "柜体板件没有按长度×深度×板厚换算，或普通门板仍会混入柜体拆单。");
     Assert(application.Contains("CommandClass(typeof(YiZhiMao.Dc.Plugin.StatisticsCommands))", StringComparison.Ordinal),
         "拆单统计命令类没有注册到插件。");
+}
+
+static void AdvancedStatisticsConfigurationAndBridgeAreComplete()
+{
+    var door = DoorStatisticsOptions.Default;
+    var frame = FrameDoorStatisticsOptions.Default;
+    var cabinet = CabinetBomOptions.Default;
+    var nesting = PanelNestingOptions.Default;
+    Assert(door.TableScaleFactor == 8 && door.Thickness == 18 && door.MaxRowsPerPage == 30,
+        "普通门板统计默认参数不完整。" );
+    Assert(frame.CabinetThickness == 18 && frame.BoardCoreCount == 2 && frame.GlassCoreCount == 0 &&
+           frame.CoreThickness == 12 && frame.SideFrameWidth == 60 && frame.TopFrameWidth == 60 &&
+           frame.MiddleFrameWidth == 60 && frame.BottomFrameWidth == 60 &&
+           frame.RightFrameTenon == 10 && frame.MiddleFrameTenon == 10 &&
+           frame.CoreTopTenon == 8 && frame.CoreBottomTenon == 8 &&
+           frame.CoreLeftTenon == 8 && frame.CoreRightTenon == 8 &&
+           frame.CenterMiddleFrame && frame.LowerFramePosition == 600 &&
+           frame.TableScaleFactor == 8 && frame.MaxRowsPerPage == 30,
+        "边框门板统计默认参数与已确认工艺不一致。" );
+    Assert(cabinet.IncludeBasicBoards && cabinet.IncludeBackboards && cabinet.IncludeCabinetSummary &&
+           cabinet.TableScaleFactor == 8 && cabinet.MaxRowsPerPage == 30,
+        "柜体拆单默认项目或表格参数不完整。" );
+    Assert(nesting.UseWoodGrain && !nesting.UseSolidColor && nesting.Use48Sheet && !nesting.Use49Sheet &&
+           nesting.IncludeCabinetBoards && nesting.IncludeFlatDoors &&
+           nesting.TableScaleFactor == 8 && nesting.MaxRowsPerPage == 30,
+        "板件统计默认材质、开料板或统计对象不正确。" );
+
+    var root = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
+    var panel = File.ReadAllText(Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "Views", "ShortcutPanelView.xaml"));
+    var commands = File.ReadAllText(Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "StatisticsCommands.cs"));
+    var bridge = File.ReadAllText(Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "LeishenBomBridge.cs"));
+    Assert(panel.Contains("x:Name=\"DoorStatisticsThicknessBox\"", StringComparison.Ordinal) &&
+           panel.Contains("x:Name=\"FrameDoorCenterMiddleFrameCheck\"", StringComparison.Ordinal) &&
+           panel.Contains("x:Name=\"CabinetBomBasicBoardsCheck\"", StringComparison.Ordinal) &&
+           panel.Contains("x:Name=\"PanelNestingWoodGrainRadio\"", StringComparison.Ordinal) &&
+           panel.Contains("Content=\"外观图超级复制 (DCCOO)\"", StringComparison.Ordinal),
+        "五类拆单统计高级参数或外观图超级复制入口不完整。" );
+    Assert(bridge.Contains("LS.Module.Bom.Models.BomParams", StringComparison.Ordinal) &&
+           bridge.Contains("LS.Module.Bom.Models.DoorStatCmdsParams", StringComparison.Ordinal) &&
+           bridge.Contains("LS.Module.Bom.Models.FrameDoorParams", StringComparison.Ordinal) &&
+           bridge.Contains("LS.Module.Bom.Models.CabinetBomParams", StringComparison.Ordinal) &&
+           bridge.Contains("LS.Module.Bom.Models.PanelNestingParams", StringComparison.Ordinal) &&
+           bridge.Contains("[\"I_TopTenon\"]", StringComparison.Ordinal) &&
+           bridge.Contains("[\"J_BottomTenon\"]", StringComparison.Ordinal) &&
+           bridge.Contains("[\"K_LeftTenon\"]", StringComparison.Ordinal) &&
+           bridge.Contains("[\"L_RightTenon\"]", StringComparison.Ordinal) &&
+           bridge.Contains("[\"Is48Panel\"]", StringComparison.Ordinal) &&
+           bridge.Contains("[\"Is49Panel\"]", StringComparison.Ordinal) &&
+           bridge.Contains("[\"IsSolidColor\"]", StringComparison.Ordinal) &&
+           bridge.Contains("LS_CMD_BOM_ONECLICK", StringComparison.Ordinal),
+        "雷神 BOM 公共参数模型或一键拆单命令桥接不完整。" );
+    Assert(commands.Contains("DC_CMD_BOM_VISUAL_COPY", StringComparison.Ordinal) &&
+           commands.Contains("LeishenBomBridge.TryQueueCommand", StringComparison.Ordinal) &&
+           commands.Contains("LeishenBomBridge.VisualCopyCommand", StringComparison.Ordinal) &&
+           bridge.Contains("LS_CMD_BOM_VISUALCOPY", StringComparison.Ordinal),
+        "拆单统计命令没有桥接成熟模块，或缺少外观图超级复制命令。" );
 }
 
 static void DrawingStatisticsAggregateAndExport()
@@ -2566,13 +4843,25 @@ static void WholeHouseStatisticsSupportsCadTableAndExcel()
 
     var root = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
     var commands = File.ReadAllText(Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "StatisticsCommands.cs"));
+    var panel = File.ReadAllText(Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "Views", "ShortcutPanelView.xaml"));
     Assert(commands.Contains("DC_CMD_WHOLE_HOUSE_BOM", StringComparison.Ordinal) &&
-           commands.Contains("放置CAD表格", StringComparison.Ordinal) &&
-           commands.Contains("导出Excel总表", StringComparison.Ordinal) &&
-           commands.Contains("Keywords.Add(\"CAD\"", StringComparison.Ordinal) &&
+           commands.Contains("请框选参与一键全屋拆单的对象", StringComparison.Ordinal) &&
+           commands.Contains("GetSelection(selectionOptions)", StringComparison.Ordinal) &&
+           !commands.Contains("CollectAll(document.Database, StatisticsMode.WholeHouse)", StringComparison.Ordinal) &&
+           commands.Contains("Keywords.Add(\"Table\", \"T\", \"放置CAD表格(T)\")", StringComparison.Ordinal) &&
+           commands.Contains("Keywords.Add(\"Excel\", \"E\", \"导出Excel总表(E)\")", StringComparison.Ordinal) &&
+           commands.Contains("GetXDataForApplication(BoardCommands.BoardPropertyAppName)", StringComparison.Ordinal) &&
+           commands.Contains("category = boardProperty?.Category ?? category", StringComparison.Ordinal) &&
+           commands.Contains("MaxRowsPerPage", StringComparison.Ordinal) &&
+           commands.Contains("TableScaleFactor", StringComparison.Ordinal) &&
            commands.Contains("new Table", StringComparison.Ordinal) &&
-           commands.Contains("Drawing1_柜拆单.xls", StringComparison.Ordinal),
-        "一键全屋拆单没有同时提供CAD关键字、CAD表格和.xls总表输出。");
+           commands.Contains("Drawing1_柜拆单.xls", StringComparison.Ordinal) &&
+           panel.Contains("x:Name=\"WholeHouseCabinetBoardsCheck\"", StringComparison.Ordinal) &&
+           panel.Contains("x:Name=\"WholeHouseBoardPropertiesCheck\"", StringComparison.Ordinal) &&
+           panel.Contains("x:Name=\"WholeHouseTableScaleBox\"", StringComparison.Ordinal) &&
+           panel.Contains("x:Name=\"WholeHouseMaxRowsBox\"", StringComparison.Ordinal) &&
+           panel.Contains("Content=\"一键全屋拆单 (DCQW)\"", StringComparison.Ordinal),
+        "一键全屋拆单未强制先框选，或缺少项目配置、表格参数与 T/E 双输出。");
 }
 
 static void FrameAlignmentMovesContainedGeometry()
@@ -2656,6 +4945,14 @@ static void RadialMenuOptionsPersistAndRejectInvalidValues()
         loaded = RadialMenuOptionsStore.Load(path);
         Assert(loaded.Items.Single(item => item.Ring == 2 && item.Position == 14).CommandAlias == "DCDY",
             "圆盘旧版批量打印默认命令没有迁移为 DC 前缀。" );
+
+        options.Items.Single(item => item.Ring == 2 && item.Position == 1).CommandAlias = "DCZ2";
+        options.Items.Single(item => item.Ring == 2 && item.Position == 2).CommandAlias = "DCZ3";
+        RadialMenuOptionsStore.Save(path, options);
+        loaded = RadialMenuOptionsStore.Load(path);
+        Assert(loaded.Items.Single(item => item.Ring == 2 && item.Position == 1).CommandAlias == "DC22" &&
+               loaded.Items.Single(item => item.Ring == 2 && item.Position == 2).CommandAlias == "DC33",
+            "圆盘旧单双线命令没有迁移为 DC22/DC33。" );
 
         options.Skin = "科技深蓝 (Tech Blue)";
         RadialMenuOptionsStore.Save(path, options);
@@ -3527,6 +5824,124 @@ static void HardwareSurfaceContractIsComplete()
             "[assembly: CommandClass(typeof(YiZhiMao.Dc.Plugin.HardwareCommands))]",
             StringComparison.Ordinal),
         "五金件命令类未注册到插件入口。");
+}
+
+static void SuperLibraryCatalogScansCategoriesAndPreviews()
+{
+    var root = Path.Combine(Path.GetTempPath(), $"dc-super-library-{Guid.NewGuid():N}");
+    Directory.CreateDirectory(root);
+    try
+    {
+        var wardrobe = Directory.CreateDirectory(Path.Combine(root, "2门衣柜")).FullName;
+        Directory.CreateDirectory(Path.Combine(root, "空分类"));
+        File.WriteAllBytes(Path.Combine(wardrobe, "标准柜.dwg"), [1, 2, 3]);
+        File.WriteAllBytes(Path.Combine(wardrobe, "标准柜.png"), [4, 5, 6]);
+        File.WriteAllBytes(Path.Combine(wardrobe, "备用.DWG"), [7]);
+        File.WriteAllBytes(Path.Combine(wardrobe, "自动备份.bak"), [8]);
+        File.WriteAllBytes(Path.Combine(root, "根目录组件.dwg"), [9]);
+
+        var categories = SuperLibraryCatalog.Scan(root);
+        var category = categories.Single(item => item.Name == "2门衣柜");
+        Assert(categories.Any(item => item.Name == "空分类" && item.Items.Count == 0),
+            "超级图库没有保留空分类。" );
+        Assert(categories.Any(item => item.Name == SuperLibraryCatalog.UnclassifiedCategoryName && item.Items.Count == 1),
+            "超级图库根目录DWG没有归入未分类。" );
+        Assert(category.Items.Count == 2 &&
+               category.Items.Any(item => item.Name == "标准柜" && item.PreviewPath?.EndsWith("标准柜.png", StringComparison.OrdinalIgnoreCase) == true) &&
+               category.Items.All(item => !item.DwgPath.EndsWith(".bak", StringComparison.OrdinalIgnoreCase)),
+            "超级图库没有按DWG扫描或匹配同名预览图。" );
+    }
+    finally
+    {
+        DeleteTestDirectory(root);
+    }
+}
+
+static void SuperLibraryCatalogProtectsRootBoundary()
+{
+    var root = Path.Combine(Path.GetTempPath(), $"dc-super-library-safe-{Guid.NewGuid():N}");
+    var outside = Path.Combine(Path.GetTempPath(), $"dc-super-library-outside-{Guid.NewGuid():N}.dwg");
+    Directory.CreateDirectory(root);
+    try
+    {
+        var original = SuperLibraryCatalog.CreateCategory(root, "原分类");
+        var renamed = SuperLibraryCatalog.RenameCategory(root, "原分类", "新分类");
+        Assert(!Directory.Exists(original) && Directory.Exists(renamed), "超级图库分类没有安全改名。" );
+
+        var dwgPath = Path.Combine(renamed, "可删除.dwg");
+        var previewPath = Path.Combine(renamed, "可删除.jpg");
+        File.WriteAllBytes(dwgPath, [1]);
+        File.WriteAllBytes(previewPath, [2]);
+        Assert(SuperLibraryCatalog.DeleteItems(root, [dwgPath]) == 1 &&
+               !File.Exists(dwgPath) && !File.Exists(previewPath),
+            "超级图库没有成对删除DWG和同名预览图。" );
+        SuperLibraryCatalog.DeleteCategory(root, "新分类");
+        Assert(!Directory.Exists(renamed), "空的超级图库分类没有删除。" );
+
+        var retained = Path.Combine(root, "边界校验失败时保留.dwg");
+        File.WriteAllBytes(retained, [3]);
+        File.WriteAllBytes(outside, [4]);
+        AssertThrows<InvalidOperationException>(
+            () => SuperLibraryCatalog.DeleteItems(root, [retained, outside]),
+            "超级图库允许删除根目录外文件。" );
+        Assert(File.Exists(retained), "超级图库批量删除没有先校验全部路径，造成了部分文件被提前删除。" );
+        AssertThrows<InvalidOperationException>(
+            () => SuperLibraryCatalog.CreateCategory(root, ".."),
+            "超级图库允许创建路径穿越分类。" );
+    }
+    finally
+    {
+        DeleteTestDirectory(root);
+        if (File.Exists(outside))
+        {
+            File.Delete(outside);
+        }
+    }
+}
+
+static void SuperLibrarySurfaceAndCommandsAreComplete()
+{
+    var root = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
+    var panel = File.ReadAllText(Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "Views", "ShortcutPanelView.xaml"));
+    var panelCode = File.ReadAllText(Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "Views", "ShortcutPanelView.xaml.cs"));
+    var palette = File.ReadAllText(Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "Views", "ToolboxPalette.cs"));
+    var commandsPath = Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "SuperLibraryCommands.cs");
+    var windowPath = Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "Views", "SuperLibraryWindow.xaml");
+    var windowCodePath = windowPath + ".cs";
+    var application = File.ReadAllText(Path.Combine(root, "src", "YiZhiMao.Dc.Plugin", "PluginApplication.cs"));
+
+    var batchIndex = panel.IndexOf("x:Name=\"BatchPrintModuleButton\"", StringComparison.Ordinal);
+    var libraryIndex = panel.IndexOf("x:Name=\"SuperLibraryModuleButton\"", StringComparison.Ordinal);
+    var statisticsIndex = panel.IndexOf("x:Name=\"StatisticsModuleButton\"", StringComparison.Ordinal);
+    Assert(batchIndex >= 0 && libraryIndex > batchIndex && statisticsIndex > libraryIndex &&
+           panel.Contains("x:Name=\"SuperLibraryModuleView\"", StringComparison.Ordinal) &&
+           panel.Contains("打开超级图库 (DCTK)", StringComparison.Ordinal),
+        "超级图库没有位于批量打印下方或缺少面板入口。" );
+    Assert(panelCode.Contains("ToolboxModule.SuperLibrary", StringComparison.Ordinal) &&
+           palette.Contains("SuperLibrary", StringComparison.Ordinal),
+        "超级图库没有接入工具箱导航状态。" );
+
+    Assert(File.Exists(commandsPath) && File.Exists(windowPath) && File.Exists(windowCodePath),
+        "超级图库命令或窗口文件缺失。" );
+    var commands = File.ReadAllText(commandsPath);
+    var window = File.ReadAllText(windowPath);
+    var windowCode = File.ReadAllText(windowCodePath);
+    Assert(commands.Contains("[ShortcutCommand(\"超级图库\", \"打开超级图库\", \"DCTK\")]", StringComparison.Ordinal) &&
+           commands.Contains("[ShortcutCommand(\"超级图库\", \"保存选中图形到图库\", \"DCBCT\")]", StringComparison.Ordinal) &&
+           commands.Contains("EntityJig", StringComparison.Ordinal) &&
+           commands.Contains("ReadDwgFile", StringComparison.Ordinal) &&
+           commands.Contains("Wblock", StringComparison.Ordinal),
+        "超级图库没有使用DC前缀命令、鼠标预览插入或选中图形保存。" );
+    Assert(window.Contains("x:Name=\"CategoryList\"", StringComparison.Ordinal) &&
+           window.Contains("x:Name=\"LibraryItemsControl\"", StringComparison.Ordinal) &&
+           window.Contains("x:Name=\"PreviewScaleSlider\"", StringComparison.Ordinal) &&
+           window.Contains("Content=\"批量删除\"", StringComparison.Ordinal) &&
+           windowCode.Contains("SendStringToExecute", StringComparison.Ordinal) &&
+           windowCode.Contains("SuperLibraryCatalog.Scan", StringComparison.Ordinal),
+        "超级图库窗口缺少分类、预览、批量删除或CAD命令调度。" );
+    Assert(application.Contains("[assembly: CommandClass(typeof(YiZhiMao.Dc.Plugin.SuperLibraryCommands))]", StringComparison.Ordinal) &&
+           application.Contains("SuperLibraryWindowManager.Dispose()", StringComparison.Ordinal),
+        "超级图库命令没有注册或窗口生命周期没有在插件卸载时清理。" );
 }
 
 static void ModuleResourcesAreBundledAndReadDirectly()

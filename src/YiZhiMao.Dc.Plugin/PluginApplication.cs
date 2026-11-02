@@ -10,6 +10,7 @@ using AcadApplication = Autodesk.AutoCAD.ApplicationServices.Core.Application;
 [assembly: CommandClass(typeof(YiZhiMao.Dc.Plugin.PanelCommands))]
 [assembly: CommandClass(typeof(YiZhiMao.Dc.Plugin.ImageBatchCommands))]
 [assembly: CommandClass(typeof(YiZhiMao.Dc.Plugin.BatchPrintCommands))]
+[assembly: CommandClass(typeof(YiZhiMao.Dc.Plugin.SuperLibraryCommands))]
 [assembly: CommandClass(typeof(YiZhiMao.Dc.Plugin.HardwareCommands))]
 [assembly: CommandClass(typeof(YiZhiMao.Dc.Plugin.DoorPanelCommands))]
 [assembly: CommandClass(typeof(YiZhiMao.Dc.Plugin.PlanDoorPanelCommands))]
@@ -17,8 +18,11 @@ using AcadApplication = Autodesk.AutoCAD.ApplicationServices.Core.Application;
 [assembly: CommandClass(typeof(YiZhiMao.Dc.Plugin.HandleCommands))]
 [assembly: CommandClass(typeof(YiZhiMao.Dc.Plugin.DrawingLayerCommands))]
 [assembly: CommandClass(typeof(YiZhiMao.Dc.Plugin.WainscotCommands))]
+[assembly: CommandClass(typeof(YiZhiMao.Dc.Plugin.SmartAnnotationCommands))]
 [assembly: CommandClass(typeof(YiZhiMao.Dc.Plugin.BoardCommands))]
 [assembly: CommandClass(typeof(YiZhiMao.Dc.Plugin.AdvancedBoardCommands))]
+[assembly: CommandClass(typeof(YiZhiMao.Dc.Plugin.CabinetCommands))]
+[assembly: CommandClass(typeof(YiZhiMao.Dc.Plugin.PlanCabinetCommands))]
 [assembly: CommandClass(typeof(YiZhiMao.Dc.Plugin.StatisticsCommands))]
 [assembly: CommandClass(typeof(YiZhiMao.Dc.Plugin.FrameCommands))]
 [assembly: CommandClass(typeof(YiZhiMao.Dc.Plugin.RadialMenuCommands))]
@@ -76,6 +80,7 @@ public sealed class PluginApplication : IExtensionApplication
         ModuleCommandGuard.Dispose();
         RadialMenuMouseActivation.Dispose();
         ToolboxPalette.Dispose();
+        SuperLibraryWindowManager.Dispose();
         RadialMenuWindowManager.Dispose();
         PluginDependencyResolver.Dispose();
     }

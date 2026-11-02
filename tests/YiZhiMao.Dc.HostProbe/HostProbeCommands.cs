@@ -150,6 +150,63 @@ public static class HostProbeCommands
         }
     }
 
+    [CommandMethod("DC_TEST_DIM_STYLE_SYNC", CommandFlags.Modal)]
+    public static void SynchronizeDimensionStyles()
+    {
+        var document = AcadApplication.DocumentManager.MdiActiveDocument;
+        if (document is null)
+        {
+            return;
+        }
+
+        try
+        {
+            var prompt = document.Editor.GetString(new Autodesk.AutoCAD.EditorInput.PromptStringOptions(
+                "\nDimension style source DWG: ")
+            {
+                AllowSpaces = true
+            });
+            if (prompt.Status != Autodesk.AutoCAD.EditorInput.PromptStatus.OK)
+            {
+                document.Editor.WriteMessage("\nDC_HOST_DIM_STYLE_SYNC_FAIL canceled");
+                return;
+            }
+
+            var pluginAssembly = AppDomain.CurrentDomain.GetAssemblies()
+                .Single(assembly => string.Equals(
+                    assembly.GetName().Name,
+                    "YiZhiMao.Dc.Plugin",
+                    StringComparison.Ordinal));
+            var serviceType = pluginAssembly.GetType(
+                "YiZhiMao.Dc.Plugin.DimensionStyleSyncService",
+                throwOnError: true)!;
+            var synchronize = serviceType.GetMethods(BindingFlags.NonPublic | BindingFlags.Static)
+                .Single(method =>
+                    method.Name == "TrySynchronize" &&
+                    method.GetParameters().Length == 4 &&
+                    method.GetParameters()[1].ParameterType == typeof(string));
+            object?[] arguments = [document, prompt.StringResult, "雷神标注", null];
+            var succeeded = (bool)(synchronize.Invoke(null, arguments) ?? false);
+
+            using var transaction = document.Database.TransactionManager.StartOpenCloseTransaction();
+            var table = (DimStyleTable)transaction.GetObject(
+                document.Database.DimStyleTableId,
+                OpenMode.ForRead);
+            var targetStyleExists = table.Has("雷神标注");
+            var marker = succeeded && targetStyleExists ? "PASS" : "FAIL";
+            document.Editor.WriteMessage(
+                $"\nDC_HOST_DIM_STYLE_SYNC_{marker} message={arguments[3]}");
+        }
+        catch (TargetInvocationException exception) when (exception.InnerException is not null)
+        {
+            WriteError(document, exception.InnerException, "DC_HOST_DIM_STYLE_SYNC_ERROR");
+        }
+        catch (System.Exception exception)
+        {
+            WriteError(document, exception, "DC_HOST_DIM_STYLE_SYNC_ERROR");
+        }
+    }
+
     private static Polyline CreateRectangle(double minX, double minY, double maxX, double maxY)
     {
         var polyline = new Polyline(4) { Closed = true };

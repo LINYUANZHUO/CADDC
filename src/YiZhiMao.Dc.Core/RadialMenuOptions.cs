@@ -60,7 +60,7 @@ public sealed class RadialMenuOptions
             Empty(1, 5), Empty(1, 6),
             Item(1, 7, "生成门板", "DCMB"), Item(1, 8, "均分板件", "DCFC"),
 
-            Item(2, 1, "单线变双", "DCZ2"), Item(2, 2, "单线变三", "DCZ3"),
+            Item(2, 1, "单线变双", "DC22"), Item(2, 2, "单线变三", "DC33"),
             Empty(2, 3), Empty(2, 4),
             Empty(2, 5), Empty(2, 6),
             Empty(2, 7), Empty(2, 8),
@@ -170,7 +170,9 @@ public static class RadialMenuOptionsStore
         [(2, 11, "TCBZ")] = "DCTCBZ",
         [(2, 12, "TCXS")] = "DCTCXS",
         [(2, 13, "TXF")] = "DCTXF",
-        [(2, 14, "DY")] = "DCDY"
+        [(2, 14, "DY")] = "DCDY",
+        [(2, 1, "DCZ2")] = "DC22",
+        [(2, 2, "DCZ3")] = "DC33"
     };
 
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
@@ -227,7 +229,7 @@ public static class RadialMenuOptionsStore
         var obsolete = new HashSet<(string Name, string Alias)>
         {
             ("快速拉伸", "KS"), ("超级拉伸", "SS"),
-            ("单元柜", "DG"), ("吊柜", "WG"), ("框架柜", "KJ"), ("切角柜", "JG"),
+            ("吊柜", "WG"), ("框架柜", "KJ"), ("切角柜", "JG"),
             ("轮廓矩形", "LK"), ("线转多段", "XD"), ("线去重", "XQC"),
             ("多线连接", "XLJ"), ("线打断", "XDD"), ("交点切断", "AB")
         };

@@ -162,6 +162,13 @@
                                TextAlignment="Center"
                                TextWrapping="Wrap" />
                 </Button>
+                <Button x:Name="CabinetModuleButton"
+                        Style="{StaticResource ModuleButtonStyle}"
+                        Click="OnCabinetModuleClick">
+                    <TextBlock Text="柜体"
+                               TextAlignment="Center"
+                               TextWrapping="Wrap" />
+                </Button>
                 <Button x:Name="BoardModuleButton"
                         Style="{StaticResource ModuleButtonStyle}"
                         Click="OnBoardModuleClick">
@@ -190,6 +197,13 @@
                                TextAlignment="Center"
                                TextWrapping="Wrap" />
                 </Button>
+                <Button x:Name="SmartAnnotationModuleButton"
+                        Style="{StaticResource ModuleButtonStyle}"
+                        Click="OnSmartAnnotationModuleClick">
+                    <TextBlock Text="智能标注"
+                               TextAlignment="Center"
+                               TextWrapping="Wrap" />
+                </Button>
                 <Button x:Name="ImageModuleButton"
                         Style="{StaticResource ModuleButtonStyle}"
                         Click="OnImageModuleClick">
@@ -208,6 +222,13 @@
                         Style="{StaticResource ModuleButtonStyle}"
                         Click="OnBatchPrintModuleClick">
                     <TextBlock Text="批量打印"
+                               TextAlignment="Center"
+                               TextWrapping="Wrap" />
+                </Button>
+                <Button x:Name="SuperLibraryModuleButton"
+                        Style="{StaticResource ModuleButtonStyle}"
+                        Click="OnSuperLibraryModuleClick">
+                    <TextBlock Text="超级图库"
                                TextAlignment="Center"
                                TextWrapping="Wrap" />
                 </Button>
@@ -1114,6 +1135,57 @@
                                 </Grid>
                             </GroupBox>
 
+                            <GroupBox Header="免拉手侧视图" Style="{StaticResource DoorPanelCompactGroupStyle}">
+                                <StackPanel>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="132" />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+                                        <TextBlock VerticalAlignment="Center" Foreground="#20242A" Text="识别模式" />
+                                        <ComboBox x:Name="DoorPanelHandlelessProfileModeCombo"
+                                                  Grid.Column="1"
+                                                  Style="{StaticResource DoorPanelCompactComboStyle}"
+                                                  SelectedIndex="0">
+                                            <ComboBoxItem Content="自动识别" Tag="Automatic" />
+                                            <ComboBoxItem Content="中拉手 C 型" Tag="Middle" />
+                                            <ComboBoxItem Content="上拉手 L 型" Tag="Top" />
+                                        </ComboBox>
+                                        <TextBlock Grid.Row="1" Margin="0,4,8,0" VerticalAlignment="Center" Foreground="#20242A" Text="免拉手缝 (mm)" />
+                                        <TextBox x:Name="DoorPanelHandlelessGapBox"
+                                                 Grid.Row="1"
+                                                 Grid.Column="1"
+                                                 Margin="0,4,0,0"
+                                                 Style="{StaticResource DoorPanelCompactInputStyle}"
+                                                 Text="26" />
+                                        <TextBlock Grid.Row="2" Margin="0,4,8,0" VerticalAlignment="Center" Foreground="#20242A" Text="挡板尺寸 (mm)" />
+                                        <TextBox x:Name="DoorPanelHandlelessProfileSizeBox"
+                                                 Grid.Row="2"
+                                                 Grid.Column="1"
+                                                 Margin="0,4,0,0"
+                                                 Style="{StaticResource DoorPanelCompactInputStyle}"
+                                                 Text="50" />
+                                    </Grid>
+                                    <TextBlock Margin="0,5,0,0"
+                                               Foreground="#68707C"
+                                               TextWrapping="Wrap"
+                                               Text="与抽面设置共用；中拉手标准搭接为 12 + 26 + 12 mm，上拉手从顶板内边起算。" />
+                                    <Button Margin="0,7,0,0"
+                                            Style="{StaticResource DoorPanelCompactActionStyle}"
+                                            Background="{StaticResource AccentBrush}"
+                                            BorderBrush="{StaticResource AccentBrush}"
+                                            Foreground="White"
+                                            FontWeight="SemiBold"
+                                            Content="生成免拉手侧视图 (DCMLS)"
+                                            Click="OnGenerateDoorHandlelessProfileClick" />
+                                </StackPanel>
+                            </GroupBox>
+
                             <Grid x:Name="DoorPanelActionGrid" Margin="0,8,0,0">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*" />
@@ -1312,33 +1384,28 @@
                                         <RowDefinition Height="Auto" />
                                         <RowDefinition Height="Auto" />
                                         <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
                                     </Grid.RowDefinitions>
-                                    <TextBlock VerticalAlignment="Center" Foreground="#20242A" Text="排列方向" />
-                                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                                        <RadioButton x:Name="DrawerFaceVerticalRadio"
-                                                     Margin="0,0,14,0"
-                                                     Foreground="#20242A"
-                                                     IsChecked="True"
-                                                     Content="竖向" />
-                                        <RadioButton x:Name="DrawerFaceHorizontalRadio"
-                                                     Foreground="#20242A"
-                                                     Content="横向" />
-                                    </StackPanel>
-                                    <TextBlock Grid.Row="1" Margin="0,4,8,0" VerticalAlignment="Center" Foreground="#20242A" Text="抽面数量" />
-                                    <TextBox x:Name="DrawerFaceCountBox"
+                                    <TextBlock VerticalAlignment="Center" Foreground="#20242A" Text="上下行数" />
+                                    <TextBox x:Name="DrawerFaceRowCountBox"
+                                             Grid.Column="1"
+                                             Style="{StaticResource DoorPanelCompactInputStyle}"
+                                             Text="2" />
+                                    <TextBlock Grid.Row="1" Margin="0,4,8,0" VerticalAlignment="Center" Foreground="#20242A" Text="左右列数" />
+                                    <TextBox x:Name="DrawerFaceColumnCountBox"
                                              Grid.Row="1"
                                              Grid.Column="1"
                                              Margin="0,4,0,0"
                                              Style="{StaticResource DoorPanelCompactInputStyle}"
-                                             Text="2" />
-                                    <TextBlock Grid.Row="2" Margin="0,4,8,0" VerticalAlignment="Center" Foreground="#20242A" Text="固定缝隙 (mm)" />
+                                             Text="1" />
+                                    <TextBlock Grid.Row="2" Margin="0,4,8,0" VerticalAlignment="Center" Foreground="#20242A" Text="普通抽面缝 (mm)" />
                                     <ComboBox x:Name="DrawerFaceGapBox"
                                               Grid.Row="2"
                                               Grid.Column="1"
                                               Margin="0,4,0,0"
                                               IsEditable="True"
                                               Style="{StaticResource DoorPanelCompactComboStyle}"
-                                              Text="3">
+                                              Text="2">
                                         <ComboBoxItem Content="0.5" />
                                         <ComboBoxItem Content="1" />
                                         <ComboBoxItem Content="1.5" />
@@ -1350,14 +1417,22 @@
                                         <ComboBoxItem Content="4.5" />
                                         <ComboBoxItem Content="5" />
                                     </ComboBox>
-                                    <TextBlock Grid.Row="3" Margin="0,4,8,0" VerticalAlignment="Center" Foreground="#20242A" Text="尺寸计算模式" />
-                                    <ComboBox x:Name="DrawerFaceCalculationModeCombo" Grid.Row="3" Grid.Column="1" Margin="0,4,0,0" Style="{StaticResource DoorPanelCompactComboStyle}" SelectedIndex="1">
-                                        <ComboBoxItem Tag="DoorRoundedGapDistributed" Content="门取整，缝均分" />
-                                        <ComboBoxItem Tag="GapRoundedDoorDistributed" Content="缝取整，门均分" />
-                                        <ComboBoxItem Tag="DoorAndGapRoundedRemainderRight" Content="门和缝取整，余量留终点" />
-                                    </ComboBox>
-                                    <TextBlock Grid.Row="4" Margin="0,4,8,0" VerticalAlignment="Center" Foreground="#20242A" Text="线条颜色 (ACI)" />
-                                    <Grid Grid.Row="4" Grid.Column="1" Margin="0,4,0,0">
+                                    <CheckBox x:Name="DrawerFaceHandlelessCheck"
+                                              Grid.Row="3"
+                                              Grid.ColumnSpan="2"
+                                              Margin="0,5,0,0"
+                                              Foreground="#20242A"
+                                              IsChecked="True"
+                                              Content="开启免拉手（仅增大上下抽面缝）" />
+                                    <TextBlock Grid.Row="4" Margin="0,4,8,0" VerticalAlignment="Center" Foreground="#20242A" Text="免拉手上下缝 (mm)" />
+                                    <TextBox x:Name="DrawerFaceHandlelessGapBox"
+                                             Grid.Row="4"
+                                             Grid.Column="1"
+                                             Margin="0,4,0,0"
+                                             Style="{StaticResource DoorPanelCompactInputStyle}"
+                                             Text="26" />
+                                    <TextBlock Grid.Row="5" Margin="0,4,8,0" VerticalAlignment="Center" Foreground="#20242A" Text="线条颜色 (ACI)" />
+                                    <Grid Grid.Row="5" Grid.Column="1" Margin="0,4,0,0">
                                         <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="6" /><ColumnDefinition Width="58" /></Grid.ColumnDefinitions>
                                         <ComboBox x:Name="DrawerFaceColorBox" IsEditable="True" Style="{StaticResource DoorPanelCompactComboStyle}" Text="3">
                                             <ComboBoxItem Content="3 - 绿色" /><ComboBoxItem Content="7 - 白色" /><ComboBoxItem Content="249 - 灰色" />
@@ -1365,6 +1440,49 @@
                                         <Button Grid.Column="2" Style="{StaticResource DoorPanelCompactActionStyle}" Content="调色…" Click="OnDrawerFaceColorClick" />
                                     </Grid>
                                 </Grid>
+                            </GroupBox>
+
+                            <GroupBox Header="免拉手侧视图" Style="{StaticResource DoorPanelCompactGroupStyle}">
+                                <StackPanel>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="132" />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+                                        <TextBlock VerticalAlignment="Center" Foreground="#20242A" Text="识别模式" />
+                                        <ComboBox x:Name="DrawerFaceHandlelessProfileModeCombo"
+                                                  Grid.Column="1"
+                                                  Style="{StaticResource DoorPanelCompactComboStyle}"
+                                                  SelectedIndex="0">
+                                            <ComboBoxItem Content="自动识别" Tag="Automatic" />
+                                            <ComboBoxItem Content="中拉手 C 型" Tag="Middle" />
+                                            <ComboBoxItem Content="上拉手 L 型" Tag="Top" />
+                                        </ComboBox>
+                                        <TextBlock Grid.Row="1" Margin="0,4,8,0" VerticalAlignment="Center" Foreground="#20242A" Text="挡板尺寸 (mm)" />
+                                        <TextBox x:Name="DrawerFaceHandlelessProfileSizeBox"
+                                                 Grid.Row="1"
+                                                 Grid.Column="1"
+                                                 Margin="0,4,0,0"
+                                                 Style="{StaticResource DoorPanelCompactInputStyle}"
+                                                 Text="50" />
+                                    </Grid>
+                                    <TextBlock Margin="0,5,0,0"
+                                               Foreground="#68707C"
+                                               TextWrapping="Wrap"
+                                               Text="中拉手标准搭接：(50 - 26) ÷ 2 = 12 mm；上拉手从顶板内边起算，不占用顶板。" />
+                                    <Button Margin="0,7,0,0"
+                                            Style="{StaticResource DoorPanelCompactActionStyle}"
+                                            Background="{StaticResource AccentBrush}"
+                                            BorderBrush="{StaticResource AccentBrush}"
+                                            Foreground="White"
+                                            FontWeight="SemiBold"
+                                            Content="生成免拉手侧视图 (DCMLS)"
+                                            Click="OnGenerateHandlelessProfileClick" />
+                                </StackPanel>
                             </GroupBox>
 
                             <GroupBox Header="四向盖值" Style="{StaticResource DoorPanelCompactGroupStyle}">
@@ -1391,28 +1509,18 @@
                                 </Grid>
                             </GroupBox>
 
-                            <GroupBox Header="遮罩与拉手" Style="{StaticResource DoorPanelCompactGroupStyle}">
+                            <GroupBox Header="落图选项" Style="{StaticResource DoorPanelCompactGroupStyle}">
                                 <StackPanel>
+                                    <CheckBox x:Name="DrawerFaceGenerateOpeningLinesCheck"
+                                              Margin="0,2"
+                                              Foreground="#20242A"
+                                              IsChecked="True"
+                                              Content="生成向下开门线（默认虚线）" />
                                     <CheckBox x:Name="DrawerFaceGenerateMaskCheck"
                                               Margin="0,2"
                                               Foreground="#20242A"
+                                              IsChecked="True"
                                               Content="生成抽屉背景遮罩 (Wipeout)" />
-                                    <Grid Margin="0,5,0,0">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="8" />
-                                            <ColumnDefinition Width="*" />
-                                        </Grid.ColumnDefinitions>
-                                        <Button Style="{StaticResource DoorPanelCompactActionStyle}" Content="拾取拉手 (DCSDH)" Click="OnPickHandleClick" />
-                                        <Button Grid.Column="2"
-                                                Style="{StaticResource DoorPanelCompactActionStyle}"
-                                                Background="{StaticResource AccentBrush}"
-                                                BorderBrush="{StaticResource AccentBrush}"
-                                                Foreground="White"
-                                                Content="应用/替换拉手 (DCLAS)"
-                                                Click="OnApplyHandleClick" />
-                                    </Grid>
-                                    <TextBlock x:Name="PickedHandleText" Margin="0,4,0,0" Foreground="#68707C" Text="当前拉手：未拾取" />
                                 </StackPanel>
                             </GroupBox>
 
@@ -1452,7 +1560,7 @@
                                        Margin="0,6,0,0"
                                        Foreground="#68707C"
                                        TextWrapping="Wrap"
-                                       Text="依次选择柜体内空两个对角点；左右键或 +/- 调整数量，竖向也可用上下键。" />
+                                       Text="点击内空自动识别；W/S、上/下或 +/- 调整行数，A/D 或左/右调整列数。" />
                         </StackPanel>
                     </ScrollViewer>
                 </TabItem>
@@ -2223,6 +2331,469 @@
             </TabControl>
         </Grid>
 
+        <ScrollViewer x:Name="SmartAnnotationModuleView"
+                      Visibility="Collapsed"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled">
+            <StackPanel Margin="10">
+                <GroupBox Header="样式库配置"
+                          Style="{StaticResource DoorPanelCompactGroupStyle}">
+                    <StackPanel>
+                        <CheckBox x:Name="SmartAnnotationUseTemplateCheck"
+                                  IsChecked="True"
+                                  Content="使用雷神标注样式" />
+                        <TextBlock Margin="0,6,0,3" Foreground="#68707C" Text="选择样式模板文件" />
+                        <ComboBox x:Name="SmartAnnotationTemplateCombo"
+                                  Height="30"
+                                  DisplayMemberPath="Name" />
+                        <Button Margin="0,6,0,0"
+                                Height="28"
+                                Style="{StaticResource DoorPanelCompactActionStyle}"
+                                Content="打开模板文件夹"
+                                Click="OnOpenDimTemplateFolderClick" />
+                    </StackPanel>
+                </GroupBox>
+
+                <GroupBox Header="间距设置"
+                          Style="{StaticResource DoorPanelCompactGroupStyle}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="90" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <TextBlock VerticalAlignment="Center" Text="内层偏移 (mm)" />
+                        <TextBox x:Name="SmartAnnotationInnerOffsetBox"
+                                 Grid.Column="1"
+                                 Style="{StaticResource DoorPanelCompactInputStyle}"
+                                 Text="160" />
+                        <TextBlock Grid.Row="1" Margin="0,5,0,0" VerticalAlignment="Center" Text="外层总尺寸偏移 (mm)" />
+                        <TextBox x:Name="SmartAnnotationOuterOffsetBox"
+                                 Grid.Row="1"
+                                 Grid.Column="1"
+                                 Margin="0,5,0,0"
+                                 Style="{StaticResource DoorPanelCompactInputStyle}"
+                                 Text="240" />
+                    </Grid>
+                </GroupBox>
+
+                <GroupBox Header="标注过滤配置"
+                          Style="{StaticResource DoorPanelCompactGroupStyle}">
+                    <StackPanel>
+                        <CheckBox x:Name="SmartAnnotationFullGraphicCheck"
+                                  Content="全图形标注模式（纯净模式，忽略图层和板厚规则）" />
+                        <Grid Margin="0,5,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="70" />
+                                <ColumnDefinition Width="12" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="70" />
+                            </Grid.ColumnDefinitions>
+                            <CheckBox x:Name="SmartAnnotationFilterThicknessCheck"
+                                      VerticalAlignment="Center"
+                                      IsChecked="True"
+                                      Content="板厚过滤" />
+                            <TextBox x:Name="SmartAnnotationFilterThicknessBox"
+                                     Grid.Column="1"
+                                     Style="{StaticResource DoorPanelCompactInputStyle}"
+                                     Text="18" />
+                            <CheckBox x:Name="SmartAnnotationFilterMinimumCheck"
+                                      Grid.Column="3"
+                                      VerticalAlignment="Center"
+                                      IsChecked="True"
+                                      Content="小于不标" />
+                            <TextBox x:Name="SmartAnnotationMinimumBox"
+                                     Grid.Column="4"
+                                     Style="{StaticResource DoorPanelCompactInputStyle}"
+                                     Text="1" />
+                        </Grid>
+                        <CheckBox x:Name="SmartAnnotationMergeOverlapCheck"
+                                  Margin="0,5,0,0"
+                                  Content="柜体标注合并重叠图形" />
+                        <WrapPanel Margin="0,5,0,0">
+                            <TextBlock Margin="0,2,6,0" Text="对象过滤：" />
+                            <CheckBox x:Name="SmartAnnotationFilterPointCheck" Margin="0,0,8,0" Content="点" />
+                            <CheckBox x:Name="SmartAnnotationFilterLineCheck" Margin="0,0,8,0" Content="线条" />
+                            <CheckBox x:Name="SmartAnnotationFilterDashedCheck" Margin="0,0,8,0" Content="虚线" />
+                            <CheckBox x:Name="SmartAnnotationFilterPolylineCheck" Margin="0,0,8,0" Content="多段线" />
+                            <CheckBox x:Name="SmartAnnotationFilterArcCheck" Margin="0,0,8,0" Content="圆弧" />
+                            <CheckBox x:Name="SmartAnnotationFilterTextCheck" Margin="0,0,8,0" IsChecked="True" Content="文字" />
+                            <CheckBox x:Name="SmartAnnotationFilterBlockCheck" Margin="0,0,8,0" Content="图块" />
+                            <CheckBox x:Name="SmartAnnotationFilterHatchCheck" Content="填充" />
+                        </WrapPanel>
+                    </StackPanel>
+                </GroupBox>
+
+                <GroupBox Header="柜体柜门标注"
+                          Style="{StaticResource DoorPanelCompactGroupStyle}">
+                    <UniformGrid Columns="2">
+                        <Button Margin="2" Style="{StaticResource DoorPanelCompactActionStyle}" Content="柜体标注 (DCBC)" Click="OnDimensionCabinetClick" />
+                        <Button Margin="2" Style="{StaticResource DoorPanelCompactActionStyle}" Content="门板标注 (DCBM)" Click="OnDimensionPanelClick" />
+                        <Button Margin="2" Style="{StaticResource DoorPanelCompactActionStyle}" Content="左下标注 (DCBZ)" Click="OnDimensionLeftBottomClick" />
+                        <Button Margin="2" Style="{StaticResource DoorPanelCompactActionStyle}" Content="右上标注 (DCBY)" Click="OnDimensionRightTopClick" />
+                        <Button Margin="2" Style="{StaticResource DoorPanelCompactActionStyle}" Content="内空标注 (DCBN)" Click="OnDimensionInnerClick" />
+                    </UniformGrid>
+                </GroupBox>
+
+                <GroupBox Header="智能标注"
+                          Style="{StaticResource DoorPanelCompactGroupStyle}">
+                    <UniformGrid Columns="2">
+                        <Button Margin="2" Style="{StaticResource DoorPanelCompactActionStyle}" Content="单边标注 (DCBD)" Click="OnDimensionSingleClick" />
+                        <Button Margin="2" Style="{StaticResource DoorPanelCompactActionStyle}" Content="连续标注 (DCBL)" Click="OnDimensionContinueClick" />
+                        <Button Margin="2" Style="{StaticResource DoorPanelCompactActionStyle}" Content="智能对象 (DCBDX)" Click="OnDimensionSmartObjectClick" />
+                        <Button Margin="2" Style="{StaticResource DoorPanelCompactActionStyle}" Content="批量动态标注 (DCBP)" Click="OnDimensionBatchDynamicClick" />
+                        <Button Margin="2" Style="{StaticResource DoorPanelCompactActionStyle}" Content="选择标注[动态] (DCBX)" Click="OnDimensionSelectDynamicClick" />
+                        <Button Margin="2" Style="{StaticResource DoorPanelCompactActionStyle}" Content="批量对齐 (DCBAA)" Click="OnDimensionAlignBatchClick" />
+                        <Button Margin="2" Style="{StaticResource DoorPanelCompactActionStyle}" Content="连续对齐 (DCBAC)" Click="OnDimensionAlignContinueClick" />
+                        <Button Margin="2" Style="{StaticResource DoorPanelCompactActionStyle}" Content="外围线条标注 (DCBWW)" Click="OnDimensionOuterClick" />
+                    </UniformGrid>
+                </GroupBox>
+
+                <GroupBox Header="标注修改"
+                          Style="{StaticResource DoorPanelCompactGroupStyle}">
+                    <UniformGrid Columns="2">
+                        <Button Margin="2" Style="{StaticResource DoorPanelCompactActionStyle}" Content="标注缩放 (DCBS)" Click="OnDimensionScaleClick" />
+                        <Button Margin="2" Style="{StaticResource DoorPanelCompactActionStyle}" Content="标注分割 (DCBF)" Click="OnDimensionSplitClick" />
+                        <Button Margin="2" Style="{StaticResource DoorPanelCompactActionStyle}" Content="标注对齐 (DCBDQ)" Click="OnDimensionAlignClick" />
+                        <Button Margin="2" Style="{StaticResource DoorPanelCompactActionStyle}" Content="合并标注 (DCBJ)" Click="OnDimensionJoinClick" />
+                    </UniformGrid>
+                </GroupBox>
+
+                <GroupBox Header="清理标注"
+                          Style="{StaticResource DoorPanelCompactGroupStyle}">
+                    <StackPanel>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="80" />
+                            </Grid.ColumnDefinitions>
+                            <CheckBox x:Name="SmartAnnotationDeleteThicknessCheck"
+                                      VerticalAlignment="Center"
+                                      Content="清除板厚" />
+                            <TextBox x:Name="SmartAnnotationDeleteThicknessBox"
+                                     Grid.Column="1"
+                                     Style="{StaticResource DoorPanelCompactInputStyle}"
+                                     Text="50" />
+                        </Grid>
+                        <Button Margin="0,6,0,0"
+                                Height="34"
+                                Style="{StaticResource DoorPanelCompactActionStyle}"
+                                Background="#F45B2A"
+                                BorderBrush="#F45B2A"
+                                Foreground="White"
+                                Content="清除所有标注 (DCBQ)"
+                                Click="OnDimensionDeleteAllClick" />
+                    </StackPanel>
+                </GroupBox>
+
+                <TextBlock x:Name="SmartAnnotationStatusText"
+                           Margin="0,4,0,8"
+                           Foreground="#68707C"
+                           TextWrapping="Wrap"
+                           Text="执行命令前会安全同步模板标注样式，并复用已安装雷神工具箱的标注命令。" />
+            </StackPanel>
+        </ScrollViewer>
+
+        <Grid x:Name="CabinetModuleView" Visibility="Collapsed">
+            <TabControl Background="#F5F6F8">
+                <TabItem Header="标准单元柜">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                        <StackPanel Margin="8">
+                            <GroupBox Header="视图生成控制" Style="{StaticResource DoorPanelCompactGroupStyle}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                                    <CheckBox x:Name="CabinetGenerateElevationCheck" IsChecked="True" Content="生成正视图" />
+                                    <CheckBox x:Name="CabinetGeneratePlanCheck" Grid.Column="1" IsChecked="True" Content="生成俯视图" />
+                                    <CheckBox x:Name="CabinetGenerateSideCheck" Grid.Column="2" IsChecked="True" Content="生成侧视图" />
+                                    <Grid Grid.Row="1" Grid.ColumnSpan="3" Margin="0,5,0,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" /><ColumnDefinition Width="86" /><ColumnDefinition Width="12" />
+                                            <ColumnDefinition Width="*" /><ColumnDefinition Width="86" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock VerticalAlignment="Center" Text="俯视图间距" />
+                                        <TextBox x:Name="CabinetPlanViewSpacingBox" Grid.Column="1" Style="{StaticResource DoorPanelCompactInputStyle}" Text="400" />
+                                        <TextBlock Grid.Column="3" VerticalAlignment="Center" Text="侧视图间距" />
+                                        <TextBox x:Name="CabinetSideViewSpacingBox" Grid.Column="4" Style="{StaticResource DoorPanelCompactInputStyle}" Text="400" />
+                                    </Grid>
+                                </Grid>
+                            </GroupBox>
+
+                            <GroupBox Header="基础尺寸" Style="{StaticResource DoorPanelCompactGroupStyle}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" /><ColumnDefinition Width="86" /><ColumnDefinition Width="12" />
+                                        <ColumnDefinition Width="*" /><ColumnDefinition Width="86" />
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                                    <TextBlock VerticalAlignment="Center" Text="宽 (W)" />
+                                    <TextBox x:Name="CabinetWidthBox" Grid.Column="1" Style="{StaticResource DoorPanelCompactInputStyle}" Text="900" />
+                                    <TextBlock Grid.Column="3" VerticalAlignment="Center" Text="高 (H)" />
+                                    <TextBox x:Name="CabinetHeightBox" Grid.Column="4" Style="{StaticResource DoorPanelCompactInputStyle}" Text="2100" />
+                                    <TextBlock Grid.Row="1" Margin="0,4,0,0" VerticalAlignment="Center" Text="深 (D)" />
+                                    <TextBox x:Name="CabinetDepthBox" Grid.Row="1" Grid.Column="1" Margin="0,4,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="580" />
+                                    <TextBlock Grid.Row="1" Grid.Column="3" Margin="0,4,0,0" VerticalAlignment="Center" Text="板厚 (T)" />
+                                    <TextBox x:Name="CabinetThicknessBox" Grid.Row="1" Grid.Column="4" Margin="0,4,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="18" />
+                                </Grid>
+                            </GroupBox>
+
+                            <GroupBox Header="侧板延伸（左 / 右）" Style="{StaticResource DoorPanelCompactGroupStyle}">
+                                <StackPanel>
+                                    <TextBlock FontWeight="SemiBold" Text="左侧板延伸" />
+                                    <Grid Margin="0,4,0,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" /><ColumnDefinition Width="86" /><ColumnDefinition Width="12" />
+                                            <ColumnDefinition Width="*" /><ColumnDefinition Width="86" />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                                        <TextBlock VerticalAlignment="Center" Text="上延伸" /><TextBox x:Name="CabinetLeftSideTopExtensionBox" Grid.Column="1" Style="{StaticResource DoorPanelCompactInputStyle}" Text="0" />
+                                        <TextBlock Grid.Column="3" VerticalAlignment="Center" Text="下延伸" /><TextBox x:Name="CabinetLeftSideBottomExtensionBox" Grid.Column="4" Style="{StaticResource DoorPanelCompactInputStyle}" Text="0" />
+                                        <TextBlock Grid.Row="1" Margin="0,4,0,0" VerticalAlignment="Center" Text="前延伸" /><TextBox x:Name="CabinetLeftSideFrontExtensionBox" Grid.Row="1" Grid.Column="1" Margin="0,4,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="0" />
+                                        <TextBlock Grid.Row="1" Grid.Column="3" Margin="0,4,0,0" VerticalAlignment="Center" Text="后延伸" /><TextBox x:Name="CabinetLeftSideRearExtensionBox" Grid.Row="1" Grid.Column="4" Margin="0,4,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="0" />
+                                    </Grid>
+                                    <TextBlock Margin="0,7,0,0" FontWeight="SemiBold" Text="右侧板延伸" />
+                                    <Grid Margin="0,4,0,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" /><ColumnDefinition Width="86" /><ColumnDefinition Width="12" />
+                                            <ColumnDefinition Width="*" /><ColumnDefinition Width="86" />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                                        <TextBlock VerticalAlignment="Center" Text="上延伸" /><TextBox x:Name="CabinetRightSideTopExtensionBox" Grid.Column="1" Style="{StaticResource DoorPanelCompactInputStyle}" Text="0" />
+                                        <TextBlock Grid.Column="3" VerticalAlignment="Center" Text="下延伸" /><TextBox x:Name="CabinetRightSideBottomExtensionBox" Grid.Column="4" Style="{StaticResource DoorPanelCompactInputStyle}" Text="0" />
+                                        <TextBlock Grid.Row="1" Margin="0,4,0,0" VerticalAlignment="Center" Text="前延伸" /><TextBox x:Name="CabinetRightSideFrontExtensionBox" Grid.Row="1" Grid.Column="1" Margin="0,4,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="0" />
+                                        <TextBlock Grid.Row="1" Grid.Column="3" Margin="0,4,0,0" VerticalAlignment="Center" Text="后延伸" /><TextBox x:Name="CabinetRightSideRearExtensionBox" Grid.Row="1" Grid.Column="4" Margin="0,4,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="0" />
+                                    </Grid>
+                                </StackPanel>
+                            </GroupBox>
+
+                            <GroupBox Header="顶底板缩进（前 / 后）" Style="{StaticResource DoorPanelCompactGroupStyle}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" /><ColumnDefinition Width="86" /><ColumnDefinition Width="12" />
+                                        <ColumnDefinition Width="*" /><ColumnDefinition Width="86" />
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                                    <TextBlock VerticalAlignment="Center" Text="顶板前缩" /><TextBox x:Name="CabinetTopFrontInsetBox" Grid.Column="1" Style="{StaticResource DoorPanelCompactInputStyle}" Text="0" />
+                                    <TextBlock Grid.Column="3" VerticalAlignment="Center" Text="顶板后缩" /><TextBox x:Name="CabinetTopRearInsetBox" Grid.Column="4" Style="{StaticResource DoorPanelCompactInputStyle}" Text="0" />
+                                    <TextBlock Grid.Row="1" Margin="0,4,0,0" VerticalAlignment="Center" Text="底板前缩" /><TextBox x:Name="CabinetBottomFrontInsetBox" Grid.Row="1" Grid.Column="1" Margin="0,4,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="0" />
+                                    <TextBlock Grid.Row="1" Grid.Column="3" Margin="0,4,0,0" VerticalAlignment="Center" Text="底板后缩" /><TextBox x:Name="CabinetBottomRearInsetBox" Grid.Row="1" Grid.Column="4" Margin="0,4,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="0" />
+                                </Grid>
+                            </GroupBox>
+
+                            <GroupBox Header="背板参数" Style="{StaticResource DoorPanelCompactGroupStyle}">
+                                <StackPanel>
+                                    <CheckBox x:Name="CabinetBackboardRearCoverCheck" Content="背板后盖模式" />
+                                    <Grid Margin="0,4,0,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" /><ColumnDefinition Width="86" /><ColumnDefinition Width="12" />
+                                            <ColumnDefinition Width="*" /><ColumnDefinition Width="86" />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                                        <TextBlock VerticalAlignment="Center" Text="背板厚度" /><TextBox x:Name="CabinetBackboardThicknessBox" Grid.Column="1" Style="{StaticResource DoorPanelCompactInputStyle}" Text="18" />
+                                        <TextBlock Grid.Column="3" VerticalAlignment="Center" Text="整体后缩" /><TextBox x:Name="CabinetBackboardOverallInsetBox" Grid.Column="4" Style="{StaticResource DoorPanelCompactInputStyle}" Text="0" />
+                                        <TextBlock Grid.Row="1" Margin="0,4,0,0" VerticalAlignment="Center" Text="上延伸" /><TextBox x:Name="CabinetBackboardTopExtensionBox" Grid.Row="1" Grid.Column="1" Margin="0,4,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="0" />
+                                        <TextBlock Grid.Row="1" Grid.Column="3" Margin="0,4,0,0" VerticalAlignment="Center" Text="下延伸" /><TextBox x:Name="CabinetBackboardBottomExtensionBox" Grid.Row="1" Grid.Column="4" Margin="0,4,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="0" />
+                                        <TextBlock Grid.Row="2" Margin="0,4,0,0" VerticalAlignment="Center" Text="左延伸" /><TextBox x:Name="CabinetBackboardLeftExtensionBox" Grid.Row="2" Grid.Column="1" Margin="0,4,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="0" />
+                                        <TextBlock Grid.Row="2" Grid.Column="3" Margin="0,4,0,0" VerticalAlignment="Center" Text="右延伸" /><TextBox x:Name="CabinetBackboardRightExtensionBox" Grid.Row="2" Grid.Column="4" Margin="0,4,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="0" />
+                                    </Grid>
+                                </StackPanel>
+                            </GroupBox>
+
+                            <GroupBox Header="顶线参数" Style="{StaticResource DoorPanelCompactGroupStyle}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" /><ColumnDefinition Width="86" /><ColumnDefinition Width="12" />
+                                        <ColumnDefinition Width="*" /><ColumnDefinition Width="86" />
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                                    <TextBlock VerticalAlignment="Center" Text="顶线高度" /><TextBox x:Name="CabinetTopRailHeightBox" Grid.Column="1" Style="{StaticResource DoorPanelCompactInputStyle}" Text="50" />
+                                    <TextBlock Grid.Column="3" VerticalAlignment="Center" Text="左延伸" /><TextBox x:Name="CabinetTopRailLeftExtensionBox" Grid.Column="4" Style="{StaticResource DoorPanelCompactInputStyle}" Text="0" />
+                                    <TextBlock Grid.Row="1" Margin="0,4,0,0" VerticalAlignment="Center" Text="右延伸" /><TextBox x:Name="CabinetTopRailRightExtensionBox" Grid.Row="1" Grid.Column="1" Margin="0,4,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="0" />
+                                    <TextBlock Grid.Row="1" Grid.Column="3" Margin="0,4,0,0" VerticalAlignment="Center" Text="后缩进" /><TextBox x:Name="CabinetTopRailRearInsetBox" Grid.Row="1" Grid.Column="4" Margin="0,4,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="0" />
+                                    <TextBlock Grid.Row="2" Margin="0,4,0,0" VerticalAlignment="Center" Text="辅助板深度" /><TextBox x:Name="CabinetTopRailAuxiliaryDepthBox" Grid.Row="2" Grid.Column="1" Margin="0,4,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="70" />
+                                </Grid>
+                            </GroupBox>
+
+                            <GroupBox Header="踢脚线参数" Style="{StaticResource DoorPanelCompactGroupStyle}">
+                                <StackPanel>
+                                    <TextBlock FontWeight="SemiBold" Text="前踢脚线" />
+                                    <Grid Margin="0,4,0,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" /><ColumnDefinition Width="86" /><ColumnDefinition Width="12" />
+                                            <ColumnDefinition Width="*" /><ColumnDefinition Width="86" />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                                        <TextBlock VerticalAlignment="Center" Text="高度" /><TextBox x:Name="CabinetFrontToeKickHeightBox" Grid.Column="1" Style="{StaticResource DoorPanelCompactInputStyle}" Text="80" />
+                                        <TextBlock Grid.Column="3" VerticalAlignment="Center" Text="前缩进" /><TextBox x:Name="CabinetFrontToeKickFrontInsetBox" Grid.Column="4" Style="{StaticResource DoorPanelCompactInputStyle}" Text="0" />
+                                        <TextBlock Grid.Row="1" Margin="0,4,0,0" VerticalAlignment="Center" Text="左延伸" /><TextBox x:Name="CabinetFrontToeKickLeftExtensionBox" Grid.Row="1" Grid.Column="1" Margin="0,4,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="0" />
+                                        <TextBlock Grid.Row="1" Grid.Column="3" Margin="0,4,0,0" VerticalAlignment="Center" Text="右延伸" /><TextBox x:Name="CabinetFrontToeKickRightExtensionBox" Grid.Row="1" Grid.Column="4" Margin="0,4,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="0" />
+                                    </Grid>
+                                    <TextBlock Margin="0,7,0,0" FontWeight="SemiBold" Text="后踢脚线" />
+                                    <Grid Margin="0,4,0,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" /><ColumnDefinition Width="86" /><ColumnDefinition Width="12" />
+                                            <ColumnDefinition Width="*" /><ColumnDefinition Width="86" />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                                        <TextBlock VerticalAlignment="Center" Text="高度" /><TextBox x:Name="CabinetRearToeKickHeightBox" Grid.Column="1" Style="{StaticResource DoorPanelCompactInputStyle}" Text="80" />
+                                        <TextBlock Grid.Column="3" VerticalAlignment="Center" Text="后缩进" /><TextBox x:Name="CabinetRearToeKickRearInsetBox" Grid.Column="4" Style="{StaticResource DoorPanelCompactInputStyle}" Text="20" />
+                                        <TextBlock Grid.Row="1" Margin="0,4,0,0" VerticalAlignment="Center" Text="左延伸" /><TextBox x:Name="CabinetRearToeKickLeftExtensionBox" Grid.Row="1" Grid.Column="1" Margin="0,4,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="0" />
+                                        <TextBlock Grid.Row="1" Grid.Column="3" Margin="0,4,0,0" VerticalAlignment="Center" Text="右延伸" /><TextBox x:Name="CabinetRearToeKickRightExtensionBox" Grid.Row="1" Grid.Column="4" Margin="0,4,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="0" />
+                                    </Grid>
+                                </StackPanel>
+                            </GroupBox>
+
+                            <Button Margin="0,6,0,0" Style="{StaticResource DoorPanelCompactActionStyle}" Background="{StaticResource AccentBrush}" BorderBrush="{StaticResource AccentBrush}" Foreground="White" FontWeight="SemiBold" Content="一键生成单元柜 (DCDG)" Click="OnGenerateStandardCabinetClick" />
+                            <Button Margin="0,6,0,0" Style="{StaticResource DoorPanelCompactActionStyle}" Background="{StaticResource AccentBrush}" BorderBrush="{StaticResource AccentBrush}" Foreground="White" FontWeight="SemiBold" Content="全局刷新柜体/板件 (DCXX)" Click="OnRefreshCabinetsClick" />
+                            <Button Margin="0,6,0,0" Style="{StaticResource DoorPanelCompactActionStyle}" Background="#666666" BorderBrush="#666666" Foreground="White" FontWeight="SemiBold" Content="重置默认参数" Click="OnResetCabinetDefaultsClick" />
+                            <Button Margin="0,6,0,0" Style="{StaticResource DoorPanelCompactActionStyle}" Background="#2F86E5" BorderBrush="#2F86E5" Foreground="White" FontWeight="SemiBold" Content="生成万能柜体 (DCWNG)" Click="OnGenerateUniversalCabinetClick" />
+                            <TextBlock x:Name="CabinetStatusText" Margin="0,7,0,0" Foreground="#68707C" TextWrapping="Wrap" Text="正视图在基点上方，俯视图在正视图下方，侧视图在正视图右侧。" />
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
+                <TabItem Header="俯视图">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                        <StackPanel Margin="8">
+                            <GroupBox Header="基础尺寸" Style="{StaticResource DoorPanelCompactGroupStyle}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" /><ColumnDefinition Width="86" /><ColumnDefinition Width="12" />
+                                        <ColumnDefinition Width="*" /><ColumnDefinition Width="86" />
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                                    <TextBlock VerticalAlignment="Center" Text="长 (W)" />
+                                    <TextBox x:Name="PlanCabinetLengthBox" Grid.Column="1" Style="{StaticResource DoorPanelCompactInputStyle}" Text="1800" />
+                                    <TextBlock Grid.Column="3" VerticalAlignment="Center" Text="宽 (D)" />
+                                    <TextBox x:Name="PlanCabinetDepthBox" Grid.Column="4" Style="{StaticResource DoorPanelCompactInputStyle}" Text="550" />
+                                    <TextBlock Grid.Row="1" Margin="0,4,0,0" VerticalAlignment="Center" Text="板厚 (T)" />
+                                    <TextBox x:Name="PlanCabinetThicknessBox" Grid.Row="1" Grid.Column="1" Margin="0,4,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="18" />
+                                </Grid>
+                            </GroupBox>
+
+                            <GroupBox Header="门板参数" Style="{StaticResource DoorPanelCompactGroupStyle}">
+                                <StackPanel>
+                                    <CheckBox x:Name="PlanCabinetGenerateDoorsCheck" IsChecked="True" Content="生成门板" />
+                                    <Grid Margin="0,4,0,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" /><ColumnDefinition Width="86" /><ColumnDefinition Width="12" />
+                                            <ColumnDefinition Width="*" /><ColumnDefinition Width="86" />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+                                        <TextBlock VerticalAlignment="Center" Text="门板厚度" />
+                                        <TextBox x:Name="PlanCabinetDoorThicknessBox" Grid.Column="1" Style="{StaticResource DoorPanelCompactInputStyle}" Text="18" />
+                                        <TextBlock Grid.Column="3" VerticalAlignment="Center" Text="门缝" />
+                                        <TextBox x:Name="PlanCabinetDoorGapBox" Grid.Column="4" Style="{StaticResource DoorPanelCompactInputStyle}" Text="0" />
+                                        <TextBlock Grid.Row="1" Margin="0,4,0,0" VerticalAlignment="Center" Text="左延伸" />
+                                        <TextBox x:Name="PlanCabinetDoorLeftExtensionBox" Grid.Row="1" Grid.Column="1" Margin="0,4,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="0" />
+                                        <TextBlock Grid.Row="1" Grid.Column="3" Margin="0,4,0,0" VerticalAlignment="Center" Text="右延伸" />
+                                        <TextBox x:Name="PlanCabinetDoorRightExtensionBox" Grid.Row="1" Grid.Column="4" Margin="0,4,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="0" />
+                                        <TextBlock Grid.Row="2" Margin="0,4,0,0" VerticalAlignment="Center" Text="缝隙模式" />
+                                        <ComboBox x:Name="PlanCabinetDoorModeCombo" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="4" Margin="0,4,0,0" SelectedIndex="0">
+                                            <ComboBoxItem Tag="GapRoundedDoorDistributed" Content="缝取整，门均分" />
+                                            <ComboBoxItem Tag="DoorAndGapRoundedRemainderRight" Content="门和缝取整，余量留右" />
+                                            <ComboBoxItem Tag="DoorRoundedGapDistributed" Content="门取整，缝均分" />
+                                        </ComboBox>
+                                        <TextBlock Grid.Row="3" Margin="0,4,0,0" VerticalAlignment="Center" Text="门板距柜体间距" />
+                                        <TextBox x:Name="PlanCabinetDoorFrontClearanceBox" Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="4" Margin="0,4,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="2" />
+                                    </Grid>
+                                </StackPanel>
+                            </GroupBox>
+
+                            <GroupBox Header="中竖板参数" Style="{StaticResource DoorPanelCompactGroupStyle}">
+                                <StackPanel>
+                                    <CheckBox x:Name="PlanCabinetGenerateMiddlePanelsCheck" IsChecked="True" Content="生成中竖板" />
+                                    <CheckBox x:Name="PlanCabinetMiddleSameDepthCheck" Margin="0,4,0,0" Content="中竖板深度同侧板" />
+                                    <Grid Margin="0,4,0,0">
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="220" /></Grid.ColumnDefinitions>
+                                        <TextBlock VerticalAlignment="Center" Text="生成模式" />
+                                        <ComboBox x:Name="PlanCabinetMiddleModeCombo" Grid.Column="1" SelectedIndex="1">
+                                            <ComboBoxItem Tag="Distributed" Content="均分柜体" />
+                                            <ComboBoxItem Tag="AlignToDoorGaps" Content="中线对齐门缝" />
+                                        </ComboBox>
+                                    </Grid>
+                                </StackPanel>
+                            </GroupBox>
+
+                            <GroupBox Header="顶板参数" Style="{StaticResource DoorPanelCompactGroupStyle}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" /><ColumnDefinition Width="86" /><ColumnDefinition Width="12" />
+                                        <ColumnDefinition Width="*" /><ColumnDefinition Width="86" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock VerticalAlignment="Center" Text="顶板前缩" />
+                                    <TextBox x:Name="PlanCabinetTopFrontInsetBox" Grid.Column="1" Style="{StaticResource DoorPanelCompactInputStyle}" Text="0" />
+                                    <TextBlock Grid.Column="3" VerticalAlignment="Center" Text="顶板后缩" />
+                                    <TextBox x:Name="PlanCabinetTopRearInsetBox" Grid.Column="4" Style="{StaticResource DoorPanelCompactInputStyle}" Text="0" />
+                                </Grid>
+                            </GroupBox>
+
+                            <GroupBox Header="侧板延伸" Style="{StaticResource DoorPanelCompactGroupStyle}">
+                                <StackPanel>
+                                    <TextBlock FontWeight="SemiBold" Text="左侧板（相对于开口）" />
+                                    <Grid Margin="0,4,0,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" /><ColumnDefinition Width="86" /><ColumnDefinition Width="12" />
+                                            <ColumnDefinition Width="*" /><ColumnDefinition Width="86" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock VerticalAlignment="Center" Text="前延伸" />
+                                        <TextBox x:Name="PlanCabinetLeftFrontExtensionBox" Grid.Column="1" Style="{StaticResource DoorPanelCompactInputStyle}" Text="0" />
+                                        <TextBlock Grid.Column="3" VerticalAlignment="Center" Text="后延伸" />
+                                        <TextBox x:Name="PlanCabinetLeftRearExtensionBox" Grid.Column="4" Style="{StaticResource DoorPanelCompactInputStyle}" Text="0" />
+                                    </Grid>
+                                    <TextBlock Margin="0,7,0,0" FontWeight="SemiBold" Text="右侧板（相对于开口）" />
+                                    <Grid Margin="0,4,0,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" /><ColumnDefinition Width="86" /><ColumnDefinition Width="12" />
+                                            <ColumnDefinition Width="*" /><ColumnDefinition Width="86" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock VerticalAlignment="Center" Text="前延伸" />
+                                        <TextBox x:Name="PlanCabinetRightFrontExtensionBox" Grid.Column="1" Style="{StaticResource DoorPanelCompactInputStyle}" Text="0" />
+                                        <TextBlock Grid.Column="3" VerticalAlignment="Center" Text="后延伸" />
+                                        <TextBox x:Name="PlanCabinetRightRearExtensionBox" Grid.Column="4" Style="{StaticResource DoorPanelCompactInputStyle}" Text="0" />
+                                    </Grid>
+                                </StackPanel>
+                            </GroupBox>
+
+                            <GroupBox Header="背板参数" Style="{StaticResource DoorPanelCompactGroupStyle}">
+                                <StackPanel>
+                                    <CheckBox x:Name="PlanCabinetBackboardRearCoverCheck" Content="背板后盖" />
+                                    <Grid Margin="0,4,0,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" /><ColumnDefinition Width="86" /><ColumnDefinition Width="12" />
+                                            <ColumnDefinition Width="*" /><ColumnDefinition Width="86" />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                                        <TextBlock VerticalAlignment="Center" Text="背板厚度" />
+                                        <TextBox x:Name="PlanCabinetBackboardThicknessBox" Grid.Column="1" Style="{StaticResource DoorPanelCompactInputStyle}" Text="8" />
+                                        <TextBlock Grid.Column="3" VerticalAlignment="Center" Text="背板后缩" />
+                                        <TextBox x:Name="PlanCabinetBackboardInsetBox" Grid.Column="4" Style="{StaticResource DoorPanelCompactInputStyle}" Text="12" />
+                                        <TextBlock Grid.Row="1" Margin="0,4,0,0" VerticalAlignment="Center" Text="左端插槽" />
+                                        <TextBox x:Name="PlanCabinetBackboardLeftGrooveBox" Grid.Row="1" Grid.Column="1" Margin="0,4,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="5" />
+                                        <TextBlock Grid.Row="1" Grid.Column="3" Margin="0,4,0,0" VerticalAlignment="Center" Text="右端插槽" />
+                                        <TextBox x:Name="PlanCabinetBackboardRightGrooveBox" Grid.Row="1" Grid.Column="4" Margin="0,4,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="5" />
+                                    </Grid>
+                                </StackPanel>
+                            </GroupBox>
+
+                            <Button Margin="0,6,0,0" Style="{StaticResource DoorPanelCompactActionStyle}" Background="{StaticResource AccentBrush}" BorderBrush="{StaticResource AccentBrush}" Foreground="White" FontWeight="SemiBold" Content="生成俯视图 (DCFST)" Click="OnGeneratePlanCabinetClick" />
+                            <Button Margin="0,6,0,0" Style="{StaticResource DoorPanelCompactActionStyle}" Background="{StaticResource AccentBrush}" BorderBrush="{StaticResource AccentBrush}" Foreground="White" FontWeight="SemiBold" Content="俯视图门板替换 (DCMBT2)" Click="OnReplacePlanCabinetDoorsClick" />
+                            <Button Margin="0,6,0,0" Style="{StaticResource DoorPanelCompactActionStyle}" Background="#666666" BorderBrush="#666666" Foreground="White" FontWeight="SemiBold" Content="重置默认参数" Click="OnResetPlanCabinetDefaultsClick" />
+                            <TextBlock x:Name="PlanCabinetStatusText" Margin="0,7,0,0" Foreground="#68707C" TextWrapping="Wrap" Text="前方默认在图形下侧；生成前可用 W/S 或 +/- 调整门数。" />
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
+            </TabControl>
+        </Grid>
+
         <Grid x:Name="BoardModuleView" Visibility="Collapsed">
             <TabControl Background="#F5F6F8">
                 <TabItem Header="板件">
@@ -2235,77 +2806,124 @@
                                     <TextBlock VerticalAlignment="Center" Text="全局板厚 (mm)" />
                                     <TextBox x:Name="BoardThicknessBox" Grid.Column="1" Style="{StaticResource DoorPanelCompactInputStyle}" Text="18" />
                                     <TextBlock Grid.Row="1" Margin="0,4,0,0" VerticalAlignment="Center" Text="标识比例 (0.1-10)" />
-                                    <TextBox x:Name="BoardTagScaleBox" Grid.Row="1" Grid.Column="1" Margin="0,4,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="5" />
+                                    <TextBox x:Name="BoardTagScaleBox" Grid.Row="1" Grid.Column="1" Margin="0,4,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="1" />
                                     <TextBlock Grid.Row="2" Margin="0,4,0,0" VerticalAlignment="Center" Text="标识类型" />
                                     <ComboBox x:Name="BoardTagTypeCombo" Grid.Row="2" Grid.Column="1" Margin="0,4,0,0" Height="30" SelectedIndex="0">
-                                        <ComboBoxItem Content="活动层板带文字" />
-                                        <ComboBoxItem Content="活动层板" />
                                         <ComboBoxItem Content="固定板件" />
+                                        <ComboBoxItem Content="活动层板" />
+                                        <ComboBoxItem Content="玻璃层板" />
+                                        <ComboBoxItem Content="活动层板带文字" />
+                                        <ComboBoxItem Content="玻璃层板带文字" />
                                     </ComboBox>
                                 </Grid>
                             </GroupBox>
                             <GroupBox Header="常规板件绘制" Style="{StaticResource DoorPanelCompactGroupStyle}">
                                 <Grid>
                                     <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="150" /></Grid.ColumnDefinitions>
-                                    <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                                    <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
                                     <TextBlock VerticalAlignment="Center" Text="板件深度 (mm)" />
                                     <TextBox x:Name="BoardDepthBox" Grid.Column="1" Style="{StaticResource DoorPanelCompactInputStyle}" Text="500" />
-                                    <Button Grid.Row="1" Grid.ColumnSpan="2" Margin="0,6,0,0" Style="{StaticResource DoorPanelCompactActionStyle}" Background="{StaticResource AccentBrush}" BorderBrush="{StaticResource AccentBrush}" Foreground="White" Content="绘制板件 (DCCB)" Click="OnDrawBoardClick" />
+                                    <TextBlock Grid.Row="1" Margin="0,6,0,0" VerticalAlignment="Center" Text="收口正面宽 (mm)" />
+                                    <TextBox x:Name="BoardTrimFaceWidthBox" Grid.Row="1" Grid.Column="1" Margin="0,6,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="50" />
+                                    <TextBlock Grid.Row="2" Margin="0,6,0,0" VerticalAlignment="Center" Text="辅助板深度 (mm)" />
+                                    <TextBox x:Name="BoardTrimAuxiliaryDepthBox" Grid.Row="2" Grid.Column="1" Margin="0,6,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="70" />
+                                    <TextBlock Grid.Row="3" Margin="0,6,0,0" VerticalAlignment="Center" Text="侧收口截面" />
+                                    <ComboBox x:Name="BoardSideTrimSectionTypeCombo" Grid.Row="3" Grid.Column="1" Margin="0,6,0,0" Height="30" SelectedIndex="0">
+                                        <ComboBoxItem Content="L型" Tag="L" />
+                                        <ComboBoxItem Content="T型" Tag="T" />
+                                        <ComboBoxItem Content="I型" Tag="I" />
+                                    </ComboBox>
+                                    <TextBlock Grid.Row="4" Margin="0,6,0,0" VerticalAlignment="Center" Text="顶封板截面" />
+                                    <ComboBox x:Name="BoardTopTrimSectionTypeCombo" Grid.Row="4" Grid.Column="1" Margin="0,6,0,0" Height="30" SelectedIndex="0">
+                                        <ComboBoxItem Content="L型" Tag="L" />
+                                        <ComboBoxItem Content="T型" Tag="T" />
+                                        <ComboBoxItem Content="I型" Tag="I" />
+                                    </ComboBox>
+                                    <TextBlock Grid.Row="5" Margin="0,6,0,0" VerticalAlignment="Center" Text="板件属性类型" />
+                                    <UniformGrid Grid.Row="5" Grid.Column="1" Margin="0,6,0,0" Columns="2">
+                                        <RadioButton x:Name="BoardPropertyNormalRadio" GroupName="BoardPropertyType" Content="普通板件" IsChecked="True" />
+                                        <RadioButton x:Name="BoardPropertySideRadio" GroupName="BoardPropertyType" Content="侧收口" />
+                                        <RadioButton x:Name="BoardPropertyTopRadio" GroupName="BoardPropertyType" Content="顶收口" />
+                                        <RadioButton x:Name="BoardPropertyVisibleRadio" GroupName="BoardPropertyType" Content="见光板" />
+                                    </UniformGrid>
+                                    <Button Grid.Row="6" Grid.ColumnSpan="2" Margin="0,6,0,0" Style="{StaticResource DoorPanelCompactActionStyle}" Background="{StaticResource AccentBrush}" BorderBrush="{StaticResource AccentBrush}" Foreground="White" Content="绘制板件 (DCCB)" Click="OnDrawBoardClick" />
                                 </Grid>
                             </GroupBox>
-                            <GroupBox Header="空间中分板件" Style="{StaticResource DoorPanelCompactGroupStyle}">
-                                <Grid>
-                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="150" /></Grid.ColumnDefinitions>
-                                    <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
-                                    <TextBlock VerticalAlignment="Center" Text="中分板深度 (mm)" />
-                                    <TextBox x:Name="BoardCenterDepthBox" Grid.Column="1" Style="{StaticResource DoorPanelCompactInputStyle}" Text="500" />
-                                    <Button Grid.Row="1" Grid.ColumnSpan="2" Margin="0,6,0,0" Style="{StaticResource DoorPanelCompactActionStyle}" Background="{StaticResource AccentBrush}" BorderBrush="{StaticResource AccentBrush}" Foreground="White" Content="中分板件 (DCZC)" Click="OnDrawCenterBoardClick" />
-                                </Grid>
-                            </GroupBox>
-                            <GroupBox Header="位移与夹层" Style="{StaticResource DoorPanelCompactGroupStyle}">
+                            <GroupBox Header="空间分板" Style="{StaticResource DoorPanelCompactGroupStyle}">
                                 <StackPanel>
-                                    <Button Style="{StaticResource DoorPanelCompactActionStyle}" Content="位移板 (DCYC)" Click="OnDisplaceBoardClick" />
-                                    <Grid Margin="0,5,0,0">
-                                        <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="82" /><ColumnDefinition Width="8" /><ColumnDefinition Width="*" /><ColumnDefinition Width="82" /></Grid.ColumnDefinitions>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="150" /></Grid.ColumnDefinitions>
                                         <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
-                                        <TextBlock VerticalAlignment="Center" Text="A层厚度" /><TextBox x:Name="AbaOuterThicknessBox" Grid.Column="1" Style="{StaticResource DoorPanelCompactInputStyle}" Text="18" />
-                                        <TextBlock Grid.Column="3" VerticalAlignment="Center" Text="B层厚度" /><TextBox x:Name="AbaCoreThicknessBox" Grid.Column="4" Style="{StaticResource DoorPanelCompactInputStyle}" Text="9" />
-                                        <TextBlock Grid.Row="1" Margin="0,4,0,0" VerticalAlignment="Center" Text="夹层深度" /><TextBox x:Name="AbaDepthBox" Grid.Row="1" Grid.Column="1" Margin="0,4,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="500" />
-                                        <Button Grid.Row="1" Grid.Column="3" Grid.ColumnSpan="2" Margin="0,4,0,0" Style="{StaticResource DoorPanelCompactActionStyle}" Background="{StaticResource AccentBrush}" BorderBrush="{StaticResource AccentBrush}" Foreground="White" Content="ABA夹层 (DCABA)" Click="OnAbaBoardClick" />
+                                        <TextBlock VerticalAlignment="Center" Text="中分板深度 (mm)" />
+                                        <TextBox x:Name="BoardCenterDepthBox" Grid.Column="1" Style="{StaticResource DoorPanelCompactInputStyle}" Text="500" />
+                                        <Button Grid.Row="1" Grid.ColumnSpan="2" Margin="0,6,0,0" Style="{StaticResource DoorPanelCompactActionStyle}" Background="{StaticResource AccentBrush}" BorderBrush="{StaticResource AccentBrush}" Foreground="White" Content="中分板件 (DCZC)" Click="OnDrawCenterBoardClick" />
+                                    </Grid>
+                                    <Grid Margin="0,5,0,0">
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="150" /></Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                                        <TextBlock VerticalAlignment="Center" Text="内退距离 (mm)" />
+                                        <TextBox x:Name="BoardDisplaceDistanceBox" Grid.Column="1" Style="{StaticResource DoorPanelCompactInputStyle}" Text="100" />
+                                        <Button Grid.Row="1" Grid.ColumnSpan="2" Margin="0,5,0,0" Style="{StaticResource DoorPanelCompactActionStyle}" Background="{StaticResource AccentBrush}" BorderBrush="{StaticResource AccentBrush}" Foreground="White" Content="位移板 (DCYC)" Click="OnDisplaceBoardClick" />
                                     </Grid>
                                 </StackPanel>
                             </GroupBox>
+                            <GroupBox Header="ABA夹心层板" Style="{StaticResource DoorPanelCompactGroupStyle}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="82" /><ColumnDefinition Width="8" /><ColumnDefinition Width="*" /><ColumnDefinition Width="82" /></Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                                    <TextBlock VerticalAlignment="Center" Text="第一层厚度" /><TextBox x:Name="AbaFirstThicknessBox" Grid.Column="1" Style="{StaticResource DoorPanelCompactInputStyle}" Text="18" />
+                                    <TextBlock Grid.Column="3" VerticalAlignment="Center" Text="深度" /><TextBox x:Name="AbaFirstDepthBox" Grid.Column="4" Style="{StaticResource DoorPanelCompactInputStyle}" Text="500" />
+                                    <TextBlock Grid.Row="1" Margin="0,4,0,0" VerticalAlignment="Center" Text="第二层厚度" /><TextBox x:Name="AbaSecondThicknessBox" Grid.Row="1" Grid.Column="1" Margin="0,4,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="9" />
+                                    <TextBlock Grid.Row="1" Grid.Column="3" Margin="0,4,0,0" VerticalAlignment="Center" Text="深度" /><TextBox x:Name="AbaSecondDepthBox" Grid.Row="1" Grid.Column="4" Margin="0,4,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="500" />
+                                    <TextBlock Grid.Row="2" Margin="0,4,0,0" VerticalAlignment="Center" Text="第三层厚度" /><TextBox x:Name="AbaThirdThicknessBox" Grid.Row="2" Grid.Column="1" Margin="0,4,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="18" />
+                                    <TextBlock Grid.Row="2" Grid.Column="3" Margin="0,4,0,0" VerticalAlignment="Center" Text="深度" /><TextBox x:Name="AbaThirdDepthBox" Grid.Row="2" Grid.Column="4" Margin="0,4,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="500" />
+                                    <Button Grid.Row="3" Grid.ColumnSpan="5" Margin="0,6,0,0" Style="{StaticResource DoorPanelCompactActionStyle}" Background="{StaticResource AccentBrush}" BorderBrush="{StaticResource AccentBrush}" Foreground="White" Content="生成夹心层板 (DCABA)" Click="OnAbaBoardClick" />
+                                </Grid>
+                            </GroupBox>
                             <GroupBox Header="均分板件" Style="{StaticResource DoorPanelCompactGroupStyle}">
                                 <Grid>
-                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="90" /><ColumnDefinition Width="10" /><ColumnDefinition Width="*" /><ColumnDefinition Width="90" /></Grid.ColumnDefinitions>
-                                    <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
-                                    <TextBlock VerticalAlignment="Center" Text="格数" /><TextBox x:Name="BoardDivideCountBox" Grid.Column="1" Style="{StaticResource DoorPanelCompactInputStyle}" Text="3" />
-                                    <TextBlock Grid.Column="3" VerticalAlignment="Center" Text="板厚" /><TextBox x:Name="BoardDivideThicknessBox" Grid.Column="4" Style="{StaticResource DoorPanelCompactInputStyle}" Text="18" />
-                                    <Button Grid.Row="1" Grid.ColumnSpan="5" Margin="0,5,0,0" Style="{StaticResource DoorPanelCompactActionStyle}" Background="{StaticResource AccentBrush}" BorderBrush="{StaticResource AccentBrush}" Foreground="White" Content="均分板件 (DCFC)" Click="OnDivideBoardClick" />
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="150" /></Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                                    <TextBlock VerticalAlignment="Center" Text="板件深度 (mm)" /><TextBox x:Name="BoardDivideDepthBox" Grid.Column="1" Style="{StaticResource DoorPanelCompactInputStyle}" Text="100" />
+                                    <TextBlock Grid.Row="1" Margin="0,4,0,0" VerticalAlignment="Center" Text="最大净空 (mm)" /><TextBox x:Name="BoardDivideMaximumClearBox" Grid.Row="1" Grid.Column="1" Margin="0,4,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="430" />
+                                    <TextBlock Grid.Row="2" Margin="0,5,0,0" VerticalAlignment="Center" Text="均分模式" />
+                                    <StackPanel Grid.Row="2" Grid.Column="1" Margin="0,5,0,0" Orientation="Horizontal">
+                                        <RadioButton x:Name="BoardDivideSmartRadio" GroupName="BoardDivideMode" IsChecked="True" Content="智能分格" />
+                                        <RadioButton x:Name="BoardDivideCountRadio" Margin="16,0,0,0" GroupName="BoardDivideMode" Content="按格数分" />
+                                    </StackPanel>
+                                    <CheckBox x:Name="BoardDivideRemainderCheck" Grid.Row="3" Grid.ColumnSpan="2" Margin="0,5,0,0" IsChecked="True" Content="余量留在最后（鼠标方向）" />
+                                    <Button Grid.Row="4" Grid.ColumnSpan="2" Margin="0,6,0,0" Style="{StaticResource DoorPanelCompactActionStyle}" Background="{StaticResource AccentBrush}" BorderBrush="{StaticResource AccentBrush}" Foreground="White" Content="均分板件 (DCFC)" Click="OnDivideBoardClick" />
                                 </Grid>
                             </GroupBox>
                             <GroupBox Header="背板生成" Style="{StaticResource DoorPanelCompactGroupStyle}">
                                 <Grid>
                                     <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="82" /><ColumnDefinition Width="8" /><ColumnDefinition Width="*" /><ColumnDefinition Width="82" /></Grid.ColumnDefinitions>
-                                    <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
-                                    <TextBlock VerticalAlignment="Center" Text="背板厚度" /><TextBox x:Name="BackboardThicknessBox" Grid.Column="1" Style="{StaticResource DoorPanelCompactInputStyle}" Text="8" />
-                                    <TextBlock Grid.Column="3" VerticalAlignment="Center" Text="缩进距离" /><TextBox x:Name="BackboardInsetBox" Grid.Column="4" Style="{StaticResource DoorPanelCompactInputStyle}" Text="12" />
-                                    <TextBlock Grid.Row="1" Margin="0,4,0,0" VerticalAlignment="Center" Text="左延伸" /><TextBox x:Name="BackboardLeftBox" Grid.Row="1" Grid.Column="1" Margin="0,4,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="5" />
-                                    <TextBlock Grid.Row="1" Grid.Column="3" Margin="0,4,0,0" VerticalAlignment="Center" Text="右延伸" /><TextBox x:Name="BackboardRightBox" Grid.Row="1" Grid.Column="4" Margin="0,4,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="5" />
-                                    <TextBlock Grid.Row="2" Margin="0,4,0,0" VerticalAlignment="Center" Text="上延伸" /><TextBox x:Name="BackboardTopBox" Grid.Row="2" Grid.Column="1" Margin="0,4,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="5" />
-                                    <TextBlock Grid.Row="2" Grid.Column="3" Margin="0,4,0,0" VerticalAlignment="Center" Text="下延伸" /><TextBox x:Name="BackboardBottomBox" Grid.Row="2" Grid.Column="4" Margin="0,4,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="5" />
-                                    <Button Grid.Row="3" Grid.ColumnSpan="5" Margin="0,5,0,0" Style="{StaticResource DoorPanelCompactActionStyle}" Background="{StaticResource AccentBrush}" BorderBrush="{StaticResource AccentBrush}" Foreground="White" Content="生成背板 (DCBB)" Click="OnBackboardClick" />
+                                    <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                                    <TextBlock VerticalAlignment="Center" Text="背板厚度 (mm)" /><TextBox x:Name="BackboardThicknessBox" Grid.Column="1" Grid.ColumnSpan="4" Style="{StaticResource DoorPanelCompactInputStyle}" Text="9" />
+                                    <TextBlock Grid.Row="1" Margin="0,4,0,0" VerticalAlignment="Center" Text="缩进距离 (mm)" /><TextBox x:Name="BackboardInsetBox" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="4" Margin="0,4,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="12" />
+                                    <TextBlock Grid.Row="2" Grid.ColumnSpan="5" Margin="0,5,0,0" Foreground="#68707C" Text="延伸距离 (mm)" />
+                                    <TextBlock Grid.Row="3" VerticalAlignment="Center" Text="左延伸" /><TextBox x:Name="BackboardLeftBox" Grid.Row="3" Grid.Column="1" Style="{StaticResource DoorPanelCompactInputStyle}" Text="5" />
+                                    <TextBlock Grid.Row="3" Grid.Column="3" VerticalAlignment="Center" Text="右延伸" /><TextBox x:Name="BackboardRightBox" Grid.Row="3" Grid.Column="4" Style="{StaticResource DoorPanelCompactInputStyle}" Text="5" />
+                                    <TextBlock Grid.Row="4" Margin="0,4,0,0" VerticalAlignment="Center" Text="上延伸" /><TextBox x:Name="BackboardTopBox" Grid.Row="4" Grid.Column="1" Margin="0,4,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="5" />
+                                    <TextBlock Grid.Row="4" Grid.Column="3" Margin="0,4,0,0" VerticalAlignment="Center" Text="下延伸" /><TextBox x:Name="BackboardBottomBox" Grid.Row="4" Grid.Column="4" Margin="0,4,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="5" />
+                                    <StackPanel Grid.Row="5" Grid.ColumnSpan="5" Margin="0,5,0,0">
+                                        <RadioButton x:Name="BackboardGeneratePlanRadio" GroupName="BackboardViewMode" IsChecked="True" Content="生成俯视图背板（无XData）" />
+                                        <RadioButton x:Name="BackboardGenerateElevationRadio" GroupName="BackboardViewMode" Margin="0,4,0,0" Content="生成正视图背板（参与拆单）" />
+                                        <CheckBox x:Name="BackboardHideElevationCheck" Margin="0,4,0,0" Content="隐藏正视图背板图层" />
+                                    </StackPanel>
+                                    <Button Grid.Row="6" Grid.ColumnSpan="5" Margin="0,6,0,0" Style="{StaticResource DoorPanelCompactActionStyle}" Background="{StaticResource AccentBrush}" BorderBrush="{StaticResource AccentBrush}" Foreground="White" Content="点击内空生成背板 (DCBB)" Click="OnBackboardClick" />
+                                    <TextBlock Grid.Row="7" Grid.ColumnSpan="5" Margin="0,5,0,0" HorizontalAlignment="Center" Foreground="#68707C" Text="* 俯视按后沿方向延伸两端，正视按四边延伸" />
                                 </Grid>
                             </GroupBox>
                             <GroupBox Header="板件编辑与投影" Style="{StaticResource DoorPanelCompactGroupStyle}">
                                 <Grid>
                                     <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="6" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
                                     <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="5" /><RowDefinition Height="Auto" /><RowDefinition Height="5" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
-                                    <Button Style="{StaticResource DoorPanelCompactActionStyle}" Content="拆分板件 (DCFG)" Click="OnSplitBoardClick" />
+                                    <Button Style="{StaticResource DoorPanelCompactActionStyle}" Content="分割板件 (DCFG)" Click="OnSplitBoardClick" />
                                     <Button Grid.Column="2" Style="{StaticResource DoorPanelCompactActionStyle}" Content="合并板件 (DCHB)" Click="OnMergeBoardsClick" />
-                                    <Button Grid.Row="2" Style="{StaticResource DoorPanelCompactActionStyle}" Content="延伸线/矩形 (DCEXX)" Click="OnExtendBoardClick" />
+                                    <Button Grid.Row="2" Style="{StaticResource DoorPanelCompactActionStyle}" Content="延伸矩形 (DCEXX)" Click="OnExtendBoardClick" />
                                     <Button Grid.Row="2" Grid.Column="2" Style="{StaticResource DoorPanelCompactActionStyle}" Content="修剪线/矩形 (DCTRR)" Click="OnTrimBoardClick" />
-                                    <Button Grid.Row="4" Grid.ColumnSpan="3" Style="{StaticResource DoorPanelCompactActionStyle}" Background="{StaticResource AccentBrush}" BorderBrush="{StaticResource AccentBrush}" Foreground="White" Content="层板投影 (DCFS)" Click="OnShelfProjectClick" />
+                                    <Button Grid.Row="4" Grid.ColumnSpan="3" Style="{StaticResource DoorPanelCompactActionStyle}" Background="{StaticResource AccentBrush}" BorderBrush="{StaticResource AccentBrush}" Foreground="White" Content="生成层板侧视/立板俯视 (DCFS)" Click="OnShelfProjectClick" />
                                 </Grid>
                             </GroupBox>
                             <TextBlock x:Name="BoardStatusText" Margin="0,6,0,0" Foreground="#68707C" TextWrapping="Wrap" />
@@ -2336,16 +2954,53 @@
                             <GroupBox Header="单线变双/三线" Style="{StaticResource DoorPanelCompactGroupStyle}">
                                 <Grid>
                                     <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="150" /></Grid.ColumnDefinitions>
-                                    <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
-                                    <TextBlock VerticalAlignment="Center" Text="上延伸 (mm)" />
-                                    <TextBox x:Name="BoardExtendStartBox" Grid.Column="1" Style="{StaticResource DoorPanelCompactInputStyle}" Text="0" />
-                                    <TextBlock Grid.Row="1" Margin="0,4,0,0" VerticalAlignment="Center" Text="下延伸 (mm)" />
-                                    <TextBox x:Name="BoardExtendEndBox" Grid.Row="1" Grid.Column="1" Margin="0,4,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="0" />
-                                    <Grid Grid.Row="2" Grid.ColumnSpan="2" Margin="0,6,0,0">
+                                    <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                                    <TextBlock VerticalAlignment="Center" Text="板件厚度 (mm)" />
+                                    <TextBox x:Name="BoardConvertLineThicknessBox" Grid.Column="1" Style="{StaticResource DoorPanelCompactInputStyle}" Text="18" />
+                                    <TextBlock Grid.Row="1" Margin="0,4,0,0" VerticalAlignment="Center" Text="双线模式" />
+                                    <ComboBox x:Name="BoardConvertDoubleModeCombo" Grid.Row="1" Grid.Column="1" Margin="0,4,0,0" Height="30" SelectedIndex="0"><ComboBoxItem Content="生成线" Tag="Line" /><ComboBoxItem Content="生成矩形" Tag="Rectangle" /></ComboBox>
+                                    <TextBlock Grid.Row="2" Margin="0,4,0,0" VerticalAlignment="Center" Text="三线模式" />
+                                    <ComboBox x:Name="BoardConvertTripleModeCombo" Grid.Row="2" Grid.Column="1" Margin="0,4,0,0" Height="30" SelectedIndex="0"><ComboBoxItem Content="生成线" Tag="Line" /><ComboBoxItem Content="生成矩形" Tag="Rectangle" /></ComboBox>
+                                    <TextBlock Grid.Row="3" Margin="0,4,0,0" VerticalAlignment="Center" Text="上/左延伸 (mm)" />
+                                    <TextBox x:Name="BoardExtendStartBox" Grid.Row="3" Grid.Column="1" Margin="0,4,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="0" />
+                                    <TextBlock Grid.Row="4" Margin="0,4,0,0" VerticalAlignment="Center" Text="下/右延伸 (mm)" />
+                                    <TextBox x:Name="BoardExtendEndBox" Grid.Row="4" Grid.Column="1" Margin="0,4,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="0" />
+                                    <Grid Grid.Row="5" Grid.ColumnSpan="2" Margin="0,6,0,0">
                                         <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="6" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
-                                        <Button Style="{StaticResource DoorPanelCompactActionStyle}" Background="{StaticResource AccentBrush}" BorderBrush="{StaticResource AccentBrush}" Foreground="White" Content="单线变双 (DCZ2)" Click="OnBoardLineToDoubleClick" />
-                                        <Button Grid.Column="2" Style="{StaticResource DoorPanelCompactActionStyle}" Background="{StaticResource AccentBrush}" BorderBrush="{StaticResource AccentBrush}" Foreground="White" Content="单线变三 (DCZ3)" Click="OnBoardLineToTripleClick" />
+                                        <Button Style="{StaticResource DoorPanelCompactActionStyle}" Background="{StaticResource AccentBrush}" BorderBrush="{StaticResource AccentBrush}" Foreground="White" Content="单线变双 (DC22)" Click="OnBoardLineToDoubleClick" />
+                                        <Button Grid.Column="2" Style="{StaticResource DoorPanelCompactActionStyle}" Background="{StaticResource AccentBrush}" BorderBrush="{StaticResource AccentBrush}" Foreground="White" Content="单线变三 (DC33)" Click="OnBoardLineToTripleClick" />
                                     </Grid>
+                                </Grid>
+                            </GroupBox>
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
+                <TabItem Header="分区">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                        <StackPanel Margin="8">
+                            <GroupBox Header="门板分区辅助" Style="{StaticResource DoorPanelCompactGroupStyle}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="150" /></Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                                    <TextBlock VerticalAlignment="Center" Text="上延伸高度 (mm)" />
+                                    <TextBox x:Name="DoorPartitionTopExtensionBox" Grid.Column="1" Style="{StaticResource DoorPanelCompactInputStyle}" Text="2700" />
+                                    <TextBlock Grid.Row="1" Margin="0,4,0,0" VerticalAlignment="Center" Text="下延伸高度 (mm)" />
+                                    <TextBox x:Name="DoorPartitionBottomExtensionBox" Grid.Row="1" Grid.Column="1" Margin="0,4,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="300" />
+                                    <TextBlock Grid.Row="2" Margin="0,4,0,0" VerticalAlignment="Center" Text="最大门扇宽度 (mm)" />
+                                    <TextBox x:Name="DoorPartitionMaximumWidthBox" Grid.Row="2" Grid.Column="1" Margin="0,4,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="450" />
+                                    <StackPanel Grid.Row="3" Grid.ColumnSpan="2" Margin="0,5,0,0">
+                                        <TextBlock Text="分区格式" />
+                                        <StackPanel Margin="0,3,0,0" Orientation="Horizontal">
+                                            <RadioButton x:Name="DoorPartitionSmartRadio" GroupName="DoorPartitionMode" IsChecked="True" Content="智能分区" />
+                                            <RadioButton x:Name="DoorPartitionCountRadio" Margin="16,0,0,0" GroupName="DoorPartitionMode" Content="按格数分" />
+                                        </StackPanel>
+                                    </StackPanel>
+                                    <TextBlock Grid.Row="4" Margin="0,5,0,0" VerticalAlignment="Center" Text="默认门扇/分区数量" />
+                                    <TextBox x:Name="DoorPartitionDefaultCountBox" Grid.Row="4" Grid.Column="1" Margin="0,5,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="8" />
+                                    <StackPanel Grid.Row="5" Grid.ColumnSpan="2" Margin="0,6,0,0">
+                                        <Button Style="{StaticResource DoorPanelCompactActionStyle}" Background="{StaticResource AccentBrush}" BorderBrush="{StaticResource AccentBrush}" Foreground="White" Content="点选两点分区 (FQ)" Click="OnDoorPartitionClick" />
+                                        <TextBlock Margin="0,5,0,0" HorizontalAlignment="Center" Foreground="#68707C" Text="* 移动终点实时预览；W/+增加，S/-减少门扇数" TextWrapping="Wrap" />
+                                    </StackPanel>
                                 </Grid>
                             </GroupBox>
                         </StackPanel>
@@ -2354,97 +3009,264 @@
                 <TabItem Header="组件">
                     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                         <StackPanel Margin="8">
-                            <GroupBox Header="组件公共设置" Style="{StaticResource DoorPanelCompactGroupStyle}">
-                                <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="150" /></Grid.ColumnDefinitions><TextBlock VerticalAlignment="Center" Text="酒架深度 (mm)" /><TextBox x:Name="WineRackDepthBox" Grid.Column="1" Style="{StaticResource DoorPanelCompactInputStyle}" Text="500" /></Grid>
-                            </GroupBox>
-                            <GroupBox Header="十字酒架" Style="{StaticResource DoorPanelCompactGroupStyle}">
-                                <Grid>
-                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="90" /><ColumnDefinition Width="12" /><ColumnDefinition Width="*" /><ColumnDefinition Width="90" /></Grid.ColumnDefinitions>
-                                    <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
-                                    <TextBlock VerticalAlignment="Center" Text="横板数" /><TextBox x:Name="WineRowsBox" Grid.Column="1" Style="{StaticResource DoorPanelCompactInputStyle}" Text="3" />
-                                    <TextBlock Grid.Column="3" VerticalAlignment="Center" Text="竖板数" /><TextBox x:Name="WineColumnsBox" Grid.Column="4" Style="{StaticResource DoorPanelCompactInputStyle}" Text="3" />
-                                    <TextBlock Grid.Row="1" Margin="0,4,0,0" VerticalAlignment="Center" Text="板厚 (mm)" /><TextBox x:Name="WineCrossThicknessBox" Grid.Row="1" Grid.Column="1" Margin="0,4,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="18" />
-                                    <Button Grid.Row="1" Grid.Column="3" Grid.ColumnSpan="2" Margin="0,4,0,0" Style="{StaticResource DoorPanelCompactActionStyle}" Background="{StaticResource AccentBrush}" BorderBrush="{StaticResource AccentBrush}" Foreground="White" Content="生成十字酒架 (DCJJ)" Click="OnCrossWineRackClick" />
-                                </Grid>
-                            </GroupBox>
-                            <GroupBox Header="45°斜酒架" Style="{StaticResource DoorPanelCompactGroupStyle}">
+                            <GroupBox Header="鞋柜斜层板" Style="{StaticResource DoorPanelCompactGroupStyle}">
                                 <Grid>
                                     <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="150" /></Grid.ColumnDefinitions>
-                                    <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
-                                    <TextBlock VerticalAlignment="Center" Text="板厚 (mm)" /><TextBox x:Name="WineDiagonalThicknessBox" Grid.Column="1" Style="{StaticResource DoorPanelCompactInputStyle}" Text="12" />
-                                    <TextBlock Grid.Row="1" Margin="0,4,0,0" VerticalAlignment="Center" Text="内格净宽 (mm)" /><TextBox x:Name="WineCellWidthBox" Grid.Row="1" Grid.Column="1" Margin="0,4,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="100" />
-                                    <Button Grid.Row="2" Grid.ColumnSpan="2" Margin="0,6,0,0" Style="{StaticResource DoorPanelCompactActionStyle}" Background="{StaticResource AccentBrush}" BorderBrush="{StaticResource AccentBrush}" Foreground="White" Content="生成斜酒架 (DCJX)" Click="OnDiagonalWineRackClick" />
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+                                    <TextBlock VerticalAlignment="Center" Text="层板实际深度 (mm)" />
+                                    <TextBox x:Name="ShoeShelfDepthBox" Grid.Column="1" Style="{StaticResource DoorPanelCompactInputStyle}" Text="260" />
+                                    <StackPanel Grid.Row="1" Grid.ColumnSpan="2" Margin="0,5,0,0">
+                                        <TextBlock Text="角度模式" />
+                                        <StackPanel Margin="0,3,0,0" Orientation="Horizontal">
+                                            <RadioButton x:Name="ShoeShelfSmartAngleRadio" GroupName="ShoeShelfAngleMode" IsChecked="True" Content="智能角度" />
+                                            <RadioButton x:Name="ShoeShelfManualAngleRadio" Margin="20,0,0,0" GroupName="ShoeShelfAngleMode" Content="固定角度" />
+                                        </StackPanel>
+                                    </StackPanel>
+                                    <TextBlock Grid.Row="2" Margin="0,4,0,0" VerticalAlignment="Center" Text="优先/固定角度 (°)" />
+                                    <TextBox x:Name="ShoeShelfAngleBox" Grid.Row="2" Grid.Column="1" Margin="0,4,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="20" />
+                                    <TextBlock Grid.Row="3" Margin="0,4,0,0" VerticalAlignment="Center" Text="目标层距 (mm)" />
+                                    <TextBox x:Name="ShoeShelfTargetSpacingBox" Grid.Row="3" Grid.Column="1" Margin="0,4,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="200" />
+                                    <TextBlock Grid.Row="4" Margin="0,4,0,0" VerticalAlignment="Center" Text="顶部预留 (mm)" />
+                                    <TextBox x:Name="ShoeShelfTopReserveBox" Grid.Row="4" Grid.Column="1" Margin="0,4,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="0" />
+                                    <TextBlock Grid.Row="5" Margin="0,4,0,0" VerticalAlignment="Center" Text="底部预留 (mm)" />
+                                    <TextBox x:Name="ShoeShelfBottomReserveBox" Grid.Row="5" Grid.Column="1" Margin="0,4,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="0" />
+                                    <TextBlock Grid.Row="6" Margin="0,4,0,0" VerticalAlignment="Center" Text="前预留 (mm)" />
+                                    <TextBox x:Name="ShoeShelfFrontClearanceBox" Grid.Row="6" Grid.Column="1" Margin="0,4,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="20" />
+                                    <TextBlock Grid.Row="7" Margin="0,4,0,0" VerticalAlignment="Center" Text="后预留 (mm)" />
+                                    <TextBox x:Name="ShoeShelfRearClearanceBox" Grid.Row="7" Grid.Column="1" Margin="0,4,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="0" />
+                                    <TextBlock Grid.Row="8" Margin="0,4,0,0" VerticalAlignment="Center" Text="挡条高出层板 (mm)" />
+                                    <TextBox x:Name="ShoeShelfStopperHeightBox" Grid.Row="8" Grid.Column="1" Margin="0,4,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="20" />
+                                    <CheckBox x:Name="ShoeShelfGenerateStopperCheck" Grid.Row="9" Grid.ColumnSpan="2" Margin="0,6,0,0" IsChecked="True" Content="默认生成前挡条" />
+                                    <Button Grid.Row="10" Grid.ColumnSpan="2" Margin="0,8,0,0" Style="{StaticResource DoorPanelCompactActionStyle}" Background="{StaticResource AccentBrush}" BorderBrush="{StaticResource AccentBrush}" Foreground="White" Content="生成鞋柜斜层板 (DCXB)" Click="OnShoeShelfClick" />
                                 </Grid>
                             </GroupBox>
+                            <TextBlock Margin="4,0,4,8" Foreground="#737B86" FontSize="11" TextWrapping="Wrap" Text="* 点击柜体侧视内空，鼠标左右选择柜前方向；确认前可用 W/S 或 +/- 调整层数。" />
                         </StackPanel>
                     </ScrollViewer>
                 </TabItem>
             </TabControl>
         </Grid>
 
-        <Grid x:Name="StatisticsModuleView" Visibility="Collapsed">
-            <TabControl Background="#F5F6F8">
-                <TabItem Header="全屋拆单">
-                    <StackPanel Margin="8">
-                        <GroupBox Header="一键全屋拆单" Style="{StaticResource DoorPanelCompactGroupStyle}">
-                            <StackPanel>
-                                <TextBlock Foreground="#68707C" TextWrapping="Wrap" Text="自动扫描模型空间中的柜体板件、门板与五金，选择放置CAD表格或导出Excel总表。" />
-                                <Button Margin="0,6,0,0" Style="{StaticResource DoorPanelCompactActionStyle}" Background="{StaticResource AccentBrush}" BorderBrush="{StaticResource AccentBrush}" Foreground="White" Content="一键全屋拆单 (DCQW)" Click="OnWholeHouseStatisticsClick" />
-                            </StackPanel>
-                        </GroupBox>
+        <ScrollViewer x:Name="SuperLibraryModuleView"
+                      Visibility="Collapsed"
+                      HorizontalScrollBarVisibility="Disabled"
+                      VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="12">
+                <GroupBox Header="超级图库"
+                          Padding="12"
+                          BorderBrush="{StaticResource AccentBrush}"
+                          Foreground="{StaticResource AccentBrush}">
+                    <StackPanel>
+                        <TextBlock Foreground="#68707C"
+                                   TextWrapping="Wrap"
+                                   Text="按一级文件夹自动分类显示 DWG 和同名预览图；左键项目可跟随鼠标预览并放置。" />
+                        <Button Margin="0,14,0,0"
+                                Height="38"
+                                Style="{StaticResource FlatButtonStyle}"
+                                Background="{StaticResource AccentBrush}"
+                                BorderBrush="{StaticResource AccentBrush}"
+                                Foreground="White"
+                                FontWeight="SemiBold"
+                                Content="打开超级图库 (DCTK)"
+                                Click="OnOpenSuperLibraryClick" />
+                        <Button Margin="0,8,0,0"
+                                Height="34"
+                                Style="{StaticResource FlatButtonStyle}"
+                                Content="打开图库文件夹"
+                                Click="OnOpenSuperLibraryFolderClick" />
+                        <TextBlock Margin="0,10,0,0"
+                                   Foreground="#737B86"
+                                   FontSize="11"
+                                   TextWrapping="Wrap"
+                                   Text="* 保存选中图形到当前分类：DCBCT；插入命令：DCTKI。" />
                     </StackPanel>
-                </TabItem>
+                </GroupBox>
+            </StackPanel>
+        </ScrollViewer>
+
+        <Grid x:Name="StatisticsModuleView" Visibility="Collapsed">
+            <TabControl Margin="0,0,0,24" Background="#F5F6F8">
                 <TabItem Header="部件统计">
                     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                         <StackPanel Margin="8">
-                            <GroupBox Header="统计范围" Style="{StaticResource DoorPanelCompactGroupStyle}">
+                            <GroupBox Header="一键全屋拆单项目配置" Style="{StaticResource DoorPanelCompactGroupStyle}">
                                 <StackPanel>
-                                    <TextBlock Foreground="#68707C" TextWrapping="Wrap" Text="框选柜体板件、门板与五金，按图层和块名称归类，相同规格自动合并数量。" />
-                                    <Button Margin="0,6,0,0" Style="{StaticResource DoorPanelCompactActionStyle}" Background="{StaticResource AccentBrush}" BorderBrush="{StaticResource AccentBrush}" Foreground="White" Content="导出部件统计 (DCCD)" Click="OnPartsStatisticsClick" />
+                                    <TextBlock Margin="0,0,0,5" Foreground="#68707C" TextWrapping="Wrap" Text="请勾选需要纳入全屋拆单的项目：" />
+                                    <UniformGrid Columns="2">
+                                        <CheckBox x:Name="WholeHouseCabinetBoardsCheck" Margin="0,3" Content="柜体板件" />
+                                        <CheckBox x:Name="WholeHouseStandardDoorsCheck" Margin="0,3" Content="普通门板" />
+                                        <CheckBox x:Name="WholeHouseFrameDoorsCheck" Margin="0,3" Content="边框门板" />
+                                        <CheckBox x:Name="WholeHouseBoardPropertiesCheck" Margin="0,3" Content="板件属性统计" />
+                                        <CheckBox x:Name="WholeHouseHangingRodsCheck" Margin="0,3" Content="挂衣杆" />
+                                        <CheckBox x:Name="WholeHouseLightStripsCheck" Margin="0,3" Content="灯带" />
+                                        <CheckBox x:Name="WholeHouseHandlesCheck" Margin="0,3" Content="拉手" />
+                                        <CheckBox x:Name="WholeHouseConcealedHandlesCheck" Margin="0,3" Content="暗拉手" />
+                                        <CheckBox x:Name="WholeHouseHingesCheck" Margin="0,3" Content="铰链" />
+                                        <CheckBox x:Name="WholeHouseSlidesCheck" Margin="0,3" Content="滑道" />
+                                    </UniformGrid>
+                                </StackPanel>
+                            </GroupBox>
+                            <GroupBox Header="表格参数设置" Style="{StaticResource DoorPanelCompactGroupStyle}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="120" /></Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                                    <TextBlock VerticalAlignment="Center" Text="表格缩放倍数" />
+                                    <TextBox x:Name="WholeHouseTableScaleBox" Grid.Column="1" Style="{StaticResource DoorPanelCompactInputStyle}" Text="8" />
+                                    <TextBlock Grid.Row="1" Margin="0,5,0,0" VerticalAlignment="Center" Text="每页最大行数" />
+                                    <TextBox x:Name="WholeHouseMaxRowsBox" Grid.Row="1" Grid.Column="1" Margin="0,5,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="30" />
+                                </Grid>
+                            </GroupBox>
+                            <GroupBox Header="全屋拆单操作" Style="{StaticResource DoorPanelCompactGroupStyle}">
+                                <StackPanel>
+                                    <TextBlock Foreground="#E64B3C" TextWrapping="Wrap" Text="点击后请框选全屋图纸，成熟拆单模块可用时自动生成对应清单。" />
+                                    <Button Margin="0,6,0,0" Style="{StaticResource DoorPanelCompactActionStyle}" Content="导出部件统计 (DCCD)" Click="OnPartsStatisticsClick" />
+                                    <Button Margin="0,6,0,0" Style="{StaticResource DoorPanelCompactActionStyle}" Background="{StaticResource AccentBrush}" BorderBrush="{StaticResource AccentBrush}" Foreground="White" Content="一键全屋拆单 (DCQW)" Click="OnWholeHouseStatisticsClick" />
+                                </StackPanel>
+                            </GroupBox>
+                            <GroupBox Header="外观图辅助" Style="{StaticResource DoorPanelCompactGroupStyle}">
+                                <StackPanel>
+                                    <TextBlock Foreground="#68707C" TextWrapping="Wrap" Text="复制缩略图装饰外观，清除原图拆单数据并添加忽略标记，避免重复统计。" />
+                                    <Button Margin="0,6,0,0" Style="{StaticResource DoorPanelCompactActionStyle}" Background="#378DE5" BorderBrush="#378DE5" Foreground="White" Content="外观图超级复制 (DCCOO)" Click="OnBomVisualCopyClick" />
                                 </StackPanel>
                             </GroupBox>
                         </StackPanel>
                     </ScrollViewer>
                 </TabItem>
                 <TabItem Header="普通门板">
-                    <StackPanel Margin="8">
-                        <GroupBox Header="普通门板统计" Style="{StaticResource DoorPanelCompactGroupStyle}">
-                            <StackPanel>
-                                <TextBlock Foreground="#68707C" TextWrapping="Wrap" Text="框选门板或抽面，按名称、宽高和厚度汇总并导出 CSV。" />
-                                <Button Margin="0,6,0,0" Style="{StaticResource DoorPanelCompactActionStyle}" Background="{StaticResource AccentBrush}" BorderBrush="{StaticResource AccentBrush}" Foreground="White" Content="开始门板统计 (DCTJM)" Click="OnDoorStatisticsClick" />
-                            </StackPanel>
-                        </GroupBox>
-                    </StackPanel>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                        <StackPanel Margin="8">
+                            <GroupBox Header="门板统计说明" Style="{StaticResource DoorPanelCompactGroupStyle}">
+                                <TextBlock Foreground="#68707C" TextWrapping="Wrap" Text="自动识别雷神图框中的柜体名称，并提取门板图纸图层里没有交集的最大外圈边界；忽略内部复杂线条，只计算准确下料宽高。" />
+                            </GroupBox>
+                            <GroupBox Header="参数设置" Style="{StaticResource DoorPanelCompactGroupStyle}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="120" /></Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                                    <TextBlock VerticalAlignment="Center" Text="表格缩放倍数" />
+                                    <TextBox x:Name="DoorStatisticsTableScaleBox" Grid.Column="1" Style="{StaticResource DoorPanelCompactInputStyle}" Text="8" />
+                                    <TextBlock Grid.Row="1" Margin="0,5,0,0" VerticalAlignment="Center" Text="柜门默认厚度" />
+                                    <TextBox x:Name="DoorStatisticsThicknessBox" Grid.Row="1" Grid.Column="1" Margin="0,5,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="18" />
+                                    <TextBlock Grid.Row="2" Margin="0,5,0,0" VerticalAlignment="Center" Text="每页最大行数" />
+                                    <TextBox x:Name="DoorStatisticsMaxRowsBox" Grid.Row="2" Grid.Column="1" Margin="0,5,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="30" />
+                                </Grid>
+                            </GroupBox>
+                            <Button Style="{StaticResource DoorPanelCompactActionStyle}" Background="{StaticResource AccentBrush}" BorderBrush="{StaticResource AccentBrush}" Foreground="White" Content="开始门板统计 (DCTJM)" Click="OnDoorStatisticsClick" />
+                        </StackPanel>
+                    </ScrollViewer>
                 </TabItem>
                 <TabItem Header="边框门板">
-                    <StackPanel Margin="8">
-                        <GroupBox Header="边框门板统计" Style="{StaticResource DoorPanelCompactGroupStyle}">
-                            <StackPanel>
-                                <TextBlock Foreground="#68707C" TextWrapping="Wrap" Text="识别图层或块名称中包含“门板”且包含“边框/玻璃”的对象。" />
-                                <Button Margin="0,6,0,0" Style="{StaticResource DoorPanelCompactActionStyle}" Background="{StaticResource AccentBrush}" BorderBrush="{StaticResource AccentBrush}" Foreground="White" Content="开始边框门板统计 (DCBKM)" Click="OnFrameDoorStatisticsClick" />
-                            </StackPanel>
-                        </GroupBox>
-                    </StackPanel>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                        <StackPanel Margin="8">
+                            <GroupBox Header="基础尺寸参数 (mm)" Style="{StaticResource DoorPanelCompactGroupStyle}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="95" /></Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                                    <TextBlock VerticalAlignment="Center" Text="柜门厚度 (C)" /><TextBox x:Name="FrameDoorCabinetThicknessBox" Grid.Column="1" Style="{StaticResource DoorPanelCompactInputStyle}" Text="18" />
+                                    <TextBlock Grid.Row="1" Margin="0,4,0,0" VerticalAlignment="Center" Text="门精裁板数量 (D)" /><TextBox x:Name="FrameDoorBoardCoreCountBox" Grid.Row="1" Grid.Column="1" Margin="0,4,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="2" />
+                                    <TextBlock Grid.Row="2" Margin="0,4,0,0" VerticalAlignment="Center" Text="门精两端精裁数量 (N)" /><TextBox x:Name="FrameDoorGlassCoreCountBox" Grid.Row="2" Grid.Column="1" Margin="0,4,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="0" />
+                                    <TextBlock Grid.Row="3" Margin="0,4,0,0" VerticalAlignment="Center" Text="门芯板厚度 (F)" /><TextBox x:Name="FrameDoorCoreThicknessBox" Grid.Row="3" Grid.Column="1" Margin="0,4,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="12" />
+                                </Grid>
+                            </GroupBox>
+                            <GroupBox Header="门边及门档宽度 (mm)" Style="{StaticResource DoorPanelCompactGroupStyle}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="95" /></Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                                    <TextBlock VerticalAlignment="Center" Text="左右门边 (E)" /><TextBox x:Name="FrameDoorSideFrameWidthBox" Grid.Column="1" Style="{StaticResource DoorPanelCompactInputStyle}" Text="60" />
+                                    <TextBlock Grid.Row="1" Margin="0,4,0,0" VerticalAlignment="Center" Text="上门档 (E1)" /><TextBox x:Name="FrameDoorTopFrameWidthBox" Grid.Row="1" Grid.Column="1" Margin="0,4,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="60" />
+                                    <TextBlock Grid.Row="2" Margin="0,4,0,0" VerticalAlignment="Center" Text="中门档 (E2)" /><TextBox x:Name="FrameDoorMiddleFrameWidthBox" Grid.Row="2" Grid.Column="1" Margin="0,4,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="60" />
+                                    <TextBlock Grid.Row="3" Margin="0,4,0,0" VerticalAlignment="Center" Text="下门档 (E3)" /><TextBox x:Name="FrameDoorBottomFrameWidthBox" Grid.Row="3" Grid.Column="1" Margin="0,4,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="60" />
+                                </Grid>
+                            </GroupBox>
+                            <GroupBox Header="进榫余量 (mm)" Style="{StaticResource DoorPanelCompactGroupStyle}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="95" /></Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                                    <TextBlock VerticalAlignment="Center" Text="门档左右进榫 (G)" /><TextBox x:Name="FrameDoorRightFrameTenonBox" Grid.Column="1" Style="{StaticResource DoorPanelCompactInputStyle}" Text="10" />
+                                    <TextBlock Grid.Row="1" Margin="0,4,0,0" VerticalAlignment="Center" Text="中门档进榫 (M)" /><TextBox x:Name="FrameDoorMiddleFrameTenonBox" Grid.Row="1" Grid.Column="1" Margin="0,4,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="10" />
+                                    <TextBlock Grid.Row="2" Margin="0,4,0,0" VerticalAlignment="Center" Text="芯板上进榫 (I)" /><TextBox x:Name="FrameDoorCoreTopTenonBox" Grid.Row="2" Grid.Column="1" Margin="0,4,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="8" />
+                                    <TextBlock Grid.Row="3" Margin="0,4,0,0" VerticalAlignment="Center" Text="芯板下进榫 (J)" /><TextBox x:Name="FrameDoorCoreBottomTenonBox" Grid.Row="3" Grid.Column="1" Margin="0,4,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="8" />
+                                    <TextBlock Grid.Row="4" Margin="0,4,0,0" VerticalAlignment="Center" Text="芯板左进榫 (K)" /><TextBox x:Name="FrameDoorCoreLeftTenonBox" Grid.Row="4" Grid.Column="1" Margin="0,4,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="8" />
+                                    <TextBlock Grid.Row="5" Margin="0,4,0,0" VerticalAlignment="Center" Text="芯板右进榫 (L)" /><TextBox x:Name="FrameDoorCoreRightTenonBox" Grid.Row="5" Grid.Column="1" Margin="0,4,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="8" />
+                                </Grid>
+                            </GroupBox>
+                            <GroupBox Header="中档位置与输出" Style="{StaticResource DoorPanelCompactGroupStyle}">
+                                <StackPanel>
+                                    <CheckBox x:Name="FrameDoorCenterMiddleFrameCheck" Content="智能中档居中" />
+                                    <Grid Margin="0,4,0,0">
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="95" /></Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                                        <TextBlock VerticalAlignment="Center" Text="不居中时距下门档 (P)" /><TextBox x:Name="FrameDoorLowerFramePositionBox" Grid.Column="1" Style="{StaticResource DoorPanelCompactInputStyle}" Text="600" />
+                                        <TextBlock Grid.Row="1" Margin="0,4,0,0" VerticalAlignment="Center" Text="表格缩放倍数" /><TextBox x:Name="FrameDoorTableScaleBox" Grid.Row="1" Grid.Column="1" Margin="0,4,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="8" />
+                                        <TextBlock Grid.Row="2" Margin="0,4,0,0" VerticalAlignment="Center" Text="每页最大行数" /><TextBox x:Name="FrameDoorMaxRowsBox" Grid.Row="2" Grid.Column="1" Margin="0,4,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="30" />
+                                    </Grid>
+                                </StackPanel>
+                            </GroupBox>
+                            <Button Style="{StaticResource DoorPanelCompactActionStyle}" Background="{StaticResource AccentBrush}" BorderBrush="{StaticResource AccentBrush}" Foreground="White" Content="开始边框门拆单 (DCBKM)" Click="OnFrameDoorStatisticsClick" />
+                        </StackPanel>
+                    </ScrollViewer>
                 </TabItem>
                 <TabItem Header="柜体拆单">
-                    <StackPanel Margin="8">
-                        <GroupBox Header="柜体板件明细" Style="{StaticResource DoorPanelCompactGroupStyle}">
-                            <StackPanel>
-                                <TextBlock Foreground="#68707C" TextWrapping="Wrap" Text="框选柜体结构、层板与背板，按实际包围尺寸汇总板件明细。" />
-                                <Button Margin="0,6,0,0" Style="{StaticResource DoorPanelCompactActionStyle}" Background="{StaticResource AccentBrush}" BorderBrush="{StaticResource AccentBrush}" Foreground="White" Content="开始柜体拆单 (DCTJG)" Click="OnCabinetBomClick" />
-                            </StackPanel>
-                        </GroupBox>
-                    </StackPanel>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                        <StackPanel Margin="8">
+                            <GroupBox Header="柜体拆单项目配置" Style="{StaticResource DoorPanelCompactGroupStyle}">
+                                <StackPanel>
+                                    <TextBlock Margin="0,0,0,5" Foreground="#68707C" TextWrapping="Wrap" Text="从图框内板件 XData 自动提取柜体拆单数据：" />
+                                    <CheckBox x:Name="CabinetBomBasicBoardsCheck" Margin="0,3" Content="基础板件（侧/顶/底/脚座/顶条）" />
+                                    <CheckBox x:Name="CabinetBomBackboardsCheck" Margin="0,3" Content="背板（含上下左右插槽延伸计算）" />
+                                    <CheckBox x:Name="CabinetBomSummaryCheck" Margin="0,3" Content="汇总行（保留整体宽/高/深对照）" />
+                                </StackPanel>
+                            </GroupBox>
+                            <GroupBox Header="表格参数设置" Style="{StaticResource DoorPanelCompactGroupStyle}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="120" /></Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                                    <TextBlock VerticalAlignment="Center" Text="表格缩放倍数" /><TextBox x:Name="CabinetBomTableScaleBox" Grid.Column="1" Style="{StaticResource DoorPanelCompactInputStyle}" Text="8" />
+                                    <TextBlock Grid.Row="1" Margin="0,5,0,0" VerticalAlignment="Center" Text="每页最大行数" /><TextBox x:Name="CabinetBomMaxRowsBox" Grid.Row="1" Grid.Column="1" Margin="0,5,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="30" />
+                                </Grid>
+                            </GroupBox>
+                            <Button Style="{StaticResource DoorPanelCompactActionStyle}" Background="{StaticResource AccentBrush}" BorderBrush="{StaticResource AccentBrush}" Foreground="White" Content="开始柜体拆单 (DCTJG)" Click="OnCabinetBomClick" />
+                        </StackPanel>
+                    </ScrollViewer>
                 </TabItem>
                 <TabItem Header="板件统计">
-                    <StackPanel Margin="8">
-                        <GroupBox Header="板件规格统计" Style="{StaticResource DoorPanelCompactGroupStyle}">
-                            <StackPanel>
-                                <TextBlock Foreground="#68707C" TextWrapping="Wrap" Text="输出板件规格、数量和面积。当前版本不把面积换算冒充精确开料排版。" />
-                                <Button Margin="0,6,0,0" Style="{StaticResource DoorPanelCompactActionStyle}" Background="{StaticResource AccentBrush}" BorderBrush="{StaticResource AccentBrush}" Foreground="White" Content="导出板件统计 (DCBJT)" Click="OnBoardStatisticsClick" />
-                            </StackPanel>
-                        </GroupBox>
-                    </StackPanel>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                        <StackPanel Margin="8">
+                            <GroupBox Header="板材材质设置" Style="{StaticResource DoorPanelCompactGroupStyle}">
+                                <StackPanel>
+                                    <TextBlock Foreground="#68707C" Text="有纹路：强制长距沿 2440 方向" />
+                                    <RadioButton x:Name="PanelNestingWoodGrainRadio" Margin="0,5,0,0" GroupName="PanelNestingMaterial" Content="有纹路板材" />
+                                    <RadioButton x:Name="PanelNestingSolidColorRadio" Margin="0,5,0,0" GroupName="PanelNestingMaterial" Content="纯色板材" />
+                                </StackPanel>
+                            </GroupBox>
+                            <GroupBox Header="开料板材规格" Style="{StaticResource DoorPanelCompactGroupStyle}">
+                                <StackPanel>
+                                    <RadioButton x:Name="PanelNesting48SheetRadio" Margin="0,3" GroupName="PanelNestingSheet" Content="48尺 (2440mm × 1220mm)" />
+                                    <RadioButton x:Name="PanelNesting49SheetRadio" Margin="0,3" GroupName="PanelNestingSheet" Content="49尺 (2745mm × 1220mm)" />
+                                    <TextBlock Margin="0,5,0,0" Foreground="#E64B3C" Text="* 默认扣除开料锯刀直径 8mm" />
+                                </StackPanel>
+                            </GroupBox>
+                            <GroupBox Header="拆单统计对象" Style="{StaticResource DoorPanelCompactGroupStyle}">
+                                <StackPanel>
+                                    <CheckBox x:Name="PanelNestingCabinetCheck" Margin="0,3" Content="柜体板件" />
+                                    <CheckBox x:Name="PanelNestingFlatDoorCheck" Margin="0,3" Content="平板门板" />
+                                </StackPanel>
+                            </GroupBox>
+                            <GroupBox Header="排版图及表格参数" Style="{StaticResource DoorPanelCompactGroupStyle}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="120" /></Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                                    <TextBlock VerticalAlignment="Center" Text="图表缩放倍数" /><TextBox x:Name="PanelNestingTableScaleBox" Grid.Column="1" Style="{StaticResource DoorPanelCompactInputStyle}" Text="8" />
+                                    <TextBlock Grid.Row="1" Margin="0,5,0,0" VerticalAlignment="Center" Text="每页最大行数" /><TextBox x:Name="PanelNestingMaxRowsBox" Grid.Row="1" Grid.Column="1" Margin="0,5,0,0" Style="{StaticResource DoorPanelCompactInputStyle}" Text="30" />
+                                </Grid>
+                            </GroupBox>
+                            <Button Style="{StaticResource DoorPanelCompactActionStyle}" Background="{StaticResource AccentBrush}" BorderBrush="{StaticResource AccentBrush}" Foreground="White" Content="板件统计排版 (DCBJT)" Click="OnBoardStatisticsClick" />
+                        </StackPanel>
+                    </ScrollViewer>
                 </TabItem>
             </TabControl>
             <TextBlock x:Name="StatisticsStatusText" Margin="10,0,10,8" VerticalAlignment="Bottom" Foreground="#68707C" TextWrapping="Wrap" IsHitTestVisible="False" />
@@ -2458,10 +3280,35 @@
                 <GroupBox Header="图层规范与清理" Style="{StaticResource DoorPanelCompactGroupStyle}">
                     <StackPanel>
                         <Button Style="{StaticResource DoorPanelCompactActionStyle}" Content="快速图层管理器 (DCTC)" Click="OnLayerManagerClick" />
-                        <Button Margin="0,5,0,0" Style="{StaticResource DoorPanelCompactActionStyle}" Content="一键生成标准图层 (DCTCJZ)" Click="OnCreateStandardLayersClick" />
+                        <Button Margin="0,5,0,0" Style="{StaticResource DoorPanelCompactActionStyle}" Content="一键生成雷神标准图层 (DCTCJZ)" Click="OnCreateStandardLayersClick" />
                         <Button Margin="0,5,0,0" Style="{StaticResource DoorPanelCompactActionStyle}" Content="一键智能归层 (DCTCGC)" Click="OnNormalizeLayersClick" />
                         <TextBlock Margin="0,6,0,3" Foreground="#E64B3C" TextWrapping="Wrap" Text="警告：深度清理会删除未使用的图层和块，请谨慎操作。" />
-                        <Button Style="{StaticResource DoorPanelCompactActionStyle}" Background="#FFF0EE" BorderBrush="#F3AAA2" Foreground="#C92A1D" Content="图纸垃圾清理 (DCPU)" Click="OnPurgeDrawingClick" />
+                        <Button Style="{StaticResource DoorPanelCompactActionStyle}" Background="#FFF0EE" BorderBrush="#F3AAA2" Foreground="#C92A1D" Content="图纸终极清理 (DCPU)" Click="OnPurgeDrawingClick" />
+                    </StackPanel>
+                </GroupBox>
+
+                <GroupBox Header="自定义图层配置" Style="{StaticResource DoorPanelCompactGroupStyle}">
+                    <StackPanel>
+                        <TextBlock Margin="0,0,0,5" Foreground="#68707C" TextWrapping="Wrap" Text="配置板件、门板和标注生成时使用的目标图层名称。" />
+                        <Button Style="{StaticResource DoorPanelCompactActionStyle}" Content="🔍 一键获取当前图纸图层名称" Click="OnLoadDrawingLayerNamesClick" />
+                        <StackPanel x:Name="DrawingLayerMappingRowsPanel" Margin="0,6,0,0" />
+                        <Grid Margin="0,6,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="6" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="6" />
+                                <ColumnDefinition Width="58" />
+                            </Grid.ColumnDefinitions>
+                            <TextBox x:Name="DrawingLayerNewCategoryBox" Style="{StaticResource DoorPanelCompactInputStyle}" ToolTip="输入新增分类名称" />
+                            <ComboBox x:Name="DrawingLayerNewLayerBox" Grid.Column="2" IsEditable="True" Style="{StaticResource DoorPanelCompactComboStyle}" ToolTip="选择或输入目标图层" />
+                            <Button Grid.Column="4" Style="{StaticResource DoorPanelCompactActionStyle}" Content="＋ 添加" Click="OnAddDrawingLayerMappingClick" />
+                        </Grid>
+                        <Grid Margin="0,6,0,0">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="6" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                            <Button Style="{StaticResource DoorPanelCompactActionStyle}" Content="恢复默认" Click="OnRestoreDrawingLayerConfigurationClick" />
+                            <Button Grid.Column="2" Style="{StaticResource DoorPanelCompactActionStyle}" Background="{StaticResource AccentBrush}" BorderBrush="{StaticResource AccentBrush}" Foreground="White" Content="保存配置" Click="OnSaveDrawingLayerConfigurationClick" />
+                        </Grid>
                     </StackPanel>
                 </GroupBox>
 
@@ -2475,6 +3322,52 @@
                         <Button Grid.Row="2" Grid.Column="2" Style="{StaticResource DoorPanelCompactActionStyle}" Content="隐藏标注 (DCTCBZ)" Click="OnHideAnnotationLayersClick" />
                         <Button Grid.Row="4" Grid.ColumnSpan="3" Style="{StaticResource DoorPanelCompactActionStyle}" Background="{StaticResource AccentBrush}" BorderBrush="{StaticResource AccentBrush}" Foreground="White" Content="显示所有图层 (DCTCXS)" Click="OnShowAllLayersClick" />
                     </Grid>
+                </GroupBox>
+
+                <GroupBox Header="快捷图层与图形工具" Style="{StaticResource DoorPanelCompactGroupStyle}">
+                    <StackPanel>
+                        <TextBlock Margin="0,0,0,5" Foreground="#68707C" TextWrapping="Wrap" Text="选取图形快速切换当前图层，或隐藏、恢复和锁定对象所在图层。" />
+                        <Button Style="{StaticResource DoorPanelCompactActionStyle}" Content="清层置为当前 (DCT1)" Click="OnMakeLayerCurrentClick" />
+                        <Grid Margin="0,5,0,0">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="5" /><ColumnDefinition Width="*" /><ColumnDefinition Width="5" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                            <Button Style="{StaticResource DoorPanelCompactActionStyle}" Content="隐藏图形 (DCH1)" Click="OnHideEntitiesClick" />
+                            <Button Grid.Column="2" Style="{StaticResource DoorPanelCompactActionStyle}" Content="取消隐藏 (DCH2)" Click="OnUnhideLastEntitiesClick" />
+                            <Button Grid.Column="4" Style="{StaticResource DoorPanelCompactActionStyle}" Content="全部显示 (DCH3)" Click="OnShowAllEntitiesClick" />
+                        </Grid>
+                        <Grid Margin="0,5,0,0">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="5" /><ColumnDefinition Width="*" /><ColumnDefinition Width="5" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                            <Button Style="{StaticResource DoorPanelCompactActionStyle}" Content="锁定图层 (DCS1)" Click="OnLockEntityLayersClick" />
+                            <Button Grid.Column="2" Style="{StaticResource DoorPanelCompactActionStyle}" Content="取消锁定 (DCS2)" Click="OnUnlockEntityLayersClick" />
+                            <Button Grid.Column="4" Style="{StaticResource DoorPanelCompactActionStyle}" Content="全部解锁 (DCS3)" Click="OnUnlockAllLayersClick" />
+                        </Grid>
+                    </StackPanel>
+                </GroupBox>
+
+                <GroupBox Header="智能选择工具" Style="{StaticResource DoorPanelCompactGroupStyle}">
+                    <StackPanel>
+                        <TextBlock Margin="0,0,0,5" Foreground="#68707C" TextWrapping="Wrap" Text="点选或框选时只保留目标图层；命令结束后可直接移动、复制或删除。" />
+                        <Grid>
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="112" /><ColumnDefinition Width="*" /><ColumnDefinition Width="6" /><ColumnDefinition Width="80" /></Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                            <TextBlock VerticalAlignment="Center" Text="门板选择 (DCX1)" />
+                            <ComboBox x:Name="DrawingLayerDoorSelectionBox" Grid.Column="1" IsEditable="True" Style="{StaticResource DoorPanelCompactComboStyle}" />
+                            <Button Grid.Column="3" Style="{StaticResource DoorPanelCompactActionStyle}" Content="选择门板" Click="OnSelectDoorLayerClick" />
+                            <TextBlock Grid.Row="1" Margin="0,5,0,0" VerticalAlignment="Center" Text="柜体选择 (DCX2)" />
+                            <ComboBox x:Name="DrawingLayerCabinetSelectionBox" Grid.Row="1" Grid.Column="1" Margin="0,5,0,0" IsEditable="True" Style="{StaticResource DoorPanelCompactComboStyle}" />
+                            <Button Grid.Row="1" Grid.Column="3" Margin="0,5,0,0" Style="{StaticResource DoorPanelCompactActionStyle}" Content="选择柜体" Click="OnSelectCabinetLayerClick" />
+                            <TextBlock Grid.Row="2" Margin="0,5,0,0" VerticalAlignment="Center" Text="自定义一 (DCX3)" />
+                            <ComboBox x:Name="DrawingLayerCustomSelectionOneBox" Grid.Row="2" Grid.Column="1" Margin="0,5,0,0" IsEditable="True" Style="{StaticResource DoorPanelCompactComboStyle}" />
+                            <Button Grid.Row="2" Grid.Column="3" Margin="0,5,0,0" Style="{StaticResource DoorPanelCompactActionStyle}" Content="选择一" Click="OnSelectCustomLayerOneClick" />
+                            <TextBlock Grid.Row="3" Margin="0,5,0,0" VerticalAlignment="Center" Text="自定义二 (DCX4)" />
+                            <ComboBox x:Name="DrawingLayerCustomSelectionTwoBox" Grid.Row="3" Grid.Column="1" Margin="0,5,0,0" IsEditable="True" Style="{StaticResource DoorPanelCompactComboStyle}" />
+                            <Button Grid.Row="3" Grid.Column="3" Margin="0,5,0,0" Style="{StaticResource DoorPanelCompactActionStyle}" Content="选择二" Click="OnSelectCustomLayerTwoClick" />
+                        </Grid>
+                        <Grid Margin="0,6,0,0">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="6" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                            <Button Style="{StaticResource DoorPanelCompactActionStyle}" Content="选择所有标注 (DCX5)" Click="OnSelectAllAnnotationsClick" />
+                            <Button Grid.Column="2" Style="{StaticResource DoorPanelCompactActionStyle}" Content="选择类似对象 (DCXZ)" Click="OnSelectSimilarObjectsClick" />
+                        </Grid>
+                    </StackPanel>
                 </GroupBox>
 
                 <GroupBox Header="图纸显示修复" Style="{StaticResource DoorPanelCompactGroupStyle}">

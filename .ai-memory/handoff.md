@@ -1,3 +1,39 @@
+## Handoff Checkpoint — 2026-11-03 超级图库
+
+**更新时间**: 2026-11-03 03:27
+**当前目标**: 在批量打印下方提供可分类预览、保存和鼠标跟随插入的超级图库
+**当前阶段**: 实现、自动化验证与 AutoCAD 2026 部署完成，等待用户重新打开 CAD 人工确认
+**完成度**: 95%
+
+### 已完成
+
+- `Modules\SuperLibrary` 19 个一级分类、45 个 DWG 与 45 张同名预览已进入已安装 Bundle；9 个 `.bak` 未打包。
+- 工具箱入口、独立图库窗口、分类维护、批量删除、`DCBCT` 保存、`DCTKI` 实时预览插入及 `DCTK` 入口已接通。
+- 177/177 自动化测试通过；AutoCAD 2026 Release 0 警告 0 错误；安装目录 93/93 SHA-256 一致。
+- 精确路径 `D:\Autodesk\AutoCAD 2026\acad.exe` 已关闭，剩余进程数 0。
+
+### 未完成
+
+- 用户重新打开 AutoCAD，执行 `DCS` 后确认“超级图库”位于“批量打印”下方；打开分类、左键卡片预览放置、右键大图和 `DCBCT` 保存各验证一次。
+- AutoCAD 2017–2027 全版本发布构建仍被工作区既有 net462 API 兼容错误阻断，不影响本机 AutoCAD 2026 验证。
+
+### 关键决策
+
+- 一级目录即分类，目录为唯一数据源；只有需要标签/收藏/跨分类搜索时才增加可重建元数据。
+- 删除操作先校验全部路径并限制根目录，拒绝目录链接，界面必须二次确认。
+
+### 恢复入口
+
+- **首读文件**: `src/YiZhiMao.Dc.Plugin/Views/SuperLibraryWindow.xaml.cs`, `src/YiZhiMao.Dc.Plugin/SuperLibraryCommands.cs`
+- **关键命令**: `dotnet run --no-restore --project tests\YiZhiMao.Dc.Core.Tests\YiZhiMao.Dc.Core.Tests.csproj -c Release`
+- **验证路径**: `DCS` → “超级图库” → `DCTK` → 分类卡片左键/右键 → `DCBCT`
+
+### 阻塞项
+
+- 无本机功能代码阻塞；等待用户 AutoCAD 人工确认。
+
+---
+
 ## Handoff Checkpoint
 
 **更新时间**: 2026-10-31

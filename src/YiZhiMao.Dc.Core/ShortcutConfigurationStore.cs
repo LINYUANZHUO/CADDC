@@ -25,6 +25,19 @@ public sealed class ShortcutConfigurationStore(string configurationPath)
             ["DC_CMD_LAYER_HIDE_ANNOTATION"] = new(StringComparer.OrdinalIgnoreCase) { "TCBZ" },
             ["DC_CMD_LAYER_SHOW_ALL"] = new(StringComparer.OrdinalIgnoreCase) { "TCXS" },
             ["DC_CMD_DRAWING_DISPLAY_REPAIR"] = new(StringComparer.OrdinalIgnoreCase) { "TXF" },
+            ["DC_CMD_LAYER_MAKE_CURRENT"] = new(StringComparer.OrdinalIgnoreCase) { "T1" },
+            ["DC_CMD_ENTITY_HIDE"] = new(StringComparer.OrdinalIgnoreCase) { "H1" },
+            ["DC_CMD_ENTITY_UNHIDE_LAST"] = new(StringComparer.OrdinalIgnoreCase) { "H2" },
+            ["DC_CMD_ENTITY_SHOW_ALL"] = new(StringComparer.OrdinalIgnoreCase) { "H3" },
+            ["DC_CMD_ENTITY_LOCK_LAYERS"] = new(StringComparer.OrdinalIgnoreCase) { "S1" },
+            ["DC_CMD_ENTITY_UNLOCK_LAYERS"] = new(StringComparer.OrdinalIgnoreCase) { "S2" },
+            ["DC_CMD_ENTITY_UNLOCK_ALL_LAYERS"] = new(StringComparer.OrdinalIgnoreCase) { "S3" },
+            ["DC_CMD_SELECT_DOOR_LAYER"] = new(StringComparer.OrdinalIgnoreCase) { "X1" },
+            ["DC_CMD_SELECT_CABINET_LAYER"] = new(StringComparer.OrdinalIgnoreCase) { "X2" },
+            ["DC_CMD_SELECT_CUSTOM_LAYER_ONE"] = new(StringComparer.OrdinalIgnoreCase) { "X3" },
+            ["DC_CMD_SELECT_CUSTOM_LAYER_TWO"] = new(StringComparer.OrdinalIgnoreCase) { "X4" },
+            ["DC_CMD_SELECT_ALL_ANNOTATIONS"] = new(StringComparer.OrdinalIgnoreCase) { "X5" },
+            ["DC_CMD_SELECT_SIMILAR_IN_RANGE"] = new(StringComparer.OrdinalIgnoreCase) { "XZ" },
             ["DC_CMD_LIGHT_STRIP"] = new(StringComparer.OrdinalIgnoreCase) { "DD" },
             ["DC_CMD_HINGE_INSERT"] = new(StringComparer.OrdinalIgnoreCase) { "JL" },
             ["DC_CMD_HANGING_ROD"] = new(StringComparer.OrdinalIgnoreCase) { "YG" },
@@ -33,7 +46,12 @@ public sealed class ShortcutConfigurationStore(string configurationPath)
             ["DC_CMD_WAINSCOT_GRILLE_FILL"] = new(StringComparer.OrdinalIgnoreCase) { "GST" },
             ["DC_CMD_WAINSCOT_PERFORATED_DRAW"] = new(StringComparer.OrdinalIgnoreCase) { "DB" },
             ["DC_CMD_WAINSCOT_PERFORATED_FILL"] = new(StringComparer.OrdinalIgnoreCase) { "DBT" },
-            ["DC_CMD_WAINSCOT_BACKGROUND_DRAW"] = new(StringComparer.OrdinalIgnoreCase) { "BJQ" }
+            ["DC_CMD_WAINSCOT_BACKGROUND_DRAW"] = new(StringComparer.OrdinalIgnoreCase) { "BJQ" },
+            ["DC_CMD_LINE_TO_DOUBLE"] = new(StringComparer.OrdinalIgnoreCase) { "DCZ2" },
+            ["DC_CMD_LINE_TO_TRIPLE"] = new(StringComparer.OrdinalIgnoreCase) { "DCZ3" },
+            ["DC_CMD_CABINET_STANDARD"] = new(StringComparer.OrdinalIgnoreCase) { "DG" },
+            ["DC_CMD_CABINET_REFRESH"] = new(StringComparer.OrdinalIgnoreCase) { "XX" },
+            ["DC_CMD_CABINET_UNIVERSAL"] = new(StringComparer.OrdinalIgnoreCase) { "WNG" }
         };
 
     private static readonly JsonSerializerOptions JsonOptions = new()

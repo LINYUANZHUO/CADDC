@@ -14,9 +14,15 @@ public readonly record struct DrawerFaceRectangle(double X, double Y, double Wid
 public sealed record DrawerFaceLayout(
     IReadOnlyList<DrawerFaceRectangle> Faces,
     IReadOnlyList<DrawerFacePoint> HandleCenters,
-    double ActualGap,
+    double ActualHorizontalGap,
+    double ActualVerticalGap,
     double FaceWidth,
-    double FaceHeight);
+    double FaceHeight,
+    int RowCount,
+    int ColumnCount)
+{
+    public double ActualGap => RowCount > 1 ? ActualVerticalGap : ActualHorizontalGap;
+}
 
 public static class DrawerFaceLayoutCalculator
 {
@@ -39,32 +45,48 @@ public static class DrawerFaceLayoutCalculator
             throw new ArgumentOutOfRangeException(nameof(second), "柜体内空必须形成有效矩形。");
         }
 
-        var totalLength = options.Orientation == DrawerFaceOrientation.Vertical ? height : width;
-        var division = DoorPanelDivisionCalculator.CalculateWithGapCompensation(
-            totalLength,
-            options.Count,
-            options.Gap,
-            options.CalculationMode);
-        var faces = new List<DrawerFaceRectangle>(options.Count);
-        var centers = new List<DrawerFacePoint>(options.Count);
-        var distance = 0d;
-        foreach (var panelLength in division.PanelWidths)
+        if (options.RowCount <= 0 || options.ColumnCount <= 0)
         {
-            var face = options.Orientation == DrawerFaceOrientation.Vertical
-                ? new DrawerFaceRectangle(left, bottom + distance, width, panelLength)
-                : new DrawerFaceRectangle(left + distance, bottom, panelLength, height);
-            faces.Add(face);
-            centers.Add(new DrawerFacePoint(face.X + face.Width / 2, face.Y + face.Height / 2));
-            distance += panelLength + division.ActualGap;
+            throw new ArgumentOutOfRangeException(nameof(options), "抽面行数和列数必须大于 0。");
+        }
+
+        var horizontal = DoorPanelDivisionCalculator.Calculate(
+            width,
+            options.ColumnCount,
+            options.Gap,
+            DoorPanelCalculationMode.GapFixedDoorDistributed);
+        var vertical = DoorPanelDivisionCalculator.Calculate(
+            height,
+            options.RowCount,
+            options.Handleless ? options.HandlelessGap : options.Gap,
+            DoorPanelCalculationMode.GapFixedDoorDistributed);
+        var faces = new List<DrawerFaceRectangle>(options.RowCount * options.ColumnCount);
+        var centers = new List<DrawerFacePoint>(faces.Capacity);
+        var y = bottom;
+        foreach (var faceHeight in vertical.PanelWidths)
+        {
+            var x = left;
+            foreach (var faceWidth in horizontal.PanelWidths)
+            {
+                var face = new DrawerFaceRectangle(x, y, faceWidth, faceHeight);
+                faces.Add(face);
+                centers.Add(new DrawerFacePoint(face.X + face.Width / 2, face.Y + face.Height / 2));
+                x += faceWidth + horizontal.ActualGap;
+            }
+
+            y += faceHeight + vertical.ActualGap;
         }
 
         var firstFace = faces[0];
         return new DrawerFaceLayout(
             faces,
             centers,
-            division.ActualGap,
+            horizontal.ActualGap,
+            vertical.ActualGap,
             firstFace.Width,
-            firstFace.Height);
+            firstFace.Height,
+            options.RowCount,
+            options.ColumnCount);
     }
 
     public static IReadOnlyList<DrawerFaceLine> CalculateOpeningArrow(DrawerFaceRectangle face)

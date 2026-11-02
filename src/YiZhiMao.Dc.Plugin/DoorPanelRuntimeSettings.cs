@@ -56,8 +56,6 @@ internal static class DrawerFaceRuntimeSettings
     public static void Save(DrawerFaceOptions value) =>
         ToolboxSettingsRuntime.Update(settings => settings.DrawerFace = value);
 
-    public static HardwareLibraryItem? SelectedHandle { get; set; }
-
     public static DrawerFaceLayout? LastLayout => lastLayout;
 
     public static event Action<DrawerFaceLayout>? LayoutChanged;
